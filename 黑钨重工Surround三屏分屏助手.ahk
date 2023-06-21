@@ -71,13 +71,15 @@ else
 IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
 {
   IniRead, antialize, Settings.ini, 设置, 锐化算法 ;从ini文件读取设置
-  if (antialize=0)
+  if (antialize=1)
   {
     Menu, Tray, UnCheck, 锐化算法 ;右键菜单不打勾
+    DllCall("gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
   }
   else
   {
     Menu, Tray, Check, 锐化算法 ;右键菜单打勾
+    DllCall("gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
   }
   
   IniRead, CompatibleMode, Settings.ini, 设置, 兼容模式
@@ -104,7 +106,7 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
 }
 else ;如果配置文件不存在则新建
 {
-  antialize:=0
+  antialize:=1
   IniWrite, %antialize%, Settings.ini, 设置, 锐化算法 ;写入设置到ini文件
   CompatibleMode:=0
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
@@ -836,6 +838,7 @@ else
 }
 
 DllCall("gdi32.dll\StretchBlt", UInt,hdc_frame, Int,0, Int,0, Int,2*Rx, Int,2*Ry, UInt,hdd_frame, UInt,xz, UInt,yz, Int,2*Zx, Int,2*Zy, UInt,0xCC0020) ; SRCCOPY
+DllCall("gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
 Return
 
 GuiSize:
@@ -847,29 +850,29 @@ TrayTip,,% "Frame  =  " Round(2*Zx) " × " Round(2*Zy) "`nMagnified to = " A_Gui
 Return
 
 锐化算法:
-Critical, On
-if (antialize=1)
+if (antialize=0)
 {
-  antialize:=0
-  DllCall( "gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
+  antialize:=1
+  DllCall("gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
   IniWrite, %antialize%, Settings.ini, 设置, 锐化算法 ;写入设置到ini文件
   Menu, Tray, UnCheck, 锐化算法 ;右键菜单不打勾
 }
 else
 {
-  antialize:=1
-  DllCall( "gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
+  antialize:=0
+  DllCall("gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize )
   IniWrite, %antialize%, Settings.ini, 设置, 锐化算法 ;写入设置到ini文件
   Menu, Tray, Check, 锐化算法 ;右键菜单打勾
 }
-Critical, Off
 return
 
 关闭放大镜:
+Critical, On
 SetTimer, Repaint, Off
 DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
 DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
 Gui, 放大镜:Destroy
+Critical, Off
 Return
 
 打开放大镜:
@@ -885,6 +888,7 @@ In(x,a,b)
 }
 
 退出软件:
+Critical, On
 DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
 DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
 DllCall("magnification.dll\MagUninitialize")
@@ -893,6 +897,7 @@ if hModule := DllCall("GetModuleHandle", "Str", "gdiplus", Ptr)
 {
   DllCall("FreeLibrary", Ptr, hModule)
 }
+Critical, Off
 ExitApp
 
 $w::
