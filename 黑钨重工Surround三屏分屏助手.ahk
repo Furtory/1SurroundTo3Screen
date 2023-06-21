@@ -654,8 +654,12 @@ Reload
 
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
-if (MISY>A_ScreenHeight-5)
+MouseGetPos, MISX, MISY, WinName ;获取鼠标在屏幕中的位置
+if (WinName="黑名单窗口句柄") ;任务栏黑名单
+{
+  ;不显示任务栏
+}
+else if (MISY>A_ScreenHeight-5)
 {
   WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   TaskBar:=1
@@ -951,6 +955,7 @@ if hModule := DllCall("GetModuleHandle", "Str", "gdiplus", Ptr)
 {
   DllCall("FreeLibrary", Ptr, hModule)
 }
+WinShow, ahk_class Shell_TrayWnd ;显示任务栏
 Critical, Off
 ExitApp
 
