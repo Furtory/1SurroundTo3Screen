@@ -105,21 +105,29 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, MiniWinIDL, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;从ini文件读取设置
   IniRead, MiniWinIDM, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;从ini文件读取设置
   IniRead, MiniWinIDR, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;从ini文件读取设置
+  
+  IniRead, ActiveWindowID, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
 }
 else ;如果配置文件不存在则新建
 {
   antialize:=1
   IniWrite, %antialize%, Settings.ini, 设置, 锐化算法 ;写入设置到ini文件
+  
   CompatibleMode:=0
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
+  
   AdminMode:=0
   IniWrite, %AdminMode%, Settings.ini, 设置, 管理权限 ;写入设置到ini文件
+  
   MiniWinIDL:=0
   MiniWinIDM:=0
   MiniWinIDR:=0
   IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
   IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
   IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+  
+  ActiveWindowID:=0
+  IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
 }
 
 KDXZ:=16 ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
@@ -166,7 +174,7 @@ Ry := Round(A_ScreenHeight*(100/1080))
 Zx := Rx/zoom
 Zy := Ry/zoom
 
-TaskBar:=0
+TaskBar:=1
 
 ~WheelUp:: ;触发按键 滚轮上
 Critical, On
@@ -290,11 +298,17 @@ else
 }
 return
 
-; ~LButton:: ;左键
-; CoordMode Mouse, Screen ;以屏幕为基准
-; MouseGetPos, , , WinID
-; WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-; return
+~^LButton:: ;左键
+Critical, On
+MouseGetPos, , , WinID ;获取鼠标在窗口的句柄
+WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+ToolTip 窗口%ActiveWindowID%已准备好等待激活
+IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
+; MsgBox %ActiveWindowID%
+KeyWait LButton
+ToolTip
+Critical, Off
+return
 
 ~MButton:: ;中键
 Critical, On
@@ -574,7 +588,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n在窗口顶部`n      长按中键窗口填满所有屏幕`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n在窗口顶部`n      长按中键窗口填满所有屏幕`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键设置常用窗口`n      鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
@@ -690,22 +704,40 @@ if (WinName="黑名单窗口句柄") ;任务栏黑名单
 {
   ;不显示任务栏
 }
-else if (MISY>A_ScreenHeight-3)
+else if (MISY<3) ;如果鼠标贴着屏幕顶部
+{
+  Critical, On
+  Loop
+  {
+    ; ToolTip %A_Index%
+    Sleep 60
+    MouseGetPos, , MISY
+    if (MISY<=3) and (A_Index=10)
+    {
+      WinShow, %ActiveWindowID% ;激活后台等待激活的窗口
+    }
+    else if (MISY>3)
+    {
+      ; ToolTip
+      break
+    }
+  }
+  Critical, Off
+}
+else if (MISY>A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 {
   WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   TaskBar:=1
 }
-else if (TaskBar=1) and (MISY<ScreenBottom)
+else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务栏处于激活状态 等待鼠标离开任务栏才隐藏任务栏
 {
   WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
   DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
   TaskBar:=0
 }
-else if (TaskBar=0)
+else if (TaskBar=0) ;如果任务栏处于隐藏状态
 {
-  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
-  TaskBar:=0
+  ;不执行任何操作
 }
 
 if (MISX<FJL)
