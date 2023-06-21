@@ -503,7 +503,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
 }
 
 KeyMButton: ;计时器
-if (MButton_presses=1) and (running=1) and (MiniWinID!=0) ;此键按下了一次 并且 软件正在运行中
+if (MButton_presses=1) and (running=1) and (MiniWinID!=0) and (MYOld>WinTop) ;此键按下了一次 软件正在运行中 有最小化窗口的历史记录 没有点击在窗口顶部
 {
   ToolTip 还原最%MiniWinID%窗口
   WinRestore, ahk_id %MiniWinID% ;还原最近一次被最小化的窗口
