@@ -147,7 +147,7 @@ HSJM:=0 ;后视镜移动状态
 rWidth:=Round(SW*(640/1920)) ;后视镜宽度
 rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
 HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
-HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)) ;右后视镜显示位置X
+HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
 HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
 HWNDarr:=[WinExist("ahk_class AHKEditor"), hGui]  ; 不需要显示后视镜窗口的黑名单 填WinTitle
 SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
