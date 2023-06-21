@@ -102,7 +102,9 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
     Menu, Tray, Check, 管理权限 ;右键菜单打勾
   }
   
-  IniRead, MiniWinID, Settings.ini, 设置, 最近一次被最小化的窗口 ;从ini文件读取设置
+  IniRead, MiniWinIDL, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;从ini文件读取设置
+  IniRead, MiniWinIDM, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;从ini文件读取设置
+  IniRead, MiniWinIDR, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;从ini文件读取设置
 }
 else ;如果配置文件不存在则新建
 {
@@ -112,8 +114,12 @@ else ;如果配置文件不存在则新建
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
   AdminMode:=0
   IniWrite, %AdminMode%, Settings.ini, 设置, 管理权限 ;写入设置到ini文件
-  MiniWinID:=0
-  IniWrite, %MiniWinID%, Settings.ini, 设置, 最近一次被最小化的窗口 ;写入设置到ini文件
+  MiniWinIDL:=0
+  MiniWinIDM:=0
+  MiniWinIDR:=0
+  IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+  IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+  IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
 }
 
 KDXZ:=16 ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
@@ -264,8 +270,21 @@ else
   {
     ToolTip 最小化%WinID%窗口
     WinMinimize, ahk_id %WinID% ;最小化窗口
-    MiniWinID:=WinID ;记录最近一次被最小化的窗口
-    IniWrite, %MiniWinID%, Settings.ini, 设置, 最近一次被最小化的窗口 ;写入设置到ini文件
+    if (屏幕实时位置=1)
+    {
+      MiniWinIDL:=WinID ;记录最近一次被最小化的窗口
+      IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
+    else if (屏幕实时位置=2)
+    {
+      MiniWinIDM:=WinID ;记录最近一次被最小化的窗口
+      IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
+    else if (屏幕实时位置=3)
+    {
+      MiniWinIDR:=WinID ;记录最近一次被最小化的窗口
+      IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
 }
@@ -505,10 +524,22 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
 }
 
 KeyMButton: ;计时器
-if (MButton_presses=1) and (running=1) and (MiniWinID!=0) and (MYOld>WinTop) and (WinID!=MiniWinID) ;此键按下了一次 软件正在运行中 有最小化窗口的历史记录 没有点击在窗口顶部
+if (MButton_presses=1) and (running=1) and (MYOld>WinTop) ;此键按下了一次 软件正在运行中 没有点击在窗口顶部
 {
   ToolTip 还原最%MiniWinID%窗口
-  WinRestore, ahk_id %MiniWinID% ;还原最近一次被最小化的窗口
+  if (屏幕实时位置=1) and (MiniWinIDL!=0) and (WinID!=MiniWinIDL) ;鼠标在左边屏幕 有左边最小化窗口的历史记录 当前点击不在最小化窗口
+  {
+    WinRestore, ahk_id %MiniWinIDL% ;还原最近一次左边被最小化的窗口
+  }
+  else if (屏幕实时位置=2) and (MiniWinIDM!=0) and (WinID!=MiniWinIDM) ;鼠标在中间屏幕 有中间最小化窗口的历史记录 当前点击不在最小化窗口
+  {
+    WinRestore, ahk_id %MiniWinIDM% ;还原最近一次中间被最小化的窗口
+  }
+  else if (屏幕实时位置=3) and (MiniWinIDR!=0) and (WinID!=MiniWinIDR) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 当前点击不在最小化窗口
+  {
+    WinRestore, ahk_id %MiniWinIDR% ;还原最近一次右边被最小化的窗口
+  }
+  
   SetTimer, 关闭提示, -300 ;300毫秒后关闭提示
 }
 else if (MButton_presses>=2) ;此键按下了两次及以上
@@ -659,7 +690,7 @@ if (WinName="黑名单窗口句柄") ;任务栏黑名单
 {
   ;不显示任务栏
 }
-else if (MISY>A_ScreenHeight-5)
+else if (MISY>A_ScreenHeight-3)
 {
   WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   TaskBar:=1
