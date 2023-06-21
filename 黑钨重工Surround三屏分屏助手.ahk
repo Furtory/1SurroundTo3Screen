@@ -121,7 +121,7 @@ GDXZ:=8 ;高度修正 如果全屏后窗口仍然没有填满屏幕增加这个�
 
 FJL:=Round(A_ScreenWidth/3) ;左分界线
 FJR:=Round(A_ScreenWidth/3)*2 ;右分界线
-WinTop:=Round(A_ScreenHeight*(25/1080)) ;窗口顶部识别分界线
+WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
 SH:=A_ScreenHeight+GDXZ ;屏幕高度
 if (A_ScreenHeight=1080) ;1080P屏宽度
 {
@@ -159,6 +159,8 @@ Rx := Round(A_ScreenHeight*(100/1080))
 Ry := Round(A_ScreenHeight*(100/1080))
 Zx := Rx/zoom
 Zy := Ry/zoom
+
+TaskBar:=0
 
 ~WheelUp:: ;触发按键 滚轮上
 Critical, On
@@ -503,7 +505,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
 }
 
 KeyMButton: ;计时器
-if (MButton_presses=1) and (running=1) and (MiniWinID!=0) and (MYOld>WinTop) ;此键按下了一次 软件正在运行中 有最小化窗口的历史记录 没有点击在窗口顶部
+if (MButton_presses=1) and (running=1) and (MiniWinID!=0) and (MYOld>WinTop) and (WinID!=MiniWinID) ;此键按下了一次 软件正在运行中 有最小化窗口的历史记录 没有点击在窗口顶部
 {
   ToolTip 还原最%MiniWinID%窗口
   WinRestore, ahk_id %MiniWinID% ;还原最近一次被最小化的窗口
@@ -652,7 +654,25 @@ Reload
 
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX ;获取鼠标在屏幕中的位置
+MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
+if (MISY>A_ScreenHeight-5)
+{
+  WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+  TaskBar:=1
+}
+else if (TaskBar=1) and (MISY<ScreenBottom)
+{
+  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+  TaskBar:=0
+}
+else if (TaskBar=0)
+{
+  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+  TaskBar:=0
+}
+
 if (MISX<FJL)
 {
   屏幕实时位置:=1
