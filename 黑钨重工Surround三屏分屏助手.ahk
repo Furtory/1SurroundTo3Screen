@@ -17,6 +17,24 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   }
 }
 
+Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
+if (A_TickCount<60000) ;开机60秒内启用延时自启
+{
+  Critical On
+  StartTime := A_TickCount
+  Loop
+  {
+    Sleep, 1000
+    ElapsedTime := A_TickCount - StartTime
+    if (ElapsedTime>10000) ;软件开机后延时10秒启动
+    {
+      Critical Off
+      break
+    }
+  }
+}
+
+
 Process, Priority, , Realtime
 #MenuMaskKey vkE8
 #WinActivateForce
@@ -45,7 +63,6 @@ Global hPic
 
 MButton_presses:=0
 running:=1 ;1为运行 0为暂停
-Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
 Menu, Tray, NoStandard ;不显示默认的AHK右键菜单
 Menu, Tray, Add, 使用教程, 使用教程 ;添加新的右键菜单
 Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
@@ -450,8 +467,16 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   
   if (屏幕位置=1)
   {
-    if (MXNew>FJR)
+    if (MXNew>FJR) ;左边屏幕 到 右边屏幕
     {
+      if (WinID=MiniWinIDL)
+      {
+        MiniWinIDR:=WinID
+        IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+        MiniWinIDL:=0
+        IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      
       ToolTip 发送%WinID%窗口到右边屏幕
       WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -459,8 +484,16 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       Critical, Off
       return
     }
-    else if (MXNew>FJL)
+    else if (MXNew>FJL) ;左边屏幕 到 中间屏幕
     {
+      if (WinID=MiniWinIDL)
+      {
+        MiniWinIDM:=WinID
+        IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+        MiniWinIDL:=0
+        IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      
       ToolTip 发送%WinID%窗口到中间屏幕
       WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -471,8 +504,16 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   }
   else if (屏幕位置=2)
   {
-    if (MXNew<FJL)
+    if (MXNew<FJL) ;中间屏幕 到 左边屏幕
     {
+      if (WinID=MiniWinIDM)
+      {
+        MiniWinIDL:=WinID
+        IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+        MiniWinIDM:=0
+        IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      
       ToolTip 发送%WinID%窗口到左边屏幕
       WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -480,8 +521,16 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       Critical, Off
       return
     }
-    else if (MXNew>FJR)
+    else if (MXNew>FJR) ;中间屏幕 到 右边屏幕
     {
+      if (WinID=MiniWinIDM)
+      {
+        MiniWinIDR:=WinID
+        IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+        MiniWinIDM:=0
+        IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      
       ToolTip 发送%WinID%窗口到右边屏幕
       WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -492,8 +541,16 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   }
   else if (屏幕位置=3)
   {
-    if (MXNew<FJL)
+    if (MXNew<FJL) ;右边屏幕 到 左边屏幕
     {
+      if (WinID=MiniWinIDR)
+      {
+        MiniWinIDL:=WinID
+        IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+        MiniWinIDR:=0
+        IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      
       ToolTip 发送%WinID%窗口到左边屏幕
       WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -501,8 +558,16 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       Critical, Off
       return
     }
-    else if (MXNew<FJR)
+    else if (MXNew<FJR) ;右边屏幕 到 中间屏幕
     {
+      if (WinID=MiniWinIDR)
+      {
+        MiniWinIDM:=WinID
+        IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+        MiniWinIDR:=0
+        IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      
       ToolTip 发送%WinID%窗口到中间屏幕
       WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -875,7 +940,8 @@ Loop
 }
 Return 
 
-MagImageScalingCallback(hwnd, srcdata, srcheader, destdata, destheader, unclipped, clipped, dirty) {
+MagImageScalingCallback(hwnd, srcdata, srcheader, destdata, destheader, unclipped, clipped, dirty) 
+{
 	Static BI_RGB := 0, CBM_INIT := 6, DIB_RGB_COLORS := 0
 		, Ptr := A_PtrSize = 8 ? "UPtr" : "UInt"
 		, STM_SETIMAGE := 0x172, IMAGE_BITMAP := 0x0
@@ -920,7 +986,7 @@ MagImageScalingCallback(hwnd, srcdata, srcheader, destdata, destheader, unclippe
 	DllCall("DeleteDC", Ptr, hDC)
 	DllCall("DeleteObject", Ptr, hBMP)
 	DllCall("DeleteObject", Ptr, hBitmap)
-	Return
+	Return 1
 }
 ; */
 
@@ -998,7 +1064,7 @@ Return
 
 打开放大镜:
 gosub 放大镜
-SetTimer, Repaint, 30
+SetTimer, Repaint, 100
 Return
 
 In(x,a,b) 
