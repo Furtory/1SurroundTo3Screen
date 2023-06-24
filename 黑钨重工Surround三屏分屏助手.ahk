@@ -315,9 +315,9 @@ else
 }
 return
 
-~^LButton:: ;左键
+~^LButton:: ;Ctrl+左键
 Critical, On
-MouseGetPos, , , WinID ;获取鼠标在窗口的句柄
+MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
 WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
 ToolTip 窗口%ActiveWindowID%已准备好等待激活
 IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
@@ -325,6 +325,41 @@ IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;�
 KeyWait LButton
 ToolTip
 Critical, Off
+return
+
+~LButton:: ;左键
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
+WinGetPos, , , WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
+if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口顶部
+{
+  OldWinSY:=WinSY
+  Loop
+  {
+    Sleep 100
+    CoordMode Mouse, Screen ;以屏幕为基准
+    MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
+    MoveSpeed:=Round((WinSY-OldWinSY)/(A_Index*100)*1000)
+    ; ToolTip 鼠标移动速度是%MoveSpeed%像素/秒
+    if !GetKeyState("LButton", "P") ;左键抬起根据位置关闭对应窗口(MoveSpeed>1)
+    {
+      break
+    }
+  }
+  ; ToolTip 鼠标移动速度是%MoveSpeed%像素/秒
+  if (MoveSpeed>Round(A_ScreenHeight*1.5))
+  {
+    WinClose, ahk_id %WinID%
+  }
+  else if (WinSY>Round(A_ScreenHeight*(50/1080)))
+  {
+    CoordMode Mouse, Screen ;以屏幕为基准
+    MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
+    WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+  }
+}
+KeyWait LButton
+ToolTip
 return
 
 ~MButton:: ;中键
@@ -653,7 +688,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n在窗口顶部`n      长按中键窗口填满所有屏幕`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键设置常用窗口`n      鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n在窗口顶部`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      慢速拖动会缩放窗口至屏幕的五分之三大小`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键设置常用窗口`n      鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
@@ -805,6 +840,7 @@ else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务�
 }
 else if (TaskBar=0) ;如果任务栏处于隐藏状态
 {
+  hWnd:=""
   WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
   if (hWnd!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
   {
