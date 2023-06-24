@@ -674,6 +674,8 @@ if (running=0)
 else
 {
   ToolTip 分屏助手暂停运行
+  WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+  TaskBar:=1
   Menu, Tray, Icon, %A_ScriptDir%\Stopped.ico ;任务栏图标改成暂停运行
   running:=0
   Hotkey WheelUp, Off ;关闭滚轮上的热键
@@ -779,6 +781,7 @@ else if (MISY<3) ;如果鼠标贴着屏幕顶部
     MouseGetPos, , MISY
     if (MISY<=3) and (A_Index=10)
     {
+      WinActivate, %ActiveWindowID% ;激活后台等待激活的窗口
       WinShow, %ActiveWindowID% ;激活后台等待激活的窗口
     }
     else if (MISY>3)
@@ -802,7 +805,27 @@ else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务�
 }
 else if (TaskBar=0) ;如果任务栏处于隐藏状态
 {
-  ;不执行任何操作
+  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  if (hWnd!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
+  {
+    Loop
+    {
+      CoordMode Mouse, Screen ;以屏幕为基准
+      MouseGetPos, , MISY ;获取鼠标在屏幕中的位置
+      if (MISY>A_ScreenHeight-3)
+      {
+        break
+      }
+      else if (A_Index>=100)
+      {
+        WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+        DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+        TaskBar:=0
+        break
+      }
+      Sleep 30
+    }
+  }
 }
 
 if (MISX<FJL)
