@@ -123,7 +123,9 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, MiniWinIDM, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;从ini文件读取设置
   IniRead, MiniWinIDR, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;从ini文件读取设置
   
-  IniRead, ActiveWindowID, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
+  IniRead, ActiveWindowID, Settings.ini, 设置, 后台等待激活的窗口 ;从ini文件读取设置
+  
+  IniRead, LastWinTop, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;从ini文件读取设置
 }
 else ;如果配置文件不存在则新建
 {
@@ -145,6 +147,9 @@ else ;如果配置文件不存在则新建
   
   ActiveWindowID:=0
   IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
+  
+  LastWinTop:=0
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
 }
 
 KDXZ:=16 ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
@@ -192,6 +197,8 @@ Zx := Rx/zoom
 Zy := Ry/zoom
 
 TaskBar:=1
+
+TopOpacity:=255 ;顶置窗口透明度
 
 ~WheelUp:: ;触发按键 滚轮上
 Critical, On
@@ -351,7 +358,7 @@ if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口
   {
     WinClose, ahk_id %WinID% ;关闭窗口
   }
-  else if (WinSY>Round(A_ScreenHeight*(50/1080))) ;如果鼠标移动了窗口低于屏幕顶部范围
+  else if (WinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) ;如果鼠标移动了窗口低于屏幕顶部范围
   {
     CoordMode Mouse, Screen ;以屏幕为基准
     MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
@@ -372,6 +379,8 @@ else if (WinWY<WinTop)
     {
       Critical On
       ToolTip 窗口设为总是顶置 O
+      LastWinTop:=WinID
+      IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
       Sleep 500
       Critical Off
     }
@@ -379,6 +388,8 @@ else if (WinWY<WinTop)
     {
       Critical On
       ToolTip 窗口取消总是顶置 -
+      LastWinTop:=0
+      IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
       Sleep 500
       Critical Off
     }
@@ -389,6 +400,34 @@ else if (WinWY<WinTop)
 ToolTip
 Critical Off
 return
+
+^Up::
+if (LastWinTop!=0)
+{
+  TopOpacity:=TopOpacity+16
+  if (TopOpacity>255)
+  {
+    TopOpacity:=255
+  }
+  ToolTip 增加顶置窗口的透明度 ;%TopOpacity%
+  WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+}
+Return
+
+^Down::
+if (LastWinTop!=0)
+{
+  TopOpacity:=TopOpacity-16
+  if (TopOpacity<16)
+  {
+    TopOpacity:=16
+  }
+  ToolTip 减少顶置窗口的透明度 ;%TopOpacity%
+  WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+}
+Return
 
 AeroShake:
 摇晃次数:=0
@@ -757,7 +796,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n在窗口顶部`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      慢速拖动会缩放窗口至屏幕的五分之三大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键设置常用窗口`n      鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n在窗口顶部`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      慢速拖动会缩放窗口至屏幕的五分之三大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n总是顶置的窗口透明度`n      可通过Ctrl`+上下箭头调整`n      仅可调整最近一次被总是顶置的窗口`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键设置常用窗口`n      鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
