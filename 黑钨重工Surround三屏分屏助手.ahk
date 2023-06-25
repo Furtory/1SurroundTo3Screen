@@ -197,7 +197,6 @@ Zx := Rx/zoom
 Zy := Ry/zoom
 
 TaskBar:=1
-
 TopOpacity:=255 ;顶置窗口透明度
 
 ~WheelUp:: ;触发按键 滚轮上
@@ -431,7 +430,7 @@ Return
 
 AeroShake:
 摇晃次数:=0
-移动方向:=0
+移动方向:=0 ;向左-1 向右1
 Loop %LoopTimes% ;监测时间1次循环等于0.15秒
 {
   if !GetKeyState("LButton", "P") ;左键抬起则暂停
@@ -486,11 +485,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos, MXOld, MYOld,WinID ;获取鼠标在屏幕中的位置
   WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-  摇晃阈值:=10
-  LJX:=MXOld-摇晃阈值
-  RJX:=MXOld+摇晃阈值
-  已向左:=0
-  已向右:=0
+  
   if (MXOld<FJL)
   {
     屏幕位置:=1
@@ -504,8 +499,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
     屏幕位置:=2
   }
   
+  摇晃次数:=0
+  移动方向:=0 ;向左-1 向右1
   loop ;循环 放大镜功能 窗口传送功能
   {
+    上次移动方向:=移动方向
+    MXRecor:=MXNew
+    Sleep 30
     MouseGetPos, MXNew
     
     if !GetKeyState("MButton", "P")
@@ -513,51 +513,21 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       break
     }
     
-    if (MYOld>ScreenBottom) ;音量调整功能
+    if (MXNew-MXRecor>0)
     {
-      YLTZ:=0 ;音量调整状态
-      Loop
-      {
-        MouseGetPos, MXNew
-        增加音量:=MXOld+15
-        降低音量:=MXOld-15
-        if (MXNew>增加音量) ;向右滑动 增加音量
-        {
-          YLTZ:=1
-          MXOld:=MXNew
-          Send {Volume_Up}
-        }
-        else if (MXNew<降低音量) ;向左滑动 增加音量
-        {
-          YLTZ:=1
-          MXOld:=MXNew
-          Send {Volume_Down}
-        }
-        
-        if !GetKeyState("MButton", "P")
-        {
-          if (MXNew<增加音量) and (MXNew>降低音量) and (YLTZ=0) ;没有滑动且没有调整过音量 播放/暂停媒体
-          {
-            Send {Media_Play_Pause}
-          }
-          MButton_presses:=0 ;键击记录重置为0
-          Critical Off
-          Return
-        }
-      }
+      移动方向:=1 ;向左-1 向右1
+    }
+    else if (MXNew-MXRecor<0)
+    {
+      移动方向:=-1 ;向左-1 向右1
     }
     
-    if (MXNew<LJX)
+    if (上次移动方向!=移动方向) ;移动方向改变过
     {
-      已向左:=1
+      摇晃次数:=摇晃次数+1
     }
     
-    if (MXNew>RJX)
-    {
-      已向右:=1
-    }
-    
-    if (已向左=1) and (已向右=1) ;按下滚轮上时打开放大镜 Win+加号
+    if (摇晃次数>3) ;按下滚轮上时打开放大镜 Win+加号
     {
       FDJM:=1
       Critical, Off
@@ -605,6 +575,40 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       
       MButton_presses:=0 ;键击记录重置为0
       return
+    }
+    
+    if (MYOld>ScreenBottom) ;音量调整功能
+    {
+      YLTZ:=0 ;音量调整状态
+      Loop
+      {
+        MouseGetPos, MXNew
+        增加音量:=MXOld+15
+        降低音量:=MXOld-15
+        if (MXNew>增加音量) ;向右滑动 增加音量
+        {
+          YLTZ:=1
+          MXOld:=MXNew
+          Send {Volume_Up}
+        }
+        else if (MXNew<降低音量) ;向左滑动 增加音量
+        {
+          YLTZ:=1
+          MXOld:=MXNew
+          Send {Volume_Down}
+        }
+        
+        if !GetKeyState("MButton", "P")
+        {
+          if (MXNew<增加音量) and (MXNew>降低音量) and (YLTZ=0) ;没有滑动且没有调整过音量 播放/暂停媒体
+          {
+            Send {Media_Play_Pause}
+          }
+          MButton_presses:=0 ;键击记录重置为0
+          Critical Off
+          Return
+        }
+      }
     }
   }
   
