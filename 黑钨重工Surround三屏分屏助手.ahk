@@ -834,8 +834,8 @@ if (running=0)
   Hotkey ^c, On ;打开Ctrl+C的热键
   Hotkey w, On ;打开W的热键
   Hotkey s, On ;打开S的热键
-  SetTimer, 屏幕监测, 100
   SetTimer, 自动隐藏任务栏, Off
+  SetTimer, 屏幕监测, 100
   Menu, Tray, UnCheck, 暂停运行 ;右键菜单不打勾
 }
 else
