@@ -196,8 +196,9 @@ Ry := Round(A_ScreenHeight*(100/1080))
 Zx := Rx/zoom
 Zy := Ry/zoom
 
-TaskBar:=1
+TaskBar:=1 ;任务栏状态 1开启 0关闭
 TopOpacity:=255 ;顶置窗口透明度
+TopWindowTransparent:=0 ;顶置窗口穿透
 
 ~WheelUp:: ;触发按键 滚轮上
 Critical, On
@@ -323,13 +324,67 @@ return
 
 ~^LButton:: ;Ctrl+左键
 Critical, On
-MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
-WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
-ToolTip 窗口%ActiveWindowID%已准备好等待激活
-IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
-; MsgBox %ActiveWindowID%
-KeyWait LButton
-ToolTip
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
+WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+WinGet, 窗口状态, ExStyle, ahk_id %WinID% ;获取窗口状态
+窗口状态:= (窗口状态 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+; ToolTip %窗口状态%
+if (窗口状态=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 没有点击在窗口顶部
+{
+  MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
+  WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+  ToolTip 窗口%ActiveWindowID%已准备好等待激活
+  IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
+  KeyWait LButton
+  ToolTip
+  Critical, Off
+  Return
+}
+else ;如果已经处于总是顶置状态
+{
+  CoordMode Mouse, Screen ;以屏幕为基准
+  MouseGetPos, , ScreenY, WinID ;;获取鼠标在屏幕中的位置
+  LastWinTop:=WinID
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+  Loop
+  {
+    OldWinSY:=ScreenY
+    Sleep 10
+    MouseGetPos, , ScreenY ;;获取鼠标在屏幕中的位置
+    
+    if !GetKeyState("LButton", "P") ;左键抬起则暂停
+    {
+      break
+    }
+    
+    if (ScreenY<OldWinSY)
+    {
+      TopOpacity:=TopOpacity+2
+      if (TopOpacity>255)
+      {
+        TopOpacity:=255
+      }
+      TopOpacityPercent:=Round(TopOpacity/255*100)
+      ToolTip 增加顶置窗口的透明度 %TopOpacityPercent%
+      WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+      SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+    }
+    
+    if (ScreenY>OldWinSY)
+    {
+      TopOpacity:=TopOpacity-2
+      if (TopOpacity<2)
+      {
+        TopOpacity:=2
+      }
+      TopOpacityPercent:=Round(TopOpacity/255*100)
+      ToolTip 减少顶置窗口的透明度 %TopOpacityPercent%`%
+      WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+      SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+    }
+  }
+}
 Critical, Off
 return
 
@@ -339,8 +394,15 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, , WinSY ;;获取鼠标在屏幕中的位置
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
+WinGet, 窗口状态, ExStyle, ahk_id %WinID% ;获取窗口状态
+窗口状态:= (窗口状态 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+if (窗口状态=1)
+{
+  LastWinTop:=WinID
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+}
 WinGetPos, , , WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
-if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口顶部
+if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口顶部 ;鼠标点击在最大化的窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -364,7 +426,7 @@ if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口
     WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
   }
 }
-else if (WinWY<WinTop)
+else if (WinWY<WinTop) ;鼠标点击在窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   LoopTimes:=20 ;检测2秒
@@ -393,38 +455,27 @@ else if (WinWY<WinTop)
       Critical Off
     }
     
-    WinSet, AlwaysOnTop, Toggle, ahk_id %WinID%  ;切换窗口的顶置状态
+    WinSet, AlwaysOnTop, Toggle, ahk_id %LastWinTop%  ;切换窗口的顶置状态
   }
 }
 ToolTip
 Critical Off
 return
 
-^Up::
-if (LastWinTop!=0)
+~Tab::
+if (LastWinTop!=0) ;如果已设置总是顶置的窗口
 {
-  TopOpacity:=TopOpacity+16
-  if (TopOpacity>255)
+  if (TopWindowTransparent=0) and (TopOpacity!=255) ;如果没有开启鼠标穿透 
   {
-    TopOpacity:=255
+    TopWindowTransparent:=1
+    WinSet, ExStyle, +0x20, ahk_id %LastWinTop% ;打开鼠标穿透
   }
-  ToolTip 增加顶置窗口的透明度 ;%TopOpacity%
-  WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
-  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
-}
-Return
-
-^Down::
-if (LastWinTop!=0)
-{
-  TopOpacity:=TopOpacity-16
-  if (TopOpacity<16)
+  else ; if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
   {
-    TopOpacity:=16
+    TopWindowTransparent:=1
+    WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
   }
-  ToolTip 减少顶置窗口的透明度 ;%TopOpacity%
-  WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
-  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+  Return
 }
 Return
 
@@ -588,9 +639,11 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       YLTZ:=0 ;音量调整状态
       Loop
       {
+        增加音量:=MXOld+5
+        降低音量:=MXOld-5
+        Sleep 30
         MouseGetPos, MXNew
-        增加音量:=MXOld+15
-        降低音量:=MXOld-15
+        
         if (MXNew>增加音量) ;向右滑动 增加音量
         {
           YLTZ:=1
@@ -814,7 +867,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      慢速拖动会缩放窗口至屏幕的五分之三大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n总是顶置的窗口`n      可通过Ctrl`+上下箭头调整透明度`n      仅可调整最近一次被总是顶置的窗口`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键设置常用窗口`n      鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单机窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
@@ -827,10 +880,9 @@ if (running=0)
   Hotkey WheelUp, On ;打开滚轮上的热键
   Hotkey WheelDown, On ;打开滚轮下的热键
   Hotkey LButton, On ;打开左键的热键
+  Hotkey Tab, On ;打开Tab键的热键
   MButtonMButtonHotkey:=1 ;打开中键的部分功能
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
-  Hotkey ^Up, On ;打开Ctrl+箭头上的热键
-  Hotkey ^Down, On ;打开Ctrl+箭头下的热键
   Hotkey ^c, On ;打开Ctrl+C的热键
   Hotkey w, On ;打开W的热键
   Hotkey s, On ;打开S的热键
@@ -848,10 +900,9 @@ else
   Hotkey WheelUp, Off ;关闭滚轮上的热键
   Hotkey WheelDown, Off ;关闭滚轮下的热键
   Hotkey LButton, Off ;关闭左键的热键
+  Hotkey Tab, Off ;关闭Tab键的热键
   MButtonHotkey:=0 ;关闭中键的部分功能
   Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
-  Hotkey ^Up, Off ;关闭Ctrl+箭头上的热键
-  Hotkey ^Down, Off ;关闭Ctrl+箭头下的热键
   Hotkey ^c, Off ;关闭Ctrl+C的热键
   Hotkey w, Off ;关闭W的热键
   Hotkey s, Off ;关闭S的热键
