@@ -1298,21 +1298,62 @@ CoordMode Mouse, Screen
 MouseGetPos x, y
 xz := In(x-Zx-6,0,A_ScreenWidth-2*Zx)
 yz := In(y-Zy-6,0,A_ScreenHeight-2*Zy)
-if (x>A_ScreenWidth/2+Round(A_ScreenHeight*(500/1080)))
+if (x>FJL) and (x<FJR) ;中间屏幕
 {
-  WinMove ahk_id %MagnifierID%,,x-Round(A_ScreenHeight*(80/1080))-Rx*2, y-Ry
+  if (x>A_ScreenWidth/2+Round(A_ScreenHeight*(500/1080))) ;中线+500x
+  {
+    WinMove ahk_id %MagnifierID%,,x-Round(A_ScreenHeight*(80/1080))-Rx*2, y-Ry ;放大镜位置 左
+  }
+  else if (x<A_ScreenWidth/2-Round(A_ScreenHeight*(500/1080))) ;中线-500x
+  {
+    WinMove ahk_id %MagnifierID%,,x+Round(A_ScreenHeight*(80/1080)), y-Ry ;放大镜位置 右
+  }
+  else if (y>A_ScreenHeight/2+Round(A_ScreenHeight*(200/1080))) ;中线+200y
+  {
+    WinMove ahk_id %MagnifierID%,,x-Rx, y-Round(A_ScreenHeight*(80/1080))-Ry*2  ;放大镜位置 上
+  }
+  else
+  {
+    WinMove ahk_id %MagnifierID%,,x-Rx, y+Round(A_ScreenHeight*(80/1080)) ;放大镜位置 下
+  }
 }
-else if (x<A_ScreenWidth/2-Round(A_ScreenHeight*(500/1080)))
+else if (x<FJL) ;左边屏幕
 {
-  WinMove ahk_id %MagnifierID%,,x+Round(A_ScreenHeight*(80/1080)), y-Ry
+  if (x>SW/2+Round(A_ScreenHeight*(500/1080))) ;中线+500x
+  {
+    WinMove ahk_id %MagnifierID%,,x-Round(A_ScreenHeight*(80/1080))-Rx*2, y-Ry ;放大镜位置 左
+  }
+  else if (x<SW/2-Round(A_ScreenHeight*(500/1080))) ;中线-500x
+  {
+    WinMove ahk_id %MagnifierID%,,x+Round(A_ScreenHeight*(80/1080)), y-Ry ;放大镜位置 右
+  }
+  else if (y>A_ScreenHeight/2+Round(A_ScreenHeight*(200/1080))) ;中线+200y
+  {
+    WinMove ahk_id %MagnifierID%,,x-Rx, y-Round(A_ScreenHeight*(80/1080))-Ry*2  ;放大镜位置 上
+  }
+  else
+  {
+    WinMove ahk_id %MagnifierID%,,x-Rx, y+Round(A_ScreenHeight*(80/1080)) ;放大镜位置 下
+  }
 }
-else if (y>A_ScreenHeight/2+Round(A_ScreenHeight*(200/1080)))
+else if (x>FJR) ;右边屏幕
 {
-  WinMove ahk_id %MagnifierID%,,x-Rx, y-Round(A_ScreenHeight*(80/1080))-Ry*2
-}
-else
-{
-  WinMove ahk_id %MagnifierID%,,x-Rx, y+Round(A_ScreenHeight*(80/1080))
+  if (x>SW*2+SW/2+Round(A_ScreenHeight*(500/1080))) ;中线+500x
+  {
+    WinMove ahk_id %MagnifierID%,,x-Round(A_ScreenHeight*(80/1080))-Rx*2, y-Ry ;放大镜位置 左
+  }
+  else if (x<SW*2+SW/2-Round(A_ScreenHeight*(500/1080))) ;中线-500x
+  {
+    WinMove ahk_id %MagnifierID%,,x+Round(A_ScreenHeight*(80/1080)), y-Ry ;放大镜位置 右
+  }
+  else if (y>A_ScreenHeight/2+Round(A_ScreenHeight*(200/1080))) ;中线+200y
+  {
+    WinMove ahk_id %MagnifierID%,,x-Rx, y-Round(A_ScreenHeight*(80/1080))-Ry*2  ;放大镜位置 上
+  }
+  else
+  {
+    WinMove ahk_id %MagnifierID%,,x-Rx, y+Round(A_ScreenHeight*(80/1080)) ;放大镜位置 下
+  }
 }
 
 DllCall("gdi32.dll\StretchBlt", UInt,hdc_frame, Int,0, Int,0, Int,2*Rx, Int,2*Ry, UInt,hdd_frame, UInt,xz, UInt,yz, Int,2*Zx, Int,2*Zy, UInt,0xCC0020) ; SRCCOPY
@@ -1350,12 +1391,19 @@ SetTimer, Repaint, Off
 DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
 DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
 Gui, 放大镜:Destroy
+if (x<FJL) or (x>FJR) ;如果在两侧屏幕
+{
+  WinShow, ahk_id %MagnifierWindowID% ;打开后视镜
+}
+SetTimer, 屏幕监测, 100
 Critical, Off
 Return
 
 打开放大镜:
+SetTimer, 屏幕监测, Off
+WinHide, ahk_id %MagnifierWindowID% ;关闭后视镜
 gosub 放大镜
-SetTimer, Repaint, 75
+SetTimer, Repaint, 30
 Return
 
 In(x,a,b) 
