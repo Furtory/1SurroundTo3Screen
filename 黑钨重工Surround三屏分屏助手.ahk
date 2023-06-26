@@ -197,6 +197,8 @@ Zx := Rx/zoom
 Zy := Ry/zoom
 
 TaskBar:=1 ;任务栏状态 1开启 0关闭
+
+OldLastWinTop:=0 ;上一次穿透的窗口
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
 
@@ -327,10 +329,10 @@ Critical, On
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
 WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-WinGet, 窗口状态, ExStyle, ahk_id %WinID% ;获取窗口状态
-窗口状态:= (窗口状态 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
-; ToolTip %窗口状态%
-if (窗口状态=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 没有点击在窗口顶部
+WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
+窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+; ToolTip %窗口样式%
+if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
 {
   MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
   WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
@@ -341,10 +343,11 @@ if (窗口状态=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 �
   Critical, Off
   Return
 }
-else ;如果已经处于总是顶置状态
+else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状态 并且 没有点击在窗口顶部
 {
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos, , ScreenY, WinID ;;获取鼠标在屏幕中的位置
+  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
   LastWinTop:=WinID
   IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
   Loop
@@ -394,17 +397,29 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, , WinSY ;;获取鼠标在屏幕中的位置
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
-WinGet, 窗口状态, ExStyle, ahk_id %WinID% ;获取窗口状态
-; ToolTip %窗口状态%
-窗口状态:= (窗口状态 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
-; ToolTip %窗口状态%
-if (窗口状态=1)
-{
-  LastWinTop:=WinID
+WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
+窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+if (窗口样式=1) and (WinWY<WinTop) ;窗口处于顶置 并且 点击了窗口顶部
+{ 
+  if (OldLastWinTop!=0) and (WinID!=OldLastWinTop) ;最近有打开鼠标穿透窗口 点击的窗口不是设置了鼠标穿透的
+  {
+    ToolTip 已关闭上一个总是顶置窗口的鼠标穿透
+    TopWindowTransparent:=0
+    WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
+    OldLastWinTop:=0
+  }
+  LastWinTop:=WinID ;更新鼠标穿透对象
+  WinGet, TopOpacity, Transparent, ahk_id %WinID% ;获取窗口透明度
+  if (TopOpacity="") ;如果没有设置透明度
+  {
+    TopOpacity:=255 ;当前窗口透明度等于255
+  }
+  ; ToolTip 当前窗口透明度`：%TopOpacity%
   IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
 }
 WinGetPos, , , WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
-if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口顶部 ;鼠标点击在最大化的窗口顶部
+if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗口顶部 ;鼠标点击在最大化的窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -435,8 +450,8 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
   gosub AeroShake ;跳转检测程序
   if (摇晃次数>3)
   {
-    ; ToolTip %窗口状态%
-    if (窗口状态=0) ;如果没有处于总是顶置状态
+    ; ToolTip %窗口样式%
+    if (窗口样式=0) ;如果没有处于总是顶置状态
     {
       Critical On
       LastWinTop:=WinID
@@ -465,16 +480,18 @@ return
 ~Tab::
 if (LastWinTop!=0) ;如果已设置总是顶置的窗口
 {
-  if (TopWindowTransparent=0) and (TopOpacity!=255) ;如果没有开启鼠标穿透 
+  if (TopWindowTransparent=0) and (TopOpacity!=255) and (TopOpacity!="") ;如果没有开启鼠标穿透 
   {
     ToolTip 已打开鼠标穿透
     TopWindowTransparent:=1
+    OldLastWinTop:=LastWinTop
     WinSet, ExStyle, +0x20, ahk_id %LastWinTop% ;打开鼠标穿透
   }
   else ; if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
   {
     ToolTip 已关闭鼠标穿透
     TopWindowTransparent:=0
+    OldLastWinTop:=LastWinTop
     WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
   }
   Return
@@ -992,7 +1009,8 @@ Reload
 
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX, MISY, WinName ;获取鼠标在屏幕中的位置
+MouseGetPos, MISX, MISY, WinID ;获取鼠标在屏幕中的位置
+WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
 if (WinName="黑名单窗口句柄") ;任务栏黑名单
 {
   ;不显示任务栏
@@ -1116,7 +1134,7 @@ return
 
 自动隐藏任务栏:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX, MISY, WinName ;获取鼠标在屏幕中的位置
+MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
 if (MISY>A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 {
   WinShow, ahk_class Shell_TrayWnd ;显示任务栏
