@@ -395,7 +395,9 @@ MouseGetPos, , WinSY ;;获取鼠标在屏幕中的位置
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
 WinGet, 窗口状态, ExStyle, ahk_id %WinID% ;获取窗口状态
+; ToolTip %窗口状态%
 窗口状态:= (窗口状态 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+; ToolTip %窗口状态%
 if (窗口状态=1)
 {
   LastWinTop:=WinID
@@ -433,15 +435,14 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
   gosub AeroShake ;跳转检测程序
   if (摇晃次数>3)
   {
-    WinGet, 窗口状态, ExStyle, ahk_id %WinID% ;获取窗口状态
-    窗口状态:= (窗口状态 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
     ; ToolTip %窗口状态%
     if (窗口状态=0) ;如果没有处于总是顶置状态
     {
       Critical On
-      ToolTip 窗口设为总是顶置 O
       LastWinTop:=WinID
+      WinSet, AlwaysOnTop, On, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+      ToolTip 窗口设为总是顶置 O
       Sleep 500
       Critical Off
     }
@@ -449,13 +450,12 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
     {
       Critical On
       ToolTip 窗口取消总是顶置 -
+      WinSet, AlwaysOnTop, Off, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       LastWinTop:=0
       IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
       Sleep 500
       Critical Off
     }
-    
-    WinSet, AlwaysOnTop, Toggle, ahk_id %LastWinTop%  ;切换窗口的顶置状态
   }
 }
 ToolTip
@@ -467,12 +467,14 @@ if (LastWinTop!=0) ;如果已设置总是顶置的窗口
 {
   if (TopWindowTransparent=0) and (TopOpacity!=255) ;如果没有开启鼠标穿透 
   {
+    ToolTip 已打开鼠标穿透
     TopWindowTransparent:=1
     WinSet, ExStyle, +0x20, ahk_id %LastWinTop% ;打开鼠标穿透
   }
   else ; if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
   {
-    TopWindowTransparent:=1
+    ToolTip 已关闭鼠标穿透
+    TopWindowTransparent:=0
     WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
   }
   Return
