@@ -423,7 +423,7 @@ if (WinWY<WinTop) and (WinW=SW) and (WinH=SH) ;鼠标点击在最大化的窗口
   }
   else if (WinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) ;如果鼠标移动了窗口低于屏幕顶部范围
   {
-    CoordMode Mouse, Screen ;以屏幕为基准
+    CoordMode Mouse, Screen ;以屏幕为基准 
     MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
     WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
   }
@@ -454,8 +454,8 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       LastWinTop:=0
       IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
       Sleep 500
-      Critical Off
-    }
+        Critical Off  
+      }
   }
 }
 ToolTip
@@ -883,7 +883,7 @@ if (running=0)
   Hotkey WheelDown, On ;打开滚轮下的热键
   Hotkey LButton, On ;打开左键的热键
   Hotkey Tab, On ;打开Tab键的热键
-  MButtonMButtonHotkey:=1 ;打开中键的部分功能
+  MButtonHotkey:=1 ;打开中键的部分功能
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
   Hotkey ^c, On ;打开Ctrl+C的热键
   Hotkey w, On ;打开W的热键
