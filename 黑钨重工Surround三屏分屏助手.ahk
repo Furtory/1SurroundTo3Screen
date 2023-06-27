@@ -65,6 +65,7 @@ MButton_presses:=0
 running:=1 ;1为运行 0为暂停
 Menu, Tray, NoStandard ;不显示默认的AHK右键菜单
 Menu, Tray, Add, 使用教程, 使用教程 ;添加新的右键菜单
+Menu, Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
 Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
 Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
 Menu, Tray, Add, 管理权限, 管理权限 ;添加新的右键菜单
@@ -895,7 +896,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n呼出窗口`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
@@ -1064,6 +1065,110 @@ if (Alt_presses >= 2)
   SetTimer, 关闭提示, -500
 }
 Alt_presses := 0
+return
+
+媒体快捷:
+MsgBox, 双击左右箭头`n     上一曲/下一曲`n双击上箭头`n     喜欢歌曲`n      输出快捷键Ctrl+Alt+L`n      `n双击下箭头`n     歌词显示`n      输出快捷键Ctrl+Alt+D`n`n请把你的播放软件设置为一样的快捷键`n`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体
+return
+
+~Left::
+if (Left_presses > 0)
+{
+  Left_presses += 1
+  return
+}
+else
+{
+  Left_presses := 1
+  SetTimer, KeyLeft, -400
+}
+return
+
+KeyLeft:
+if (Left_presses >= 2)
+{
+  ToolTip 下一曲
+  Send {Media_Next}
+  SetTimer, 关闭提示, -500
+}
+Left_presses := 0
+return
+
+~Right::
+if (Right_presses > 0)
+{
+  Right_presses += 1
+  return
+}
+else
+{
+  Right_presses := 1
+  SetTimer, KeyRight, -400
+}
+return
+
+KeyRight:
+if (Right_presses >= 2)
+{
+  ToolTip 下一曲
+  Send {Media_Next}
+  SetTimer, 关闭提示, -500
+}
+Right_presses := 0
+return
+
+~Up::
+if (Up_presses > 0)
+{
+  Up_presses += 1
+  return
+}
+else
+{
+  Up_presses := 1
+  SetTimer, KeyUp, -400
+}
+return
+
+KeyUp:
+if (Up_presses >= 2)
+{
+  ToolTip 喜欢
+  Send {Ctrl Down}
+  Send {Alt Down}
+  Send {l}
+  Send {Alt Up}
+  Send {Ctrl Up}
+  SetTimer, 关闭提示, -500
+}
+Up_presses := 0
+return
+
+~Down::
+if (Down_presses > 0)
+{
+  Down_presses += 1
+  return
+}
+else
+{
+  Down_presses := 1
+  SetTimer, KeyDown, -400
+}
+return
+
+KeyDown:
+if (Down_presses >= 2)
+{
+  ToolTip 歌词
+  Send {Ctrl Down}
+  Send {Alt Down}
+  Send {d}
+  Send {Alt Up}
+  Send {Ctrl Up}
+  SetTimer, 关闭提示, -500
+}
+Down_presses := 0
 return
 
 屏幕监测:
