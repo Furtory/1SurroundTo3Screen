@@ -126,6 +126,9 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, ActiveWindowID, Settings.ini, 设置, 后台等待激活的窗口 ;从ini文件读取设置
   
   IniRead, LastWinTop, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;从ini文件读取设置
+  IniRead, OldLastWinTop, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;从ini文件读取设置
+  
+  IniRead, BlackListWindow, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
 }
 else ;如果配置文件不存在则新建
 {
@@ -150,6 +153,11 @@ else ;如果配置文件不存在则新建
   
   LastWinTop:=0
   IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+  OldLastWinTop:=0
+  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
+  
+  BlackListWindow:=0
+  IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
 }
 
 KDXZ:=16 ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
@@ -198,7 +206,6 @@ Zy := Ry/zoom
 
 TaskBar:=1 ;任务栏状态 1开启 0关闭
 
-OldLastWinTop:=0 ;上一次穿透的窗口
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
 
@@ -485,6 +492,7 @@ if (LastWinTop!=0) ;如果已设置总是顶置的窗口
     ToolTip 已打开鼠标穿透
     TopWindowTransparent:=1
     OldLastWinTop:=LastWinTop
+    IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
     WinSet, ExStyle, +0x20, ahk_id %LastWinTop% ;打开鼠标穿透
   }
   else ; if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
@@ -492,6 +500,7 @@ if (LastWinTop!=0) ;如果已设置总是顶置的窗口
     ToolTip 已关闭鼠标穿透
     TopWindowTransparent:=0
     OldLastWinTop:=LastWinTop
+    IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
     WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
   }
   Return
@@ -886,7 +895,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单机窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      例如Actual Multiple Monitors`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体`n最小化窗口后`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
@@ -911,7 +920,10 @@ if (running=0)
 }
 else
 {
-  ToolTip 分屏助手暂停运行
+  if (恢复运行检测!=1)
+  {
+    ToolTip 分屏助手暂停运行
+  }
   ; WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   ; TaskBar:=1
   Menu, Tray, Icon, %A_ScriptDir%\Stopped.ico ;任务栏图标改成暂停运行
@@ -925,8 +937,11 @@ else
   Hotkey ^c, Off ;关闭Ctrl+C的热键
   Hotkey w, Off ;关闭W的热键
   Hotkey s, Off ;关闭S的热键
-  SetTimer, 屏幕监测, Off
-  SetTimer, 自动隐藏任务栏, 100
+  if (恢复运行检测!=1)
+  {
+    SetTimer, 屏幕监测, Off
+    SetTimer, 自动隐藏任务栏, 100
+  }
   WinHide, ahk_id %MagnifierWindowID%
   Menu, Tray, Check, 暂停运行 ;右键菜单打勾
 }
@@ -1007,15 +1022,51 @@ return
 重启脚本:
 Reload
 
+~!LButton:: ;Alt+左键
+Critical, On
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WindowY, WinID_Monitor ;;获取鼠标在窗口中的位置
+WinGet, 窗口样式, ExStyle, ahk_id %WinID_Monitor% ;获取窗口样式
+窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+; ToolTip %窗口样式%
+if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
+{
+  MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
+  WinGetClass, BlackListWindow, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
+  ToolTip 窗口%BlackListWindow%已加入黑名单
+  IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+  KeyWait LButton
+  ToolTip
+  Critical, Off
+  Return
+}
+
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX, MISY, WinID ;获取鼠标在屏幕中的位置
-WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-if (WinName="黑名单窗口句柄") ;任务栏黑名单
+MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
+WinGetClass, WinName, A ;ahk_id 获取窗口类名
+; ToolTip %WinName%
+if (WinName=BlackListWindow) ;自动暂停黑名单
 {
-  ;不显示任务栏
+  if (running=1)
+  {
+    ToolTip 分屏助手暂停运行
+  }
+  running:=1
+  恢复运行检测:=1
+  gosub 暂停运行
+  Sleep 300
+  ToolTip
+  Return
 }
-else if (MISY<3) ;如果鼠标贴着屏幕顶部
+else if (恢复运行检测=1)
+{
+  running:=0
+  gosub 暂停运行
+  恢复运行检测:=0
+}
+
+if (MISY<3) ;如果鼠标贴着屏幕顶部
 {
   Critical, On
   Loop
@@ -1043,15 +1094,15 @@ else if (MISY>A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 }
 else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务栏处于激活状态 等待鼠标离开任务栏才隐藏任务栏
 {
-  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   TaskBar:=0
 }
 else if (TaskBar=0) ;如果任务栏处于隐藏状态
 {
-  hWnd:=""
-  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  if (hWnd!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
+  TaskbarID:=""
+  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  if (TaskbarID!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
   {
     Loop
     {
@@ -1063,8 +1114,8 @@ else if (TaskBar=0) ;如果任务栏处于隐藏状态
       }
       else if (A_Index>=100)
       {
-        WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-        DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+        WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+        DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
         TaskBar:=0
         break
       }
@@ -1142,15 +1193,15 @@ if (MISY>A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 }
 else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务栏处于激活状态 等待鼠标离开任务栏才隐藏任务栏
 {
-  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   TaskBar:=0
 }
 else if (TaskBar=0) ;如果任务栏处于隐藏状态
 {
-  hWnd:=""
-  WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  if (hWnd!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
+  TaskbarID:=""
+  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+  if (TaskbarID!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
   {
     Loop
     {
@@ -1162,8 +1213,8 @@ else if (TaskBar=0) ;如果任务栏处于隐藏状态
       }
       else if (A_Index>=100)
       {
-        WinGet hWnd, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-        DllCall("ShowWindow", "Ptr", hWnd, "Int", 0) ; 隐藏任务栏
+        WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+        DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
         TaskBar:=0
         break
       }
@@ -1433,6 +1484,7 @@ In(x,a,b)
 
 退出软件:
 Critical, On
+WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
 DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
 DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
 DllCall("magnification.dll\MagUninitialize")
