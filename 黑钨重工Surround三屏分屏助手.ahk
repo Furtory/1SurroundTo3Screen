@@ -1040,6 +1040,7 @@ if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 �
   Critical, Off
   Return
 }
+Return
 
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
