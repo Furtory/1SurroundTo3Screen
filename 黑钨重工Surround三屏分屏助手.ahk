@@ -412,9 +412,10 @@ MouseGetPos, , WinSY ;;获取鼠标在屏幕中的位置
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
 WinGetTitle, WinName, ahk_id %WinID% ;获取窗口类名
+WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
-if (窗口样式=1) and (WinWY<WinTop) and (WinName!="QQ") ;窗口处于顶置 并且 点击了窗口顶部
+if (窗口样式=1) and (WinWY<WinTop) and (WinName!="QQ") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置 并且 点击了窗口顶部
 { 
   if (OldLastWinTop!=0) and (WinID!=OldLastWinTop) ;最近有打开鼠标穿透窗口 点击的窗口不是设置了鼠标穿透的
   {
