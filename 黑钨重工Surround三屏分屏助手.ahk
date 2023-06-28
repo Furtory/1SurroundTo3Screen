@@ -411,10 +411,10 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, , WinSY ;;获取鼠标在屏幕中的位置
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
-WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+WinGetTitle, WinName, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
-if (窗口样式=1) and (WinWY<WinTop) ;窗口处于顶置 并且 点击了窗口顶部
+if (窗口样式=1) and (WinWY<WinTop) and (WinName!="QQ") ;窗口处于顶置 并且 点击了窗口顶部
 { 
   if (OldLastWinTop!=0) and (WinID!=OldLastWinTop) ;最近有打开鼠标穿透窗口 点击的窗口不是设置了鼠标穿透的
   {
@@ -1084,7 +1084,7 @@ Alt_presses := 0
 return
 
 媒体快捷:
-Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize
+Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
 Gui 快捷键:Font, s9, Segoe UI
 Gui 快捷键:Add, Hotkey, x58 y163 w120 h25 v上组合键, %上组合键%
 Gui 快捷键:Add, Hotkey, x58 y225 w120 h25 v下组合键, %下组合键%
@@ -1113,9 +1113,6 @@ IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;
 return
 
 Button取消:
-Gui, 快捷键:Destroy
-return
-
 GuiEscape:
 GuiClose:
 Gui, 快捷键:Destroy
