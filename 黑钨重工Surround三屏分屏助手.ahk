@@ -130,6 +130,9 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, OldLastWinTop, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;从ini文件读取设置
   
   IniRead, BlackListWindow, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
+  
+  IniRead, 上组合键, Settings.ini, 设置, 双击箭头上输出组合键 ;从ini文件读取设置
+  IniRead, 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;从ini文件读取设置
 }
 else ;如果配置文件不存在则新建
 {
@@ -159,6 +162,9 @@ else ;如果配置文件不存在则新建
   
   BlackListWindow:=0
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+  
+  IniWrite, %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
+  IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;写入设置到ini文件
 }
 
 KDXZ:=16 ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
@@ -906,11 +912,16 @@ if (running=0)
   ToolTip 分屏助手恢复运行
   Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
   running:=1
+  MButtonHotkey:=1 ;打开中键的部分功能
   Hotkey WheelUp, On ;打开滚轮上的热键
   Hotkey WheelDown, On ;打开滚轮下的热键
   Hotkey LButton, On ;打开左键的热键
   Hotkey Tab, On ;打开Tab键的热键
-  MButtonHotkey:=1 ;打开中键的部分功能
+  Hotkey Alt, On ;打开Alt键的热键
+  Hotkey Up, On ;打开箭头上键的热键
+  Hotkey Down, On ;打开箭头下键的热键
+  Hotkey Left, On ;打开箭头左键的热键
+  Hotkey Right, On ;打开箭头右键的热键
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
   Hotkey ^c, On ;打开Ctrl+C的热键
   Hotkey w, On ;打开W的热键
@@ -929,11 +940,16 @@ else
   ; TaskBar:=1
   Menu, Tray, Icon, %A_ScriptDir%\Stopped.ico ;任务栏图标改成暂停运行
   running:=0
+  MButtonHotkey:=0 ;关闭中键的部分功能
   Hotkey WheelUp, Off ;关闭滚轮上的热键
   Hotkey WheelDown, Off ;关闭滚轮下的热键
   Hotkey LButton, Off ;关闭左键的热键
   Hotkey Tab, Off ;关闭Tab键的热键
-  MButtonHotkey:=0 ;关闭中键的部分功能
+  Hotkey Alt, Off ;关闭Alt键的热键
+  Hotkey Up, Off ;关闭箭头上键的热键
+  Hotkey Down, Off ;关闭箭头下键的热键
+  Hotkey Left, Off ;关闭箭头左键的热键
+  Hotkey Right, Off ;关闭箭头右键的热键
   Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
   Hotkey ^c, Off ;关闭Ctrl+C的热键
   Hotkey w, Off ;关闭W的热键
@@ -1068,107 +1084,96 @@ Alt_presses := 0
 return
 
 媒体快捷:
-MsgBox, 双击左右箭头`n     上一曲/下一曲`n双击上箭头`n     喜欢歌曲`n      输出快捷键Ctrl+Alt+L`n      `n双击下箭头`n     歌词显示`n      输出快捷键Ctrl+Alt+D`n`n请把你的播放软件设置为一样的快捷键`n`n在屏幕底部`n      滚轮最大或最小化全部窗口`n      按住中键左右移动调整音量`n      单击中键可以播放`/暂停媒体
+Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize
+Gui 快捷键:Font, s9, Segoe UI
+Gui 快捷键:Add, Hotkey, x58 y163 w120 h25 v上组合键, %上组合键%
+Gui 快捷键:Add, Hotkey, x58 y225 w120 h25 v下组合键, %下组合键%
+Gui 快捷键:Add, Text, x18 y13 w197 h117 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键
+Gui 快捷键:Add, Button, x15 y264 w69 h25 GButton重置, &重置
+Gui 快捷键:Add, Button, x83 y264 w69 h25 GButton确认, &确认
+Gui 快捷键:Add, Button, x151 y264 w69 h25 GButton取消, &取消
+Gui 快捷键:Add, Text, x58 y138 w120 h25 +0x200, 喜欢歌曲
+Gui 快捷键:Add, Text, x58 y200 w120 h25 +0x200, 歌曲歌词
+Gui 快捷键:Show, w234 h309, 媒体快捷键设置
+Return
+
+Button重置:
+Gui, 快捷键:Destroy
+上组合键:=""
+下组合键:=""
+IniWrite, %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
+IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;写入设置到ini文件
+return
+
+Button确认:
+Gui, 快捷键:Submit, NoHide
+Gui, 快捷键:Destroy
+IniWrite, %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
+IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;写入设置到ini文件
+return
+
+Button取消:
+Gui, 快捷键:Destroy
+return
+
+GuiEscape:
+GuiClose:
+Gui, 快捷键:Destroy
 return
 
 ~Left::
-if (Left_presses > 0)
-{
-  Left_presses += 1
-  return
-}
-else
-{
-  Left_presses := 1
-  SetTimer, KeyLeft, -400
-}
-return
-
-KeyLeft:
-if (Left_presses >= 2)
-{
-  ToolTip 下一曲
-  Send {Media_Next}
-  SetTimer, 关闭提示, -500
-}
-Left_presses := 0
-return
-
 ~Right::
-if (Right_presses > 0)
-{
-  Right_presses += 1
-  return
-}
-else
-{
-  Right_presses := 1
-  SetTimer, KeyRight, -400
-}
-return
-
-KeyRight:
-if (Right_presses >= 2)
-{
-  ToolTip 下一曲
-  Send {Media_Next}
-  SetTimer, 关闭提示, -500
-}
-Right_presses := 0
-return
-
 ~Up::
-if (Up_presses > 0)
-{
-  Up_presses += 1
-  return
-}
-else
-{
-  Up_presses := 1
-  SetTimer, KeyUp, -400
-}
-return
-
-KeyUp:
-if (Up_presses >= 2)
-{
-  ToolTip 喜欢
-  Send {Ctrl Down}
-  Send {Alt Down}
-  Send {l}
-  Send {Alt Up}
-  Send {Ctrl Up}
-  SetTimer, 关闭提示, -500
-}
-Up_presses := 0
-return
-
 ~Down::
-if (Down_presses > 0)
+if (Media_presses > 0) ;后续的按下
 {
-  Down_presses += 1
+  Media_presses_New:=StrReplace(A_ThisHotkey,"~")
+  if (Media_presses_New!=Media_presses_History)
+  {
+    ; SetTimer, KeyMedia, Delete
+    ; Media_presses:=1
+    SetTimer, KeyMedia, -400
+  }
+  else ;if (Media_presses_New=Media_presses_History)
+  {
+    Media_presses += 1 ;2
+  }
   return
 }
-else
+else ;第一次按下
 {
-  Down_presses := 1
-  SetTimer, KeyDown, -400
+  Media_presses_History:=StrReplace(A_ThisHotkey,"~")
+  Media_presses := 1
+  SetTimer, KeyMedia, -400
 }
 return
 
-KeyDown:
-if (Down_presses >= 2)
+KeyMedia:
+if (Media_presses >= 2) ;双击
 {
-  ToolTip 歌词
-  Send {Ctrl Down}
-  Send {Alt Down}
-  Send {d}
-  Send {Alt Up}
-  Send {Ctrl Up}
+  if (A_PriorKey="Left")
+  {
+    ToolTip 上一曲
+    Send {Media_Next}
+  }
+  else if (A_PriorKey="Right")
+  {
+    ToolTip 下一曲
+    Send {Media_Next}
+  }
+  else if (A_PriorKey="Up")
+  {
+    ToolTip 喜欢歌曲
+    Send %上组合键%
+  }
+  else if (A_PriorKey="Down")
+  {
+    ToolTip 歌曲歌词
+    Send %下组合键%
+  }
   SetTimer, 关闭提示, -500
 }
-Down_presses := 0
+Media_presses := 0
 return
 
 屏幕监测:
