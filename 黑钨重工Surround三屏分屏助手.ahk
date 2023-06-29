@@ -363,47 +363,68 @@ if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 �
 else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状态 并且 没有点击在窗口顶部
 {
   CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos, , ScreenY, WinID ;;获取鼠标在屏幕中的位置
-  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-  LastWinTop:=WinID
-  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
-  Loop
+  MouseGetPos, , ScreenOldY, WinID ;;获取鼠标在屏幕中的位置
+  Loop 30 ;如果300ms内不移动不调整透明度左键也不会抬起
   {
-    OldWinSY:=ScreenY
-    Sleep 10
-    MouseGetPos, , ScreenY ;;获取鼠标在屏幕中的位置
-    
     if !GetKeyState("LButton", "P") ;左键抬起则暂停
     {
       break
     }
     
-    if (ScreenY<OldWinSY)
+    Sleep 10
+    CoordMode Mouse, Screen ;以屏幕为基准
+    MouseGetPos, , ScreenY, WinID ;获取鼠标在屏幕中的位置
+    if (ScreenY=ScreenOldY) ;如果鼠标没有移动
     {
-      TopOpacity:=TopOpacity+2
-      if (TopOpacity>255)
-      {
-        TopOpacity:=255
-      }
-      TopOpacityPercent:=Round(TopOpacity/255*100)
-      ToolTip 增加顶置窗口的透明度 %TopOpacityPercent%
-      WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
-      SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+      continue
+    }
+    else ;鼠标移动了
+    {
+      Send {LButton Up} ;抬起左键后再调整透明度
     }
     
-    if (ScreenY>OldWinSY)
+    WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+    LastWinTop:=WinID
+    IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+    Loop
     {
-      TopOpacity:=TopOpacity-2
-      if (TopOpacity<2)
+      OldWinSY:=ScreenY
+      Sleep 10
+      MouseGetPos, , ScreenY ;;获取鼠标在屏幕中的位置
+      
+      if !GetKeyState("LButton", "P") ;左键抬起则暂停
       {
-        TopOpacity:=2
+        break
       }
-      TopOpacityPercent:=Round(TopOpacity/255*100)
-      ToolTip 减少顶置窗口的透明度 %TopOpacityPercent%`%
-      WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
-      SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+      
+      if (ScreenY<OldWinSY)
+      {
+        TopOpacity:=TopOpacity+2
+        if (TopOpacity>255)
+        {
+          TopOpacity:=255
+        }
+        TopOpacityPercent:=Round(TopOpacity/255*100, 2)
+        ToolTip 增加顶置窗口的透明度 %TopOpacityPercent%`%
+        WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+        SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+      }
+      
+      if (ScreenY>OldWinSY)
+      {
+        TopOpacity:=TopOpacity-2
+        if (TopOpacity<2)
+        {
+          TopOpacity:=2
+        }
+        TopOpacityPercent:=Round(TopOpacity/255*100, 2)
+        ToolTip 减少顶置窗口的透明度 %TopOpacityPercent%`%
+        WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+        SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+      }
     }
   }
+  KeyWait LButton
 }
 Critical, Off
 return
@@ -476,14 +497,14 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       LastWinTop:=WinID
       WinSet, AlwaysOnTop, On, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
-      ToolTip 窗口设为总是顶置 O
+      ToolTip 窗口%LastWinTop%设为总是顶置 O
       Sleep 500
       Critical Off
     }
     else ;如果已经处于总是顶置状态
     {
       Critical On
-      ToolTip 窗口取消总是顶置 -
+      ToolTip 窗口%LastWinTop%取消总是顶置 -
       WinSet, AlwaysOnTop, Off, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       LastWinTop:=0
       IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
@@ -689,21 +710,29 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
           YLTZ:=1
           MXOld:=MXNew
           Send {Volume_Up}
+          SoundGet, 音量
+          音量:=Round(音量)
+          ToolTip 增加音量+%音量%
         }
         else if (MXNew<降低音量) ;向左滑动 增加音量
         {
           YLTZ:=1
           MXOld:=MXNew
           Send {Volume_Down}
+          SoundGet, 音量
+          音量:=Round(音量)
+          ToolTip 降低音量-%音量%
         }
         
         if !GetKeyState("MButton", "P")
         {
           if (MXNew<增加音量) and (MXNew>降低音量) and (YLTZ=0) ;没有滑动且没有调整过音量 播放/暂停媒体
           {
+            ToolTip 播放/暂停媒体
             Send {Media_Play_Pause}
           }
           MButton_presses:=0 ;键击记录重置为0
+          SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
           Critical Off
           Return
         }
@@ -1103,7 +1132,7 @@ else
 return
 
 KeyAlt:
-if (Alt_presses >= 2) ;清除黑名单并恢复运行
+if (Alt_presses >= 2) and (BlackListWindow!=0) ;清除黑名单并恢复运行
 {
   ToolTip 已清除黑名单设置
   BlackListWindow:=0
