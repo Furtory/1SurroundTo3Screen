@@ -259,18 +259,21 @@ else
   if (WinInScreenX<FJL) and (WY<WinTop) ;点击的窗口在左边屏幕 并且 点击位置在窗口顶部
   {
     ToolTip 最大化%WinID%窗口
+    WinRestore, ahk_id %WinID%
     WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
   else if (WinInScreenX>FJL) and (WinInScreenX<FJR) and (WY<WinTop) ;点击的窗口在中间屏幕 并且 点击位置在窗口顶部
   {
     ToolTip 最大化%WinID%窗口
+    WinRestore, ahk_id %WinID%
     WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
   else if (WinInScreenX>FJR) and (WY<WinTop) ;点击的窗口在右边屏幕 并且 点击位置在窗口顶部
   {
     ToolTip 最大化%WinID%窗口
+    WinRestore, ahk_id %WinID%
     WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
@@ -455,6 +458,7 @@ if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗�
   {
     CoordMode Mouse, Screen ;以屏幕为基准 
     MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
+    WinRestore, ahk_id %WinID%
     WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
   }
 }
@@ -720,6 +724,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       }
       
       ToolTip 发送%WinID%窗口到右边屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       MButton_presses:=0 ;键击记录重置为0
@@ -737,6 +742,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       }
       
       ToolTip 发送%WinID%窗口到中间屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       MButton_presses:=0 ;键击记录重置为0
@@ -757,6 +763,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       }
       
       ToolTip 发送%WinID%窗口到左边屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       MButton_presses:=0 ;键击记录重置为0
@@ -774,6 +781,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       }
       
       ToolTip 发送%WinID%窗口到右边屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       MButton_presses:=0 ;键击记录重置为0
@@ -794,6 +802,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       }
       
       ToolTip 发送%WinID%窗口到左边屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       MButton_presses:=0 ;键击记录重置为0
@@ -811,6 +820,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       }
       
       ToolTip 发送%WinID%窗口到中间屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       MButton_presses:=0 ;键击记录重置为0
@@ -833,6 +843,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
     if (WY<WinTop) ;点击位置在窗口顶部
     {
       ToolTip 将%WinID%窗口填满所有屏幕
+      WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
     }
@@ -910,7 +921,15 @@ return
 Critical, On
 if (running=0)
 {
-  ToolTip 分屏助手恢复运行
+  if (Alt自动暂停=1)
+  {
+    ToolTip 自动恢复运行
+  }
+  else
+  {
+    ToolTip 分屏助手恢复运行
+    Hotkey Alt, On ;打开Alt键的热键
+  }
   Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
   running:=1
   MButtonHotkey:=1 ;打开中键的部分功能
@@ -918,7 +937,6 @@ if (running=0)
   Hotkey WheelDown, On ;打开滚轮下的热键
   Hotkey LButton, On ;打开左键的热键
   Hotkey Tab, On ;打开Tab键的热键
-  Hotkey Alt, On ;打开Alt键的热键
   Hotkey Up, On ;打开箭头上键的热键
   Hotkey Down, On ;打开箭头下键的热键
   Hotkey Left, On ;打开箭头左键的热键
@@ -927,15 +945,20 @@ if (running=0)
   Hotkey ^c, On ;打开Ctrl+C的热键
   Hotkey w, On ;打开W的热键
   Hotkey s, On ;打开S的热键
-  SetTimer, 自动隐藏任务栏, Off
+  SetTimer, 自动隐藏任务栏, Delete
   SetTimer, 屏幕监测, 100
   Menu, Tray, UnCheck, 暂停运行 ;右键菜单不打勾
 }
 else
 {
-  if (恢复运行检测!=1)
+  if (Alt自动暂停=1)
+  {
+    ToolTip 自动暂停运行
+  }
+  else
   {
     ToolTip 分屏助手暂停运行
+    Hotkey Alt, Off ;关闭Alt键的热键
   }
   ; WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   ; TaskBar:=1
@@ -946,7 +969,6 @@ else
   Hotkey WheelDown, Off ;关闭滚轮下的热键
   Hotkey LButton, Off ;关闭左键的热键
   Hotkey Tab, Off ;关闭Tab键的热键
-  Hotkey Alt, Off ;关闭Alt键的热键
   Hotkey Up, Off ;关闭箭头上键的热键
   Hotkey Down, Off ;关闭箭头下键的热键
   Hotkey Left, Off ;关闭箭头左键的热键
@@ -955,9 +977,15 @@ else
   Hotkey ^c, Off ;关闭Ctrl+C的热键
   Hotkey w, Off ;关闭W的热键
   Hotkey s, Off ;关闭S的热键
-  if (恢复运行检测!=1)
+  if (Alt自动暂停=1)
   {
-    SetTimer, 屏幕监测, Off
+    WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+    TaskBar:=0
+  }
+  else
+  {
+    SetTimer, 屏幕监测, Delete
     SetTimer, 自动隐藏任务栏, 100
   }
   WinHide, ahk_id %MagnifierWindowID%
@@ -1061,6 +1089,7 @@ if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 �
 Return
 
 ~Alt::
+KeyWait Alt
 if (Alt_presses > 0)
 {
   Alt_presses += 1
@@ -1074,11 +1103,15 @@ else
 return
 
 KeyAlt:
-if (Alt_presses >= 2)
+if (Alt_presses >= 2) ;清除黑名单并恢复运行
 {
   ToolTip 已清除黑名单设置
   BlackListWindow:=0
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+  Sleep 300
+  running:=0
+  gosub 暂停运行
+  Alt自动暂停:=0
   SetTimer, 关闭提示, -500
 }
 Alt_presses := 0
@@ -1179,24 +1212,23 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
 WinGetClass, WinName, A ;ahk_id 获取窗口类名
 ; ToolTip %WinName%
-if (WinName=BlackListWindow) ;自动暂停黑名单
+if (WinName=BlackListWindow) and (running=1) ;自动暂停黑名单
 {
-  if (running=1)
-  {
-    ToolTip 分屏助手暂停运行
-  }
-  running:=1
-  恢复运行检测:=1
+  Alt自动暂停:=1
   gosub 暂停运行
   Sleep 300
   ToolTip
   Return
 }
-else if (恢复运行检测=1)
+else if (WinName!=BlackListWindow) and (Alt自动暂停=1) and (running=0) ;恢复运行
 {
-  running:=0
   gosub 暂停运行
-  恢复运行检测:=0
+  Alt自动暂停:=0
+  Return
+}
+else if (Alt自动暂停=1)
+{
+  Return
 }
 
 if (MISY<3) ;如果鼠标贴着屏幕顶部
