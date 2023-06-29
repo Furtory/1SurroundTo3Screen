@@ -938,6 +938,22 @@ if (WY<WinTop) ;点击位置在窗口顶部
 Critical, Off
 return
 
+~#Space::
+KeyWait, Space
+WinGet, win_id, , A
+thread_id := DllCall("GetWindowThreadProcessId", "UInt", win_id, "UInt", 0)
+输入法 := DllCall("GetKeyboardLayout", "UInt", thread_id)
+if (输入法=67699721)
+{
+  ToolTip 中文输入法 ;%输入法%
+}
+else if (输入法=134481924)
+{
+  ToolTip 英文输入法 ;%输入法%
+}
+SetTimer, 关闭提示, -800 ;800毫秒后关闭提示
+Return
+
 关闭提示:
 ToolTip
 return
