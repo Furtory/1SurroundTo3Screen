@@ -191,6 +191,7 @@ YDY:=0 ;屏幕原点Y
 YDM:=(A_ScreenWidth-SW*3)/2+SW ;中间屏幕左上角原点X
 YDR:=Round((A_ScreenWidth-SW*3)+SW*2+KDXZ/2) ;右边屏幕左上角原点X
 ScreenBottom:=A_ScreenHeight-Round(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
+ScreenBottomMax:=A_ScreenHeight-Round(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
 ; MsgBox %SW% %SH%
 
 HSJ:=0 ;后视镜打开状态
@@ -667,22 +668,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       {
         if !GetKeyState("MButton", "P") ;抬起中键时关闭放大镜 Win+Esc
         {
+          Hotkey, Shift, Off
+          Hotkey, Ctrl, Off
           break
-        }
+        }  
         
-        If (zoom<31 and GetKeyState("w", "P"))
-        {
-          zoom *= 1.189207115
-          KeyWait w
-        }
-        If (zoom> 1 and GetKeyState("s", "P"))
-        {
-          zoom /= 1.189207115
-          KeyWait s
-        }
-        Zx := Rx/zoom
-        Zy := Ry/zoom
-        TrayTip,,% "Zoom = " Round(100*zoom) "%"
+        Hotkey, Shift, On
+        Hotkey, Ctrl, On
       }
       
       ToolTip 关闭放大镜
@@ -959,7 +951,7 @@ ToolTip
 return
 
 使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n呼出窗口`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下W或者S改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n呼出窗口`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
@@ -988,8 +980,6 @@ if (running=0)
   Hotkey Right, On ;打开箭头右键的热键
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
   Hotkey ^c, On ;打开Ctrl+C的热键
-  Hotkey w, On ;打开W的热键
-  Hotkey s, On ;打开S的热键
   SetTimer, 自动隐藏任务栏, Delete
   SetTimer, 屏幕监测, 100
   Menu, Tray, UnCheck, 暂停运行 ;右键菜单不打勾
@@ -1020,8 +1010,6 @@ else
   Hotkey Right, Off ;关闭箭头右键的热键
   Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
   Hotkey ^c, Off ;关闭Ctrl+C的热键
-  Hotkey w, Off ;关闭W的热键
-  Hotkey s, Off ;关闭S的热键
   if (Alt自动暂停=1)
   {
     WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
@@ -1297,12 +1285,35 @@ if (MISY<3) ;如果鼠标贴着屏幕顶部
   }
   Critical, Off
 }
-else if (MISY>A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
+else if (MISY>=A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 {
   WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   TaskBar:=1
+  任务栏计时器:=0
 }
-else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务栏处于激活状态 等待鼠标离开任务栏才隐藏任务栏
+else if (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
+{
+  任务栏计时器:=0
+}
+else if (TaskBar=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+{
+  DllCall("QueryPerformanceFrequency", "Int64*", freq)
+  DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
+  任务栏计时器:=1
+}
+else if (TaskBar=1) and (MISY<ScreenBottom) and (MISY>ScreenBottomMax) ;如果鼠标处于预览窗口范围 且任务栏处于激活状态 等待3秒才隐藏任务栏
+{
+  DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
+  记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
+  ; ToolTip 记录时间%记录时间%ms %WinName% %MISY% %MISX%
+  if (记录时间>800)
+  {
+    WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+    TaskBar:=0
+  }
+}
+else if (TaskBar=1) and (MISY<ScreenBottomMax) ;如果鼠标离开预览窗口范围 且任务栏处于激活状态 隐藏任务栏
 {
   WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
   DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
@@ -1396,12 +1407,35 @@ return
 自动隐藏任务栏:
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
-if (MISY>A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
+if (MISY>=A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 {
   WinShow, ahk_class Shell_TrayWnd ;显示任务栏
   TaskBar:=1
+  任务栏计时器:=0
 }
-else if (TaskBar=1) and (MISY<ScreenBottom) ;如果鼠标离开底部且任务栏处于激活状态 等待鼠标离开任务栏才隐藏任务栏
+else if (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
+{
+  任务栏计时器:=0
+}
+else if (TaskBar=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+{
+  DllCall("QueryPerformanceFrequency", "Int64*", freq)
+  DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
+  任务栏计时器:=1
+}
+else if (TaskBar=1) and (MISY<ScreenBottom) and (MISY>ScreenBottomMax) ;如果鼠标处于预览窗口范围 且任务栏处于激活状态 等待3秒才隐藏任务栏
+{
+  DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
+  记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
+  ; ToolTip 记录时间%记录时间%ms %WinName% %MISY% %MISX%
+  if (记录时间>800)
+  {
+    WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+    TaskBar:=0
+  }
+}
+else if (TaskBar=1) and (MISY<ScreenBottomMax) ;如果鼠标离开预览窗口范围 且任务栏处于激活状态 隐藏任务栏
 {
   WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
   DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
@@ -1707,20 +1741,17 @@ WinShow, ahk_class Shell_TrayWnd ;显示任务栏
 Critical, Off
 ExitApp
 
-$w::
-if (FDJM=0)
-{
-  Send {w Down}
-  KeyWait w
-  Send {w Up}
-}
+
+~Shift::
+zoom *= 1.189207115
+KeyWait Shift
+Zx := Rx/zoom
+Zy := Ry/zoom
 Return
 
-$s::
-if (FDJM=0)
-{
-  Send {s Down}
-  KeyWait s
-  Send {s Up}
-}
+~Ctrl::
+zoom /= 1.189207115
+KeyWait Ctrl
+Zx := Rx/zoom
+Zy := Ry/zoom
 Return
