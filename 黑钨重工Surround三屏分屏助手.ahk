@@ -21,6 +21,10 @@ Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
 if (A_TickCount<60000) ;开机60秒内启用延时自启
 {
   Critical On
+  LastWinTop:=""
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+  OldLastWinTop:=""
+  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
   StartTime := A_TickCount
   Loop
   {
@@ -152,15 +156,15 @@ else ;如果配置文件不存在则新建
   IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
   IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
   
-  ActiveWindowID:=0
+  ActiveWindowID:=""
   IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
   
-  LastWinTop:=0
+  LastWinTop:=""
   IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
-  OldLastWinTop:=0
+  OldLastWinTop:=""
   IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
   
-  BlackListWindow:=0
+  BlackListWindow:=""
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
   
   IniWrite, %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
@@ -442,12 +446,12 @@ WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
 if (窗口样式=1) and (WinWY<WinTop) and (WinName!="QQ") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置 并且 点击了窗口顶部
 { 
-  if (OldLastWinTop!=0) and (WinID!=OldLastWinTop) ;最近有打开鼠标穿透窗口 点击的窗口不是设置了鼠标穿透的
+  if (OldLastWinTop!="") and (WinID!=OldLastWinTop) ;最近有打开鼠标穿透窗口 点击的窗口不是设置了鼠标穿透的
   {
     ToolTip 已关闭上一个总是顶置窗口的鼠标穿透
     TopWindowTransparent:=0
     WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
-    OldLastWinTop:=0
+    OldLastWinTop:=""
   }
   LastWinTop:=WinID ;更新鼠标穿透对象
   WinGet, TopOpacity, Transparent, ahk_id %WinID% ;获取窗口透明度
@@ -507,7 +511,7 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       Critical On
       ToolTip 窗口%LastWinTop%取消总是顶置 -
       WinSet, AlwaysOnTop, Off, ahk_id %LastWinTop%  ;切换窗口的顶置状态
-      LastWinTop:=0
+      LastWinTop:=""
       IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
       Sleep 500
         Critical Off  
@@ -519,7 +523,7 @@ Critical Off
 return
 
 ~Tab::
-if (LastWinTop!=0) ;如果已设置总是顶置的窗口
+if (LastWinTop!="") ;如果已设置总是顶置的窗口
 {
   if (TopWindowTransparent=0) and (TopOpacity!=255) and (TopOpacity!="") ;如果没有开启鼠标穿透 
   {
@@ -903,7 +907,7 @@ if (MButton_presses=1) and (running=1) and (MYOld>WinTop) ;此键按下了一次
   
   SetTimer, 关闭提示, -300 ;300毫秒后关闭提示
 }
-else if (MButton_presses>=2) ;此键按下了两次及以上
+else if (MButton_presses>=2) and (MYOld>WinTop) ;此键按下了两次及以上
 {
   gosub 暂停运行
 }
@@ -1131,17 +1135,18 @@ if (Alt_presses > 0)
 else
 {
   Alt_presses := 1
-  SetTimer, KeyAlt, -400
+  KeyWait, Alt
+  SetTimer, KeyAlt, -300
 }
 return
 
 KeyAlt:
-if (Alt_presses >= 2) and (BlackListWindow!=0) ;清除黑名单并恢复运行
+if (Alt_presses >= 2) and (BlackListWindow!="") ;清除黑名单并恢复运行
 {
   ToolTip 已清除黑名单设置
-  BlackListWindow:=0
+  Sleep 500
+  BlackListWindow:=""
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
-  Sleep 300
   running:=0
   gosub 暂停运行
   Alt自动暂停:=0
@@ -1743,6 +1748,7 @@ ExitApp
 
 
 ~Shift::
+; ToolTip 放大镜放大
 zoom *= 1.189207115
 KeyWait Shift
 Zx := Rx/zoom
@@ -1750,6 +1756,7 @@ Zy := Ry/zoom
 Return
 
 ~Ctrl::
+; ToolTip 放大镜缩小
 zoom /= 1.189207115
 KeyWait Ctrl
 Zx := Rx/zoom
