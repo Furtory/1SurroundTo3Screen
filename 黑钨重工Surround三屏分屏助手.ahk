@@ -135,6 +135,8 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   
   IniRead, BlackListWindow, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
   
+  IniRead, MediaWindow, Settings.ini, 设置, 呼出播放器 ;从ini文件读取设置
+  
   IniRead, 上组合键, Settings.ini, 设置, 双击箭头上输出组合键 ;从ini文件读取设置
   IniRead, 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;从ini文件读取设置
 }
@@ -166,6 +168,9 @@ else ;如果配置文件不存在则新建
   
   BlackListWindow:=""
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+  
+  MediaWindow:=""
+  IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
   
   IniWrite, %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
   IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;写入设置到ini文件
@@ -480,7 +485,7 @@ if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗�
   {
     WinClose, ahk_id %WinID% ;关闭窗口
   }
-  else if (WinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) ;如果鼠标移动了窗口低于屏幕顶部范围
+  else if (WinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) and (WinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) ;如果鼠标移动了窗口低于屏幕顶部范围
   {
     CoordMode Mouse, Screen ;以屏幕为基准 
     MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
@@ -980,8 +985,10 @@ if (running=0)
   Hotkey Tab, On ;打开Tab键的热键
   Hotkey Up, On ;打开箭头上键的热键
   Hotkey Down, On ;打开箭头下键的热键
+  Hotkey Up & Down, On ;打开箭头上下键的热键
   Hotkey Left, On ;打开箭头左键的热键
   Hotkey Right, On ;打开箭头右键的热键
+  Hotkey Left & Right, On ;打开箭头左右键的热键
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
   Hotkey ^c, On ;打开Ctrl+C的热键
   SetTimer, 自动隐藏任务栏, Delete
@@ -1010,8 +1017,10 @@ else
   Hotkey Tab, Off ;关闭Tab键的热键
   Hotkey Up, Off ;关闭箭头上键的热键
   Hotkey Down, Off ;关闭箭头下键的热键
+  Hotkey Up & Down, Off ;关闭箭头上下键的热键
   Hotkey Left, Off ;关闭箭头左键的热键
   Hotkey Right, Off ;关闭箭头右键的热键
+  Hotkey Left & Right, Off ;关闭箭头左右键的热键
   Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
   Hotkey ^c, Off ;关闭Ctrl+C的热键
   if (Alt自动暂停=1)
@@ -1114,7 +1123,6 @@ WinGet, 窗口样式, ExStyle, ahk_id %WinID_Monitor% ;获取窗口样式
 ; ToolTip %窗口样式%
 if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
 {
-  MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
   WinGetClass, BlackListWindow, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
   ToolTip 窗口%BlackListWindow%已加入黑名单
@@ -1158,15 +1166,15 @@ return
 媒体快捷:
 Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
 Gui 快捷键:Font, s9, Segoe UI
-Gui 快捷键:Add, Hotkey, x58 y163 w120 h25 v上组合键, %上组合键%
-Gui 快捷键:Add, Hotkey, x58 y225 w120 h25 v下组合键, %下组合键%
-Gui 快捷键:Add, Text, x18 y13 w197 h117 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键
-Gui 快捷键:Add, Button, x15 y264 w69 h25 GButton重置, &重置
-Gui 快捷键:Add, Button, x83 y264 w69 h25 GButton确认, &确认
-Gui 快捷键:Add, Button, x151 y264 w69 h25 GButton取消, &取消
-Gui 快捷键:Add, Text, x58 y138 w120 h25 +0x200, 喜欢歌曲
-Gui 快捷键:Add, Text, x58 y200 w120 h25 +0x200, 歌曲歌词
-Gui 快捷键:Show, w234 h309, 媒体快捷键设置
+Gui 快捷键:Add, Hotkey, x58 y273 w120 h25 v上组合键, %上组合键%
+Gui 快捷键:Add, Hotkey, x58 y335 w120 h25 v下组合键, %下组合键%
+Gui 快捷键:Add, Text, x14 y13 w197 h221 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n双击箭头`n      左箭头 上一曲`n      右箭头 下一曲`n同时按下两个箭头`n      左右箭头 暂停播放`n      上下箭头 呼出关`/闭播放器`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键
+Gui 快捷键:Add, Button, x15 y374 w69 h25 GButton重置, &重置
+Gui 快捷键:Add, Button, x83 y374 w69 h25 GButton确认, &确认
+Gui 快捷键:Add, Button, x151 y374 w69 h25 GButton取消, &取消
+Gui 快捷键:Add, Text, x58 y248 w120 h25 +0x200, 喜欢歌曲
+Gui 快捷键:Add, Text, x58 y310 w120 h25 +0x200, 歌曲歌词
+Gui 快捷键:Show, w234 h416, 媒体快捷键设置
 Return
 
 Button重置:
@@ -1190,6 +1198,39 @@ GuiClose:
 Gui, 快捷键:Destroy
 return
 
+Left & Right::
+Send {Media_Play_Pause}
+Return
+
+Up & Down::
+MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
+WinGetClass, WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+if (MediaWindow="")
+{
+  MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
+  WinGetClass, MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
+  IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+  ToolTip 已设置%MediaWindow%为播放器快捷呼出
+  Sleep 500
+  ToolTip
+}
+else if (WindowID!=MediaWindow)
+{
+  WinActivate, ahk_class %MediaWindow%
+  WinShow, ahk_class %MediaWindow%
+  ToolTip 快捷呼出%MediaWindow%播放器
+  Sleep 500
+  ToolTip
+}
+else
+{
+  WinMinimize, ahk_class %MediaWindow%
+  ToolTip 快捷关闭%MediaWindow%播放器
+  Sleep 500
+  ToolTip
+}
+Return
+
 ~Left::
 ~Right::
 ~Up::
@@ -1199,8 +1240,6 @@ if (Media_presses > 0) ;后续的按下
   Media_presses_New:=StrReplace(A_ThisHotkey,"~")
   if (Media_presses_New!=Media_presses_History)
   {
-    ; SetTimer, KeyMedia, Delete
-    ; Media_presses:=1
     SetTimer, KeyMedia, -400
   }
   else ;if (Media_presses_New=Media_presses_History)
@@ -1250,7 +1289,7 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
 WinGetClass, WinName, A ;ahk_id 获取窗口类名
 ; ToolTip %WinName%
-if (WinName=BlackListWindow) and (running=1) ;自动暂停黑名单
+if (WinName!="") and (WinName=BlackListWindow) and (running=1) ;自动暂停黑名单
 {
   Alt自动暂停:=1
   gosub 暂停运行
@@ -1258,7 +1297,7 @@ if (WinName=BlackListWindow) and (running=1) ;自动暂停黑名单
   ToolTip
   Return
 }
-else if (WinName!=BlackListWindow) and (Alt自动暂停=1) and (running=0) ;恢复运行
+else if (WinName!="") and (WinName!=BlackListWindow) and (Alt自动暂停=1) and (running=0) ;恢复运行
 {
   gosub 暂停运行
   Alt自动暂停:=0
