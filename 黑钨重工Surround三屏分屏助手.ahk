@@ -985,10 +985,8 @@ if (running=0)
   Hotkey Tab, On ;打开Tab键的热键
   Hotkey Up, On ;打开箭头上键的热键
   Hotkey Down, On ;打开箭头下键的热键
-  Hotkey Up & Down, On ;打开箭头上下键的热键
   Hotkey Left, On ;打开箭头左键的热键
   Hotkey Right, On ;打开箭头右键的热键
-  Hotkey Left & Right, On ;打开箭头左右键的热键
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
   Hotkey ^c, On ;打开Ctrl+C的热键
   SetTimer, 自动隐藏任务栏, Delete
@@ -1017,10 +1015,8 @@ else
   Hotkey Tab, Off ;关闭Tab键的热键
   Hotkey Up, Off ;关闭箭头上键的热键
   Hotkey Down, Off ;关闭箭头下键的热键
-  Hotkey Up & Down, Off ;关闭箭头上下键的热键
   Hotkey Left, Off ;关闭箭头左键的热键
   Hotkey Right, Off ;关闭箭头右键的热键
-  Hotkey Left & Right, Off ;关闭箭头左右键的热键
   Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
   Hotkey ^c, Off ;关闭Ctrl+C的热键
   if (Alt自动暂停=1)
@@ -1198,43 +1194,54 @@ GuiClose:
 Gui, 快捷键:Destroy
 return
 
-Left & Right::
-Send {Media_Play_Pause}
-Return
-
-Up & Down::
-MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
-WinGetClass, WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
-if (MediaWindow="")
-{
-  MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
-  WinGetClass, MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
-  IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-  ToolTip 已设置%MediaWindow%为播放器快捷呼出
-  Sleep 500
-  ToolTip
-}
-else if (WindowID!=MediaWindow)
-{
-  WinActivate, ahk_class %MediaWindow%
-  WinShow, ahk_class %MediaWindow%
-  ToolTip 快捷呼出%MediaWindow%播放器
-  Sleep 500
-  ToolTip
-}
-else
-{
-  WinMinimize, ahk_class %MediaWindow%
-  ToolTip 快捷关闭%MediaWindow%播放器
-  Sleep 500
-  ToolTip
-}
-Return
-
 ~Left::
 ~Right::
 ~Up::
 ~Down::
+Loop
+{
+  if GetKeyState("Left", "P") and GetKeyState("Right", "P")
+  {
+    Send {Media_Play_Pause}
+    Return
+  }
+  else if GetKeyState("Up", "P") and GetKeyState("Down", "P")
+  {
+    MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
+    WinGetClass, WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+    if (MediaWindow="")
+    {
+      MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
+      WinGetClass, MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
+      IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+      ToolTip 已设置%MediaWindow%为播放器快捷呼出
+      Sleep 500
+      ToolTip
+    }
+    else if (WindowID!=MediaWindow)
+    {
+      WinActivate, ahk_class %MediaWindow%
+      WinShow, ahk_class %MediaWindow%
+      ToolTip 快捷呼出%MediaWindow%播放器
+      Sleep 500
+      ToolTip
+    }
+    else
+    {
+      WinMinimize, ahk_class %MediaWindow%
+      ToolTip 快捷关闭%MediaWindow%播放器
+      Sleep 500
+      ToolTip
+    }
+    Return
+  }
+  
+  if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+  {
+    break
+  }
+  Sleep 10
+}
 if (Media_presses > 0) ;后续的按下
 {
   Media_presses_New:=StrReplace(A_ThisHotkey,"~")
