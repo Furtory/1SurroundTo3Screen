@@ -33,7 +33,7 @@ if (A_TickCount<60000) ;开机60秒内启用延时自启
     if (ElapsedTime>10000) ;软件开机后延时10秒启动
     {
       Critical Off
-      break
+      Reload
     }
   }
 }
@@ -1164,7 +1164,7 @@ Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
 Gui 快捷键:Font, s9, Segoe UI
 Gui 快捷键:Add, Hotkey, x58 y273 w120 h25 v上组合键, %上组合键%
 Gui 快捷键:Add, Hotkey, x58 y335 w120 h25 v下组合键, %下组合键%
-Gui 快捷键:Add, Text, x14 y13 w197 h221 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n双击箭头`n      左箭头 上一曲`n      右箭头 下一曲`n同时按下两个箭头`n      左右箭头 暂停播放`n      上下箭头 呼出关`/闭播放器`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键
+Gui 快捷键:Add, Text, x14 y13 w197 h221 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n双击箭头`n      左箭头 上一曲   右箭头 下一曲`n同时按下两个箭头`n      左右箭头 暂停播放`n      上下箭头 呼出关`/闭播放器`n      上下箭头长按 清除呼出设置`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键
 Gui 快捷键:Add, Button, x15 y374 w69 h25 GButton重置, &重置
 Gui 快捷键:Add, Button, x83 y374 w69 h25 GButton确认, &确认
 Gui 快捷键:Add, Button, x151 y374 w69 h25 GButton取消, &取消
@@ -1194,46 +1194,86 @@ GuiClose:
 Gui, 快捷键:Destroy
 return
 
+打开快捷键:
+Hotkey, Left, On
+Hotkey, Right, On
+Hotkey, Up, On
+Hotkey, Down, On
+Return
+
 ~Left::
+Hotkey, Right, Off
+Hotkey, Up, Off
+Hotkey, Down, Off
 ~Right::
+Hotkey, Left, Off
+Hotkey, Up, Off
+Hotkey, Down, Off
 ~Up::
+Hotkey, Left, Off
+Hotkey, Right, Off
+Hotkey, Down, Off
 ~Down::
+Hotkey, Left, Off
+Hotkey, Right, Off
+Hotkey, Up, Off
 Loop
 {
   if GetKeyState("Left", "P") and GetKeyState("Right", "P")
   {
     Send {Media_Play_Pause}
+    gosub 打开快捷键
     Return
   }
   else if GetKeyState("Up", "P") and GetKeyState("Down", "P")
   {
-    MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
-    WinGetClass, WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
-    if (MediaWindow="")
+    DllCall("QueryPerformanceFrequency", "Int64*", freq)
+    DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Lefty_Right)
+    Loop
     {
-      MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
-      WinGetClass, MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
-      IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-      ToolTip 已设置%MediaWindow%为播放器快捷呼出
-      Sleep 500
-      ToolTip
+      if !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+      {
+        DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Lefty_Right)
+        清除播放器快捷呼出设置记录时间:=Round((KeyUp_Lefty_Right-KeyDown_Lefty_Right)/freq*1000, 2)
+        if (清除播放器快捷呼出设置记录时间>500)
+        {
+          ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置 
+          MediaWindow:=""
+          IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+          gosub 打开快捷键
+          Return
+        }
+        else
+        {
+          MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
+          WinGetClass, WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+          if (MediaWindow="")
+          {
+            MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
+            WinGetClass, MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
+            IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+            ToolTip 已设置%MediaWindow%为播放器快捷呼出
+            SetTimer, 关闭提示, -500
+          }
+          else if (WindowID!=MediaWindow)
+          {
+            WinActivate, ahk_class %MediaWindow%
+            WinShow, ahk_class %MediaWindow%
+            ToolTip 快捷呼出%MediaWindow%播放器
+            SetTimer, 关闭提示, -500
+          }
+          else
+          {
+            WinMinimize, ahk_class %MediaWindow%
+            ToolTip 快捷关闭%MediaWindow%播放器
+            SetTimer, 关闭提示, -500
+          }
+          gosub 打开快捷键
+          Return
+        }
+      }
+      Sleep 10
     }
-    else if (WindowID!=MediaWindow)
-    {
-      WinActivate, ahk_class %MediaWindow%
-      WinShow, ahk_class %MediaWindow%
-      ToolTip 快捷呼出%MediaWindow%播放器
-      Sleep 500
-      ToolTip
-    }
-    else
-    {
-      WinMinimize, ahk_class %MediaWindow%
-      ToolTip 快捷关闭%MediaWindow%播放器
-      Sleep 500
-      ToolTip
-    }
-    Return
   }
   
   if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
@@ -1253,6 +1293,7 @@ if (Media_presses > 0) ;后续的按下
   {
     Media_presses += 1 ;2
   }
+  gosub 打开快捷键
   return
 }
 else ;第一次按下
@@ -1261,6 +1302,7 @@ else ;第一次按下
   Media_presses := 1
   SetTimer, KeyMedia, -400
 }
+gosub 打开快捷键
 return
 
 KeyMedia:
