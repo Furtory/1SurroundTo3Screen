@@ -30,7 +30,7 @@ if (A_TickCount<60000) ;开机60秒内启用延时自启
   {
     Sleep, 1000
     ElapsedTime := A_TickCount - StartTime
-    if (ElapsedTime>10000) ;软件开机后延时10秒启动
+    if (ElapsedTime>30000) ;软件开机后延时30秒启动
     {
       Critical Off
       Reload
@@ -538,7 +538,7 @@ if (LastWinTop!="") ;如果已设置总是顶置的窗口
     IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
     WinSet, ExStyle, +0x20, ahk_id %LastWinTop% ;打开鼠标穿透
   }
-  else ; if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
+  else if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
   {
     ToolTip 已关闭鼠标穿透
     TopWindowTransparent:=0
@@ -896,18 +896,20 @@ if (MButton_presses=1) and (running=1) and (MYOld>WinTop) ;此键按下了一次
   {
     Return
   }
-  ToolTip 还原最%MiniWinID%窗口
   if (屏幕实时位置=1) and (MiniWinIDL!=0) and (WinID!=MiniWinIDL) ;鼠标在左边屏幕 有左边最小化窗口的历史记录 当前点击不在最小化窗口
   {
     WinRestore, ahk_id %MiniWinIDL% ;还原最近一次左边被最小化的窗口
+    ToolTip 还原最近%MiniWinID%窗口
   }
   else if (屏幕实时位置=2) and (MiniWinIDM!=0) and (WinID!=MiniWinIDM) ;鼠标在中间屏幕 有中间最小化窗口的历史记录 当前点击不在最小化窗口
   {
     WinRestore, ahk_id %MiniWinIDM% ;还原最近一次中间被最小化的窗口
+    ToolTip 还原最近%MiniWinID%窗口
   }
   else if (屏幕实时位置=3) and (MiniWinIDR!=0) and (WinID!=MiniWinIDR) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 当前点击不在最小化窗口
   {
     WinRestore, ahk_id %MiniWinIDR% ;还原最近一次右边被最小化的窗口
+    ToolTip 还原最近%MiniWinID%窗口
   }
   
   SetTimer, 关闭提示, -300 ;300毫秒后关闭提示
@@ -1160,6 +1162,8 @@ Alt_presses := 0
 return
 
 媒体快捷:
+旧上组合键:=上组合键
+旧下组合键:=下组合键
 Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
 Gui 快捷键:Font, s9, Segoe UI
 Gui 快捷键:Add, Hotkey, x58 y273 w120 h25 v上组合键, %上组合键%
@@ -1191,6 +1195,8 @@ return
 Button取消:
 GuiEscape:
 GuiClose:
+上组合键:=旧上组合键
+下组合键:=旧下组合键
 Gui, 快捷键:Destroy
 return
 
@@ -1205,18 +1211,27 @@ Return
 Hotkey, Right, Off
 Hotkey, Up, Off
 Hotkey, Down, Off
+goto 媒体快捷键
+
 ~Right::
 Hotkey, Left, Off
 Hotkey, Up, Off
 Hotkey, Down, Off
+goto 媒体快捷键
+
 ~Up::
 Hotkey, Left, Off
 Hotkey, Right, Off
 Hotkey, Down, Off
+goto 媒体快捷键
+
 ~Down::
 Hotkey, Left, Off
 Hotkey, Right, Off
 Hotkey, Up, Off
+goto 媒体快捷键
+
+媒体快捷键:
 Loop
 {
   if GetKeyState("Left", "P") and GetKeyState("Right", "P")
