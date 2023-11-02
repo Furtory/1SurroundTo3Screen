@@ -498,7 +498,7 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   LoopTimes:=20 ;检测2秒
   gosub AeroShake ;跳转检测程序
-  if (摇晃次数>3)
+  if (摇晃次数>3) and (总移动距离>=1000)
   {
     ; ToolTip %窗口样式%
     if (窗口样式=0) ;如果没有处于总是顶置状态
@@ -553,24 +553,29 @@ Return
 AeroShake:
 摇晃次数:=0
 移动方向:=0 ;向左-1 向右1
+移动距离:=0
+总移动距离:=0
+CoordMode Mouse, Screen ;以屏幕为基准
+MouseGetPos, WinSX ;;获取鼠标在屏幕中的位置
 Loop %LoopTimes% ;监测时间1次循环等于0.15秒
 {
-  if !GetKeyState("LButton", "P") ;左键抬起则暂停
-  {
-    break
-  }
   ; ToolTip 摇晃次数:%摇晃次数%`n移动速度:%MoveSpeed%
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", LBDown) ;第一次记录时间
   上次移动方向:=移动方向
   OldWinSX:=WinSX
   Sleep 100
-  CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
+  MouseGetPos, WinSX ;;获取鼠标在屏幕中的位置
   DllCall("QueryPerformanceCounter", "Int64*", LBUp) ;第二次记录时间
+  移动距离:=Abs(WinSX-OldWinSX)
+  总移动距离:=总移动距离+移动距离
   按下时间:=(LBUp-LBDown)/freq*1000 ;按下时间=第二次记录时间-第一次记录时间
-  MoveSpeed:=Abs(Round((WinSX-OldWinSX)/按下时间*1000)) ;移动速度=移动距离/时间
-  if (MoveSpeed<=Round(A_ScreenHeight*(1200/1080))) ;如果速度小于100像素/秒
+  MoveSpeed:=Round(移动距离/按下时间*1000) ;移动速度=移动距离/时间
+  if !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") ;左键抬起则暂停
+  {
+    break
+  }
+  else if (MoveSpeed<=Round(A_ScreenHeight*(1200/1080))) ;如果速度小于100像素/秒
   {
     continue ;不记录
   }
@@ -611,7 +616,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
     Return
   }
   CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos, MXOld, MYOld,WinID ;获取鼠标在屏幕中的位置
+  MouseGetPos, MXOld, MYOld, WinID ;获取鼠标在屏幕中的位置
   WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
   
   if (MXOld<FJL)
@@ -629,12 +634,18 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   
   摇晃次数:=0
   移动方向:=0 ;向左-1 向右1
+  移动距离:=0
+  总移动距离:=0
+  CoordMode Mouse, Screen ;以屏幕为基准
+  MouseGetPos, MXNew ;;获取鼠标在屏幕中的位置
   loop ;循环 放大镜功能 窗口传送功能
   {
     上次移动方向:=移动方向
     MXRecor:=MXNew
     Sleep 30
     MouseGetPos, MXNew
+    移动距离:=Abs(MXNew-MXRecor)
+    总移动距离:=总移动距离+移动距离
     
     if !GetKeyState("MButton", "P")
     {
@@ -655,7 +666,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       摇晃次数:=摇晃次数+1
     }
     
-    if (摇晃次数>3) ;按下滚轮上时打开放大镜 Win+加号
+    if (摇晃次数>3) and (总移动距离>=1000) ;按下滚轮上时打开放大镜 Win+加号
     {
       FDJM:=1
       Critical, Off
