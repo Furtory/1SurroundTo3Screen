@@ -22,9 +22,9 @@ if (A_TickCount<60000) ;开机60秒内启用延时自启
 {
   Critical On
   LastWinTop:=""
-  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
   OldLastWinTop:=""
-  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
+  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
   StartTime := A_TickCount
   Loop
   {
@@ -68,13 +68,16 @@ Global hPic
 MButton_presses:=0
 running:=1 ;1为运行 0为暂停
 Menu, Tray, NoStandard ;不显示默认的AHK右键菜单
-Menu, Tray, Add, 使用教程, 使用教程 ;添加新的右键菜单
-Menu, Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
-Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
-Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
+Menu, Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
+Menu, Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
+Menu, Tray, Add
 Menu, Tray, Add, 管理权限, 管理权限 ;添加新的右键菜单
+Menu, Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
 Menu, Tray, Add, 兼容模式, 兼容模式 ;添加新的右键菜单
+Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
 Menu, Tray, Add, 开机自启, 开机自启 ;添加新的右键菜单
+Menu, Tray, Add
+Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
 Menu, Tray, Add, 重启软件, 重启脚本 ;添加新的右键菜单
 Menu, Tray, Add, 退出软件, 退出软件 ;添加新的右键菜单
 
@@ -130,8 +133,8 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   
   IniRead, ActiveWindowID, Settings.ini, 设置, 后台等待激活的窗口 ;从ini文件读取设置
   
-  IniRead, LastWinTop, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;从ini文件读取设置
-  IniRead, OldLastWinTop, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;从ini文件读取设置
+  IniRead, LastWinTop, Settings.ini, 设置, 被总是顶置的窗口 ;从ini文件读取设置
+  IniRead, OldLastWinTop, Settings.ini, 设置, 上次被总是顶置的窗口 ;从ini文件读取设置
   
   IniRead, BlackListWindow, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
   
@@ -162,9 +165,9 @@ else ;如果配置文件不存在则新建
   IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
   
   LastWinTop:=""
-  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
   OldLastWinTop:=""
-  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
+  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
   
   BlackListWindow:=""
   IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
@@ -395,19 +398,19 @@ else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状
     
     WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
     LastWinTop:=WinID
-    IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+    IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
     Loop
     {
       OldWinSY:=ScreenY
       Sleep 10
-      MouseGetPos, , ScreenY ;;获取鼠标在屏幕中的位置
+      MouseGetPos, , ScreenY ;获取鼠标在屏幕中的位置
       
       if !GetKeyState("LButton", "P") ;左键抬起则暂停
       {
         break
       }
       
-      if (ScreenY<OldWinSY)
+      if (ScreenY<OldWinSY) ;向上移动降低透明度
       {
         TopOpacity:=TopOpacity+2
         if (TopOpacity>255)
@@ -420,7 +423,7 @@ else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状
         SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
       }
       
-      if (ScreenY>OldWinSY)
+      if (ScreenY>OldWinSY) ;向下移动增加透明度
       {
         TopOpacity:=TopOpacity-2
         if (TopOpacity<2)
@@ -449,26 +452,41 @@ WinGetTitle, WinName, ahk_id %WinID% ;获取窗口类名
 WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
-if (窗口样式=1) and (WinWY<WinTop) and (WinName!="QQ") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置 并且 点击了窗口顶部
-{ 
-  if (OldLastWinTop!="") and (WinID!=OldLastWinTop) ;最近有打开鼠标穿透窗口 点击的窗口不是设置了鼠标穿透的
-  {
-    ToolTip 已关闭上一个总是顶置窗口的鼠标穿透
-    TopWindowTransparent:=0
-    WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
-    OldLastWinTop:=""
-  }
-  LastWinTop:=WinID ;更新鼠标穿透对象
-  WinGet, TopOpacity, Transparent, ahk_id %WinID% ;获取窗口透明度
-  if (TopOpacity="") ;如果没有设置透明度
-  {
-    TopOpacity:=255 ;当前窗口透明度等于255
-  }
-  ; ToolTip 当前窗口透明度`：%TopOpacity%
-  IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+
+if (WinExist("ahk_id" LastWinTop)=0) ;如果被总是顶置的窗口不存在 清除对应设置
+{
+  LastWinTop:=""
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件"
 }
+else
+{
+  if (窗口样式=1) and (WinName!="QQ") and (WinName!="任务管理器") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置
+  { 
+    if (OldLastWinTop!="") and (WinID!=OldLastWinTop) ;上次被总是顶置的窗口 点击的窗口不是设置了鼠标穿透的
+    {
+      ToolTip 已恢复上一个总是顶置的窗口为初始状态
+      TopWindowTransparent:=0
+      WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
+      TopOpacity:=255
+      WinSet, Transparent, %TopOpacity%, ahk_id %OldLastWinTop%
+      WinSet, AlwaysOnTop, Off, ahk_id %OldLastWinTop%  ;切换窗口的顶置状态
+      OldLastWinTop:=""
+      IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
+    }
+    LastWinTop:=WinID ;更新鼠标穿透对象
+    IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
+    WinGet, TopOpacity, Transparent, ahk_id %WinID% ;获取窗口透明度
+    ; ToolTip 当前窗口透明度`：%TopOpacity%
+    if (TopOpacity="") ;如果没有设置透明度
+    {
+      TopOpacity:=255 ;当前窗口透明度等于255
+      WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+    }
+  }
+}
+
 WinGetPos, , , WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
-if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗口顶部 ;鼠标点击在最大化的窗口顶部
+if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -504,9 +522,26 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
     if (窗口样式=0) ;如果没有处于总是顶置状态
     {
       Critical On
+      if (LastWinTop!="") and (LastWinTop!=WinID)
+      {
+        OldLastWinTop:=LastWinTop
+        IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
+      }
+      
+      if (OldLastWinTop!="")
+      {
+        TopWindowTransparent:=0
+        WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
+        TopOpacity:=255
+        WinSet, Transparent, %TopOpacity%, ahk_id %OldLastWinTop%
+        WinSet, AlwaysOnTop, Off, ahk_id %OldLastWinTop%  ;切换窗口的顶置状态
+        OldLastWinTop:=""
+        IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
+      }
+      
       LastWinTop:=WinID
       WinSet, AlwaysOnTop, On, ahk_id %LastWinTop%  ;切换窗口的顶置状态
-      IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+      IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
       ToolTip 窗口%LastWinTop%设为总是顶置 O
       Sleep 500
       Critical Off
@@ -514,13 +549,17 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
     else ;如果已经处于总是顶置状态
     {
       Critical On
+      TopWindowTransparent:=0
+      WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
       ToolTip 窗口%LastWinTop%取消总是顶置 -
       WinSet, AlwaysOnTop, Off, ahk_id %LastWinTop%  ;切换窗口的顶置状态
+      TopOpacity:=255
+      WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
       LastWinTop:=""
-      IniWrite, %LastWinTop%, Settings.ini, 设置, 最近一次被总是顶置的窗口 ;写入设置到ini文件
+      IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
       Sleep 500
-        Critical Off  
-      }
+      Critical Off  
+    }
   }
 }
 ToolTip
@@ -528,22 +567,23 @@ Critical Off
 return
 
 ~Tab::
-if (LastWinTop!="") ;如果已设置总是顶置的窗口
+if (WinExist("ahk_id" LastWinTop)=0) ;如果被总是顶置的窗口不存在 清除对应设置
+{
+  LastWinTop:=""
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件"
+}
+else if (LastWinTop!="") and (WinExist("ahk_id" LastWinTop)!=0)
 {
   if (TopWindowTransparent=0) and (TopOpacity!=255) and (TopOpacity!="") ;如果没有开启鼠标穿透 
   {
     ToolTip 已打开鼠标穿透
     TopWindowTransparent:=1
-    OldLastWinTop:=LastWinTop
-    IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
     WinSet, ExStyle, +0x20, ahk_id %LastWinTop% ;打开鼠标穿透
   }
   else if (TopWindowTransparent=1) ;如果已经开启鼠标穿透
   {
     ToolTip 已关闭鼠标穿透
     TopWindowTransparent:=0
-    OldLastWinTop:=LastWinTop
-    IniWrite, %OldLastWinTop%, Settings.ini, 设置, 最近一次打开鼠标穿透的窗口 ;写入设置到ini文件
     WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
   }
   Return
@@ -596,13 +636,28 @@ Loop %LoopTimes% ;监测时间1次循环等于0.15秒
 }
 Return
 
-~MButton:: ;中键
+$MButton:: ;中键
 Critical, On
 DllCall("QueryPerformanceFrequency", "Int64*", freq)
 DllCall("QueryPerformanceCounter", "Int64*", TapBefore)
 if (MButton_presses > 0) ;因为键击记录不是0 证明这不是首次按下
 {
-  MButton_presses:=MButton_presses+1 ;所以记录键击次数+1
+  中键按下:=A_TickCount
+  Send {MButton Down}
+  Loop
+  {
+    Sleep 10
+    if !GetKeyState("MButton", "P")
+    {
+      Send {MButton Up}
+      break
+    }
+  }
+  中键按下:=A_TickCount-中键按下
+  if (中键按下<300)
+  {
+    MButton_presses:=MButton_presses+1 ;所以记录键击次数+1
+  }
   Critical, Off
   return
 }
@@ -611,7 +666,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   MButton_presses:=1
   if (MButtonHotkey=0)
   {
-    SetTimer, KeyMButton, -300 ; 启动在 300 毫秒内等待更多键击的计时器
+    SetTimer, KeyMButton, -500 ; 启动在 500 毫秒内等待更多键击的计时器
     Critical Off
     Return
   }
@@ -666,7 +721,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       摇晃次数:=摇晃次数+1
     }
     
-    if (摇晃次数>3) and (总移动距离>=1000) ;按下滚轮上时打开放大镜 Win+加号
+    if (摇晃次数>3) and (总移动距离>=1000) ;按下滚轮时打开放大镜 Win+加号
     {
       FDJM:=1
       Critical, Off
@@ -870,6 +925,9 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
     }
   }
   
+  CoordMode Mouse, Window ;以窗口为基准
+  MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
+  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
   DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
   按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
   if (按下时间>300) ;长按时间大于300ms将当前窗口填满所有屏幕
@@ -878,9 +936,6 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
     {
       Return
     }
-    CoordMode Mouse, Window ;以窗口为基准
-    MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-    WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
     if (WY<WinTop) ;点击位置在窗口顶部
     {
       ToolTip 将%WinID%窗口填满所有屏幕
@@ -894,6 +949,10 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   }
   else
   {
+    if (WY<WinTop) ;点击位置在窗口顶部
+    {
+      Send {MButton}
+    }
     SetTimer, KeyMButton, -300 ; 启动在 300 毫秒内等待更多键击的计时器
   }
   Critical, Off
@@ -909,18 +968,42 @@ if (MButton_presses=1) and (running=1) and (MYOld>WinTop) ;此键按下了一次
   }
   if (屏幕实时位置=1) and (MiniWinIDL!=0) and (WinID!=MiniWinIDL) ;鼠标在左边屏幕 有左边最小化窗口的历史记录 当前点击不在最小化窗口
   {
-    WinRestore, ahk_id %MiniWinIDL% ;还原最近一次左边被最小化的窗口
-    ToolTip 还原最近%MiniWinID%窗口
+    if (WinExist("ahk_id" MiniWinIDL)!=0)
+    {
+      WinRestore, ahk_id %MiniWinIDL% ;还原最近一次左边被最小化的窗口
+      ToolTip 还原最近%MiniWinIDL%窗口
+    }
+    else
+    {
+      MiniWinIDL:=0
+      IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
   }
   else if (屏幕实时位置=2) and (MiniWinIDM!=0) and (WinID!=MiniWinIDM) ;鼠标在中间屏幕 有中间最小化窗口的历史记录 当前点击不在最小化窗口
   {
-    WinRestore, ahk_id %MiniWinIDM% ;还原最近一次中间被最小化的窗口
-    ToolTip 还原最近%MiniWinID%窗口
+    if (WinExist("ahk_id" MiniWinIDM)!=0)
+    {
+      WinRestore, ahk_id %MiniWinIDM% ;还原最近一次左边被最小化的窗口
+      ToolTip 还原最近%MiniWinIDM%窗口
+    }
+    else
+    {
+      MiniWinIDL:=0
+      IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
   }
   else if (屏幕实时位置=3) and (MiniWinIDR!=0) and (WinID!=MiniWinIDR) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 当前点击不在最小化窗口
   {
-    WinRestore, ahk_id %MiniWinIDR% ;还原最近一次右边被最小化的窗口
-    ToolTip 还原最近%MiniWinID%窗口
+    if (WinExist("ahk_id" MiniWinIDR)!=0)
+    {
+      WinRestore, ahk_id %MiniWinIDR% ;还原最近一次左边被最小化的窗口
+      ToolTip 还原最近%MiniWinIDR%窗口
+    }
+    else
+    {
+      MiniWinIDL:=0
+      IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
   }
   
   SetTimer, 关闭提示, -300 ;300毫秒后关闭提示
@@ -972,12 +1055,21 @@ Return
 ToolTip
 return
 
-使用教程:
-MsgBox, ,使用教程 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n呼出窗口`n      按中键可以呼出最近一次最小化的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+基础功能:
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n呼出窗口`n      按中键可以呼出最近一次最小化的窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+return
+
+进阶功能:
+MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 暂停运行: ;模式切换
 Critical, On
+if !GetKeyState("MButton", "P")
+{
+  Send {MButton Up}
+}
+
 if (running=0)
 {
   if (Alt自动暂停=1)
