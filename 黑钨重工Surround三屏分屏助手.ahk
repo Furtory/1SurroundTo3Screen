@@ -229,7 +229,12 @@ TaskBar:=1 ;任务栏状态 1开启 0关闭
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
 
+WheelUp:
+Hotkey, ~WheelUp, On
+return
+
 ~WheelUp:: ;触发按键 滚轮上
+Hotkey, ~WheelUp, Off
 Critical, On
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MX, MY ;获取鼠标在屏幕中的位置
@@ -292,9 +297,15 @@ else
   }
 }
 Critical, Off
+SetTimer, WheelUp, -100
+return
+
+WheelDown:
+Hotkey, ~WheelDown, On
 return
 
 ~WheelDown:: ;触发按键 滚轮下
+Hotkey, ~WheelDown, Off
 Critical, On
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MX, MY ;获取鼠标在屏幕中的位置
@@ -352,6 +363,8 @@ else
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
 }
+Critical, Off
+SetTimer, WheelDown, -100
 return
 
 ~^LButton:: ;Ctrl+左键
@@ -640,7 +653,7 @@ $MButton:: ;中键
 Critical, On
 DllCall("QueryPerformanceFrequency", "Int64*", freq)
 DllCall("QueryPerformanceCounter", "Int64*", TapBefore)
-if (MButton_presses > 0) ;因为键击记录不是0 证明这不是首次按下
+if (MButton_presses>0) ;因为键击记录不是0 证明这不是首次按下
 {
   中键按下:=A_TickCount
   Send {MButton Down}
@@ -666,10 +679,24 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   MButton_presses:=1
   if (MButtonHotkey=0)
   {
+    if (running=0)
+    {
+      Send {MButton Down}
+      Loop
+      {
+        Sleep 10
+        if !GetKeyState("MButton", "P")
+        {
+          Send {MButton Up}
+          break
+        }
+      }
+    }
     SetTimer, KeyMButton, -500 ; 启动在 500 毫秒内等待更多键击的计时器
     Critical Off
     Return
   }
+
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos, MXOld, MYOld, WinID ;获取鼠标在屏幕中的位置
   WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
@@ -1072,15 +1099,6 @@ if !GetKeyState("MButton", "P")
 
 if (running=0)
 {
-  if (Alt自动暂停=1)
-  {
-    ToolTip 自动恢复运行
-  }
-  else
-  {
-    ToolTip 分屏助手恢复运行
-    Hotkey Alt, On ;打开Alt键的热键
-  }
   Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
   running:=1
   MButtonHotkey:=1 ;打开中键的部分功能
@@ -1097,20 +1115,19 @@ if (running=0)
   SetTimer, 自动隐藏任务栏, Delete
   SetTimer, 屏幕监测, 100
   Menu, Tray, UnCheck, 暂停运行 ;右键菜单不打勾
-}
-else
-{
+  
   if (Alt自动暂停=1)
   {
-    ToolTip 自动暂停运行
+    ToolTip 自动恢复运行
   }
   else
   {
-    ToolTip 分屏助手暂停运行
-    Hotkey Alt, Off ;关闭Alt键的热键
+    ToolTip 分屏助手恢复运行
+    Hotkey Alt, On ;打开Alt键的热键
   }
-  ; WinShow, ahk_class Shell_TrayWnd ;显示任务栏
-  ; TaskBar:=1
+}
+else
+{
   Menu, Tray, Icon, %A_ScriptDir%\Stopped.ico ;任务栏图标改成暂停运行
   running:=0
   MButtonHotkey:=0 ;关闭中键的部分功能
@@ -1137,6 +1154,16 @@ else
   }
   WinHide, ahk_id %MagnifierWindowID%
   Menu, Tray, Check, 暂停运行 ;右键菜单打勾
+  
+  if (Alt自动暂停=1)
+  {
+    ToolTip 自动暂停运行
+  }
+  else
+  {
+    ToolTip 分屏助手暂停运行
+    Hotkey Alt, Off ;关闭Alt键的热键
+  }
 }
 Critical, Off
 SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1939,7 +1966,27 @@ In(x,a,b)
 
 退出软件:
 Critical, On
-WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
+if (OldLastWinTop!="")
+{
+  TopWindowTransparent:=0
+  WinSet, ExStyle, -0x20, ahk_id %OldLastWinTop% ;关闭鼠标穿透
+  TopOpacity:=255
+  WinSet, Transparent, %TopOpacity%, ahk_id %OldLastWinTop%
+  WinSet, AlwaysOnTop, Off, ahk_id %OldLastWinTop%  ;切换窗口的顶置状态
+  OldLastWinTop:=""
+  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
+}
+if (OldLastWinTop!="")
+{
+  TopWindowTransparent:=0
+  WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
+  ToolTip 窗口%LastWinTop%取消总是顶置 -
+  WinSet, AlwaysOnTop, Off, ahk_id %LastWinTop%  ;切换窗口的顶置状态
+  TopOpacity:=255
+  WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
+  LastWinTop:=""
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
+}
 DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
 DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
 DllCall("magnification.dll\MagUninitialize")
@@ -1948,6 +1995,7 @@ if hModule := DllCall("GetModuleHandle", "Str", "gdiplus", Ptr)
 {
   DllCall("FreeLibrary", Ptr, hModule)
 }
+Gui, 后视镜:Destroy
 WinShow, ahk_class Shell_TrayWnd ;显示任务栏
 Critical, Off
 ExitApp
