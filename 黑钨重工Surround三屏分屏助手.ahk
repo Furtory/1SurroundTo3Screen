@@ -131,6 +131,10 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, MiniWinIDM, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;从ini文件读取设置
   IniRead, MiniWinIDR, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;从ini文件读取设置
   
+  IniRead, MasterWinIDL, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+  IniRead, MasterWinIDM, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+  IniRead, MasterWinIDR, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+  
   IniRead, ActiveWindowID, Settings.ini, 设置, 后台等待激活的窗口 ;从ini文件读取设置
   
   IniRead, LastWinTop, Settings.ini, 设置, 被总是顶置的窗口 ;从ini文件读取设置
@@ -160,6 +164,13 @@ else ;如果配置文件不存在则新建
   IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
   IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
   IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+  
+  MasterWinIDL:=0
+  MasterWinIDM:=0
+  MasterWinIDR:=0
+  IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+  IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+  IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
   
   ActiveWindowID:=""
   IniWrite, %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
@@ -214,6 +225,7 @@ HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
 HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
 HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
 HWNDarr:=[WinExist("ahk_class AHKEditor"), hGui]  ; 不需要显示后视镜窗口的黑名单 填WinTitle
+黑名单:=0
 SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 
 FDJ:=0 ;放大镜打开状态
@@ -228,6 +240,16 @@ TaskBar:=1 ;任务栏状态 1开启 0关闭
 
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
+return
+
+黑名单:
+黑名单:=0
+if (WinName="WorkerW") or (WinName="_cls_desk_") or (WinName="Progman") or (WinName="ActualTools_MultiMonitorTaskbar") or (WinName="SciTEWindow") ;黑名单列表 双引号内填类名 ahk_class
+{
+  Critical, Off
+  黑名单:=1 ;如果在黑名单列表的窗口内操作则不执行
+}
+return
 
 WheelUp:
 Hotkey, ~WheelUp, On
@@ -265,10 +287,10 @@ else
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, WX, WY, WinID ;获取鼠标在窗口中的位置
   WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-  if (WinName="WorkerW") or (WinName="_cls_desk_") or (WinName="Progman") or (WinName="ActualTools_MultiMonitorTaskbar") ;黑名单列表 双引号内填类名 ahk_class
+  gosub 黑名单
+  if (黑名单=1)
   {
-    Critical, Off
-    return ;如果在黑名单列表的窗口内操作则不执行
+    return
   }
   WinGetPos, SX, SY, W, H, ahk_id %WinID% ;获取窗口以屏幕为基准的位置 窗口的宽和高
   WinInScreenX:=SX+W/2 ;窗口中间以屏幕为基准的位置
@@ -336,12 +358,12 @@ else
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
   WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
-  if (WinName="WorkerW") or (WinName="_cls_desk_") or (WinName="Progman") or (WinName="ActualTools_MultiMonitorTaskbar") ;黑名单列表 双引号内填类名 ahk_class
+  gosub 黑名单
+  if (黑名单=1)
   {
-    Critical, Off
-    return ;如果在黑名单列表的窗口内操作则不执行
+    return
   }
-  if (WY<WinTop) ;点击位置在窗口顶部
+  else if (WY<WinTop) ;点击位置在窗口顶部
   {
     ToolTip 最小化%WinID%窗口
     WinMinimize, ahk_id %WinID% ;最小化窗口
@@ -365,6 +387,41 @@ else
 }
 Critical, Off
 SetTimer, WheelDown, -100
+return
+
+~+LButton:: ;Shift+左键
+Critical, On
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
+WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+gosub 黑名单
+if (黑名单=1)
+{
+  return
+}
+else if (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
+{
+  if (屏幕实时位置=1)
+  {
+    MasterWinIDL:=WinID ;记录主窗口
+    IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+    ToolTip 设定%MasterWinIDL%左边屏幕主窗口
+  }
+  else if (屏幕实时位置=2)
+  {
+    MasterWinIDM:=WinID ;记录主窗口
+    IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+    ToolTip 设定%MasterWinIDM%中间屏幕主窗口
+  }
+  else if (屏幕实时位置=3)
+  {
+    MasterWinIDR:=WinID ;记录主窗口
+    IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+    ToolTip 设定%MasterWinIDR%右边屏幕主窗口
+  }
+  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+}
+Critical, Off
 return
 
 ~^LButton:: ;Ctrl+左键
@@ -985,51 +1042,152 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   Critical, Off
   return
 }
+Critical, Off
+return
 
 KeyMButton: ;计时器
-if (MButton_presses=1) and (running=1) and (MYOld>WinTop) ;此键按下了一次 软件正在运行中 没有点击在窗口顶部
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WY ;获取鼠标在窗口中的位置
+if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 软件正在运行中 没有点击在窗口顶部
 {
   if (MButtonHotkey=0)
   {
     Return
   }
-  if (屏幕实时位置=1) and (MiniWinIDL!=0) and (WinID!=MiniWinIDL) ;鼠标在左边屏幕 有左边最小化窗口的历史记录 当前点击不在最小化窗口
+  
+  if (屏幕实时位置=1) and (MiniWinIDL!=0) ;鼠标在左边屏幕 有左边最小化窗口的历史记录
   {
-    if (WinExist("ahk_id" MiniWinIDL)!=0)
+    If (WinActive("ahk_id" MasterWinIDL)=0) ;主窗口
     {
-      WinRestore, ahk_id %MiniWinIDL% ;还原最近一次左边被最小化的窗口
-      ToolTip 还原最近%MiniWinIDL%窗口
+      if (WinExist("ahk_id" MasterWinIDL)!=0)
+      {
+        WinGet, 窗口状态, MinMax, ahk_id %MasterWinIDL%
+        if (窗口状态=-1)
+        {
+          WinRestore, ahk_id %MasterWinIDL% ;还原主窗口
+        }
+        else
+        {
+          WinActivate, ahk_id %MasterWinIDL%
+        }
+        ToolTip 还原左边屏幕%MasterWinIDL%主窗口
+      }
+      else
+      {
+        MasterWinIDL:=0
+        IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+      }
     }
-    else
+    else If (WinActive("ahk_id" MiniWinIDL)=0) ;被最小化的窗口
     {
-      MiniWinIDL:=0
-      IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      if (WinExist("ahk_id" MiniWinIDL)!=0)
+      {
+        WinGet, 窗口状态, MinMax, ahk_id %MiniWinIDL%
+        if (窗口状态=-1)
+        {
+          WinRestore, ahk_id %MiniWinIDL% ;还原主窗口
+        }
+        else
+        {
+          WinActivate, ahk_id %MiniWinIDL%
+        }
+        ToolTip 还原最近最小化%MiniWinIDL%窗口
+      }
+      else
+      {
+        MiniWinIDL:=0
+        IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
     }
   }
-  else if (屏幕实时位置=2) and (MiniWinIDM!=0) and (WinID!=MiniWinIDM) ;鼠标在中间屏幕 有中间最小化窗口的历史记录 当前点击不在最小化窗口
+  else if (屏幕实时位置=2) and (MiniWinIDM!=0) ;鼠标在中间屏幕 有中间最小化窗口的历史记录
   {
-    if (WinExist("ahk_id" MiniWinIDM)!=0)
+    If (WinActive("ahk_id" MasterWinIDM)=0) ;主窗口
     {
-      WinRestore, ahk_id %MiniWinIDM% ;还原最近一次左边被最小化的窗口
-      ToolTip 还原最近%MiniWinIDM%窗口
+      if (WinExist("ahk_id" MasterWinIDM)!=0)
+      {
+        WinGet, 窗口状态, MinMax, ahk_id %MasterWinIDM%
+        if (窗口状态=-1)
+        {
+          WinRestore, ahk_id %MasterWinIDM% ;还原主窗口
+        }
+        else
+        {
+          WinActivate, ahk_id %MasterWinIDM%
+        }
+        ToolTip 还原中间屏幕%MasterWinIDM%主窗口
+      }
+      else
+      {
+        MasterWinIDM:=0
+        IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+      }
     }
-    else
+    else If (WinActive("ahk_id" MiniWinIDM)=0) ;被最小化的窗口
     {
-      MiniWinIDL:=0
-      IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      if (WinExist("ahk_id" MiniWinIDM)!=0)
+      {
+        WinGet, 窗口状态, MinMax, ahk_id %MiniWinIDM%
+        if (窗口状态=-1)
+        {
+          WinRestore, ahk_id %MiniWinIDM% ;还原主窗口
+        }
+        else
+        {
+          WinActivate, ahk_id %MiniWinIDM%
+        }
+        ToolTip 还原最近最小化%MiniWinIDM%窗口
+      }
+      else
+      {
+        MiniWinIDL:=0
+        IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
     }
   }
-  else if (屏幕实时位置=3) and (MiniWinIDR!=0) and (WinID!=MiniWinIDR) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 当前点击不在最小化窗口
+  else if (屏幕实时位置=3) and (MiniWinIDR!=0) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 
   {
-    if (WinExist("ahk_id" MiniWinIDR)!=0)
+    If (WinActive("ahk_id" MasterWinIDR)=0) ;主窗口
     {
-      WinRestore, ahk_id %MiniWinIDR% ;还原最近一次左边被最小化的窗口
-      ToolTip 还原最近%MiniWinIDR%窗口
+      if (WinExist("ahk_id" MasterWinIDR)!=0)
+      {
+        WinGet, 窗口状态, MinMax, ahk_id %MasterWinIDR%
+        if (窗口状态=-1)
+        {
+          WinRestore, ahk_id %MasterWinIDR% ;还原主窗口
+        }
+        else
+        {
+          WinActivate, ahk_id %MasterWinIDR%
+        }
+        ToolTip 还原右边屏幕%MasterWinIDR%主窗口
+      }
+      else
+      {
+        MasterWinIDM:=0
+        IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+      }
     }
-    else
+    else If (WinActive("ahk_id" MiniWinIDR)=0) ;被最小化的窗口
     {
-      MiniWinIDL:=0
-      IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      if (WinExist("ahk_id" MiniWinIDR)!=0)
+      {
+        WinGet, 窗口状态, MinMax, ahk_id %MiniWinIDR%
+        if (窗口状态=-1)
+        {
+          WinRestore, ahk_id %MiniWinIDR% ;还原主窗口
+        }
+        else
+        {
+          WinActivate, ahk_id %MiniWinIDR%
+        }
+        ToolTip 还原最近最小化%MiniWinIDR%窗口
+      }
+      else
+      {
+        MiniWinIDL:=0
+        IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
     }
   }
   
@@ -1083,7 +1241,7 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小在窗口任意位置`n      按住中键并拖动到其他窗口`n      可以发送窗口到中键抬起的时候的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n呼出窗口`n      按中键可以呼出最近一次最小化的窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 进阶功能:
