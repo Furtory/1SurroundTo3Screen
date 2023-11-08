@@ -371,16 +371,31 @@ else
     {
       MiniWinIDL:=WinID ;记录最近一次被最小化的窗口
       IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      if (MiniWinIDL=MasterWinIDL)
+      {
+        MasterWinIDL:=0
+        IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+      }
     }
     else if (屏幕实时位置=2)
     {
       MiniWinIDM:=WinID ;记录最近一次被最小化的窗口
       IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      if (MiniWinIDM=MasterWinIDM)
+      {
+        MasterWinIDM:=0
+        IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+      }
     }
     else if (屏幕实时位置=3)
     {
       MiniWinIDR:=WinID ;记录最近一次被最小化的窗口
       IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      if (MiniWinIDR=MasterWinIDR)
+      {
+        MasterWinIDR:=0
+        IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+      }
     }
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
@@ -405,18 +420,33 @@ else if (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在�
   {
     MasterWinIDL:=WinID ;记录主窗口
     IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+    if (MasterWinIDL=MiniWinIDL)
+    {
+      MiniWinIDL:=0
+      IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
     ToolTip 设定%MasterWinIDL%左边屏幕主窗口
   }
   else if (屏幕实时位置=2)
   {
     MasterWinIDM:=WinID ;记录主窗口
     IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+    if (MasterWinIDM=MiniWinIDM)
+    {
+      MiniWinIDM:=0
+      IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
     ToolTip 设定%MasterWinIDM%中间屏幕主窗口
   }
   else if (屏幕实时位置=3)
   {
     MasterWinIDR:=WinID ;记录主窗口
     IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+    if (MasterWinIDR=MiniWinIDR)
+    {
+      MiniWinIDR:=0
+      IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
     ToolTip 设定%MasterWinIDR%右边屏幕主窗口
   }
   SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -902,6 +932,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         MiniWinIDL:=0
         IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
       }
+      else if (WinID=MasterWinIDL)
+      {
+        MasterWinIDR:=WinID
+        IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+        MasterWinIDL:=0
+        IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+      }
       
       ToolTip 发送%WinID%窗口到右边屏幕
       WinRestore, ahk_id %WinID%
@@ -919,6 +956,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
         MiniWinIDL:=0
         IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      else if (WinID=MasterWinIDL)
+      {
+        MasterWinIDM:=WinID
+        IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+        MasterWinIDL:=0
+        IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
       }
       
       ToolTip 发送%WinID%窗口到中间屏幕
@@ -941,6 +985,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         MiniWinIDM:=0
         IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
       }
+      else if (WinID=MasterWinIDM)
+      {
+        MasterWinIDL:=WinID
+        IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+        MasterWinIDM:=0
+        IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+      }
       
       ToolTip 发送%WinID%窗口到左边屏幕
       WinRestore, ahk_id %WinID%
@@ -958,6 +1009,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
         MiniWinIDM:=0
         IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      else if (WinID=MasterWinIDM)
+      {
+        MasterWinIDR:=WinID
+        IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+        MasterWinIDM:=0
+        IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
       }
       
       ToolTip 发送%WinID%窗口到右边屏幕
@@ -980,6 +1038,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         MiniWinIDR:=0
         IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
       }
+      else if (WinID=MasterWinIDR)
+      {
+        MasterWinIDL:=WinID
+        IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+        MasterWinIDR:=0
+        IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+      }
       
       ToolTip 发送%WinID%窗口到左边屏幕
       WinRestore, ahk_id %WinID%
@@ -997,6 +1062,13 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
         MiniWinIDR:=0
         IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+      }
+      else if (WinID=MasterWinIDR)
+      {
+        MasterWinIDM:=WinID
+        IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+        MasterWinIDR:=0
+        IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
       }
       
       ToolTip 发送%WinID%窗口到中间屏幕
@@ -1057,7 +1129,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
   
   if (屏幕实时位置=1) and (MiniWinIDL!=0) ;鼠标在左边屏幕 有左边最小化窗口的历史记录
   {
-    If (WinActive("ahk_id" MasterWinIDL)=0) ;主窗口
+    If (WinActive("ahk_id" MasterWinIDL)=0) and (MasterWinIDL!=0) ;主窗口
     {
       if (WinExist("ahk_id" MasterWinIDL)!=0)
       {
@@ -1078,7 +1150,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
       }
     }
-    else If (WinActive("ahk_id" MiniWinIDL)=0) ;被最小化的窗口
+    else If (WinActive("ahk_id" MiniWinIDL)=0) and (MasterWinIDL!=0) ;被最小化的窗口
     {
       if (WinExist("ahk_id" MiniWinIDL)!=0)
       {
@@ -1102,7 +1174,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
   }
   else if (屏幕实时位置=2) and (MiniWinIDM!=0) ;鼠标在中间屏幕 有中间最小化窗口的历史记录
   {
-    If (WinActive("ahk_id" MasterWinIDM)=0) ;主窗口
+    If (WinActive("ahk_id" MasterWinIDM)=0) and (MasterWinIDM!=0) ;主窗口
     {
       if (WinExist("ahk_id" MasterWinIDM)!=0)
       {
@@ -1123,7 +1195,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
       }
     }
-    else If (WinActive("ahk_id" MiniWinIDM)=0) ;被最小化的窗口
+    else If (WinActive("ahk_id" MiniWinIDM)=0) and (MiniWinIDM!=0) ;被最小化的窗口
     {
       if (WinExist("ahk_id" MiniWinIDM)!=0)
       {
@@ -1147,7 +1219,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
   }
   else if (屏幕实时位置=3) and (MiniWinIDR!=0) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 
   {
-    If (WinActive("ahk_id" MasterWinIDR)=0) ;主窗口
+    If (WinActive("ahk_id" MasterWinIDR)=0) and (MasterWinIDR!=0) ;主窗口
     {
       if (WinExist("ahk_id" MasterWinIDR)!=0)
       {
@@ -1168,7 +1240,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
       }
     }
-    else If (WinActive("ahk_id" MiniWinIDR)=0) ;被最小化的窗口
+    else If (WinActive("ahk_id" MiniWinIDR)=0) and (MiniWinIDR!=0) ;被最小化的窗口
     {
       if (WinExist("ahk_id" MiniWinIDR)!=0)
       {
