@@ -1551,15 +1551,15 @@ return
 旧下组合键:=下组合键
 Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
 Gui 快捷键:Font, s9, Segoe UI
-Gui 快捷键:Add, Hotkey, x58 y273 w120 h25 v上组合键, %上组合键%
-Gui 快捷键:Add, Hotkey, x58 y335 w120 h25 v下组合键, %下组合键%
-Gui 快捷键:Add, Text, x14 y13 w197 h221 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n双击箭头`n      左箭头 上一曲   右箭头 下一曲`n同时按下两个箭头`n      左右箭头 暂停播放`n      上下箭头 呼出关`/闭播放器`n      上下箭头长按 清除呼出设置`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键
-Gui 快捷键:Add, Button, x15 y374 w69 h25 GButton重置, &重置
-Gui 快捷键:Add, Button, x83 y374 w69 h25 GButton确认, &确认
-Gui 快捷键:Add, Button, x151 y374 w69 h25 GButton取消, &取消
-Gui 快捷键:Add, Text, x58 y248 w120 h25 +0x200, 喜欢歌曲
-Gui 快捷键:Add, Text, x58 y310 w120 h25 +0x200, 歌曲歌词
-Gui 快捷键:Show, w234 h416, 媒体快捷键设置
+Gui 快捷键:Add, Hotkey, x58 y313 w120 h25 v上组合键, %上组合键%
+Gui 快捷键:Add, Hotkey, x58 y375 w120 h25 v下组合键, %下组合键%
+Gui 快捷键:Add, Text, x14 y13 w197 h281 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n双击箭头`n      左箭头 上一曲   右箭头 下一曲`n同时按下两个箭头`n      左右箭头 暂停播放`n      上下箭头 呼出关`/闭播放器`n      上下箭头长按 清除呼出设置`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键`n`n      长按左右箭头关闭媒体快捷键`n      在屏幕底部点击中键重新打开
+Gui 快捷键:Add, Button, x15 y424 w69 h25 GButton重置, &重置
+Gui 快捷键:Add, Button, x83 y424 w69 h25 GButton确认, &确认
+Gui 快捷键:Add, Button, x151 y424 w69 h25 GButton取消, &取消
+Gui 快捷键:Add, Text, x58 y288 w120 h25 +0x200, 喜欢歌曲
+Gui 快捷键:Add, Text, x58 y350 w120 h25 +0x200, 歌曲歌词
+Gui 快捷键:Show, w234 h466, 媒体快捷键设置
 Return
 
 Button重置:
