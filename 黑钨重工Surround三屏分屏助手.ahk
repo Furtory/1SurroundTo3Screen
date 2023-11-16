@@ -21,10 +21,6 @@ Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
 if (A_TickCount<60000) ;开机60秒内启用延时自启
 {
   Critical On
-  LastWinTop:=""
-  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
-  OldLastWinTop:=""
-  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
   StartTime := A_TickCount
   Loop
   {
@@ -95,6 +91,11 @@ else
 
 IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
 {
+  LastWinTop:=""
+  IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
+  OldLastWinTop:=""
+  IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
+  
   IniRead, antialize, Settings.ini, 设置, 锐化算法 ;从ini文件读取设置
   if (antialize=1)
   {
@@ -226,6 +227,8 @@ HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) 
 HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
 HWNDarr:=[WinExist("ahk_class AHKEditor"), hGui]  ; 不需要显示后视镜窗口的黑名单 填WinTitle
 黑名单:=0
+媒体快捷键:=1
+暂停:=0
 SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 
 FDJ:=0 ;放大镜打开状态
@@ -616,7 +619,7 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   LoopTimes:=20 ;检测2秒
   gosub AeroShake ;跳转检测程序
-  if (摇晃次数>3) and (总移动距离>=1000)
+  if (摇晃次数>3) and (总移动距离>=Round(A_ScreenHeight*(800/1080)))
   {
     ; ToolTip %窗口样式%
     if (窗口样式=0) ;如果没有处于总是顶置状态
@@ -642,8 +645,11 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       LastWinTop:=WinID
       WinSet, AlwaysOnTop, On, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
-      ToolTip 窗口%LastWinTop%设为总是顶置 O
-      Sleep 500
+      Loop 20
+      {
+        ToolTip 窗口%LastWinTop%设为总是顶置 O
+        Sleep 30
+      }
       Critical Off
     }
     else ;如果已经处于总是顶置状态
@@ -651,13 +657,16 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       Critical On
       TopWindowTransparent:=0
       WinSet, ExStyle, -0x20, ahk_id %LastWinTop% ;关闭鼠标穿透
-      ToolTip 窗口%LastWinTop%取消总是顶置 -
       WinSet, AlwaysOnTop, Off, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       TopOpacity:=255
       WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
       LastWinTop:=""
       IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
-      Sleep 500
+      Loop 20
+      {
+        ToolTip 窗口%LastWinTop%取消总是顶置 -
+        Sleep 30
+      }
       Critical Off  
     }
   }
@@ -835,7 +844,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
       摇晃次数:=摇晃次数+1
     }
     
-    if (摇晃次数>3) and (总移动距离>=1000) ;按下滚轮时打开放大镜 Win+加号
+    if (摇晃次数>3) and (总移动距离>=Round(A_ScreenHeight*(800/1080))) ;按下滚轮时打开放大镜 Win+加号
     {
       FDJM:=1
       Critical, Off
@@ -909,8 +918,20 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         {
           if (MXNew<增加音量) and (MXNew>降低音量) and (YLTZ=0) ;没有滑动且没有调整过音量 播放/暂停媒体
           {
-            ToolTip 播放/暂停媒体
-            Send {Media_Play_Pause}
+            if (媒体快捷键=0)
+            {
+              媒体快捷键:=1
+              Hotkey, Left, On
+              Hotkey, Right, On
+              Hotkey, Up, On
+              Hotkey, Down, On
+              ToolTip 媒体快捷键已打开
+            }
+            else
+            {
+              ToolTip 播放/暂停媒体
+              Send {Media_Play_Pause}
+            }
           }
           MButton_presses:=0 ;键击记录重置为0
           SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1086,18 +1107,22 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
   DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
   按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
-  if (按下时间>300) ;长按时间大于300ms将当前窗口填满所有屏幕
+  if (按下时间>500) ;长按时间大于500ms将当前窗口填满所有屏幕
   {
     if (MButtonHotkey=0)
     {
       Return
     }
-    if (WY<WinTop) ;点击位置在窗口顶部
+    else if (WY<WinTop) ;点击位置在窗口顶部
     {
-      ToolTip 将%WinID%窗口填满所有屏幕
-      WinRestore, ahk_id %WinID%
-      WinMove, ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
-      SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+      WinGetPos, , , WinW, WinH, ahk_id %WinID%
+      if (WinW<A_ScreenWidth) or (WinH<A_ScreenHeight)
+      {
+        WinRestore, ahk_id %WinID%
+        WinMove, ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        ToolTip 将%WinID%窗口填满所有屏幕
+        SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+      }
     }
     MButton_presses:=0 ;键击记录重置为0
     Critical, Off
@@ -1560,62 +1585,72 @@ GuiClose:
 Gui, 快捷键:Destroy
 return
 
-打开快捷键:
-Hotkey, Left, On
-Hotkey, Right, On
-Hotkey, Up, On
-Hotkey, Down, On
-Return
-
 ~Left::
-Hotkey, Right, Off
-Hotkey, Up, Off
-Hotkey, Down, Off
-goto 媒体快捷键
-
 ~Right::
-Hotkey, Left, Off
-Hotkey, Up, Off
-Hotkey, Down, Off
-goto 媒体快捷键
-
 ~Up::
-Hotkey, Left, Off
-Hotkey, Right, Off
-Hotkey, Down, Off
-goto 媒体快捷键
-
 ~Down::
-Hotkey, Left, Off
-Hotkey, Right, Off
-Hotkey, Up, Off
-goto 媒体快捷键
-
-媒体快捷键:
+if (暂停=1)
+{
+  Return
+}
+暂停:=1
 Loop
 {
   if GetKeyState("Left", "P") and GetKeyState("Right", "P")
   {
-    Send {Media_Play_Pause}
-    gosub 打开快捷键
-    Return
+    DllCall("QueryPerformanceFrequency", "Int64*", freq)
+    DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Lefty_Right)
+    Loop  
+    {
+      ; ToolTip LR
+      if !GetKeyState("Left", "P") and !GetKeyState("Right", "P")
+      {
+        DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Lefty_Right)
+        媒体快捷键按下时长:=Round((KeyUp_Lefty_Right-KeyDown_Lefty_Right)/freq*1000, 2)
+        ; ToolTip %媒体快捷键% %媒体快捷键按下时长%
+        if (媒体快捷键按下时长>500) and (媒体快捷键=1)
+        {
+          媒体快捷键:=0
+          Hotkey, ~Left, Off
+          Hotkey, ~Right, Off
+          Hotkey, ~Up, Off
+          Hotkey, ~Down, Off
+          Loop 20
+          {
+            ToolTip 媒体快捷键已关闭
+            Sleep 30
+          }
+          ToolTip
+          暂停:=0
+          Return
+        }
+        else
+        {
+          Send {Media_Play_Pause}
+          暂停:=0
+          Return
+        }
+      }
+      Sleep 10
+    }
   }
   else if GetKeyState("Up", "P") and GetKeyState("Down", "P")
   {
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
-    DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Lefty_Right)
+    DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Up_Down)
     Loop
     {
+      ; ToolTip UD
       if !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
       {
-        DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Lefty_Right)
-        清除播放器快捷呼出设置记录时间:=Round((KeyUp_Lefty_Right-KeyDown_Lefty_Right)/freq*1000, 2)
+        DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Up_Down)
+        清除播放器快捷呼出设置记录时间:=Round((KeyUp_Up_Down-KeyDown_Up_Down)/freq*1000, 2)
         if (清除播放器快捷呼出设置记录时间>500)
         {
           ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置 
           MediaWindow:=""
           IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-          gosub 打开快捷键
+          暂停:=0
           Return
         }
         else
@@ -1643,7 +1678,7 @@ Loop
             ToolTip 快捷关闭%MediaWindow%播放器
             SetTimer, 关闭提示, -500
           }
-          gosub 打开快捷键
+          暂停:=0
           Return
         }
       }
@@ -1660,15 +1695,16 @@ Loop
 if (Media_presses > 0) ;后续的按下
 {
   Media_presses_New:=StrReplace(A_ThisHotkey,"~")
-  if (Media_presses_New!=Media_presses_History)
-  {
-    SetTimer, KeyMedia, -400
-  }
-  else ;if (Media_presses_New=Media_presses_History)
+  if (Media_presses_New=Media_presses_History)
   {
     Media_presses += 1 ;2
   }
-  gosub 打开快捷键
+  else if (Media_presses_New!=Media_presses_History)
+  {
+    Media_presses := 0
+    SetTimer, KeyMedia, Delete
+  }
+  暂停:=0
   return
 }
 else ;第一次按下
@@ -1676,8 +1712,10 @@ else ;第一次按下
   Media_presses_History:=StrReplace(A_ThisHotkey,"~")
   Media_presses := 1
   SetTimer, KeyMedia, -400
+  暂停:=0
+  return
 }
-gosub 打开快捷键
+暂停:=0
 return
 
 KeyMedia:
@@ -2229,7 +2267,6 @@ Gui, 后视镜:Destroy
 WinShow, ahk_class Shell_TrayWnd ;显示任务栏
 Critical, Off
 ExitApp
-
 
 ~Shift::
 ; ToolTip 放大镜放大
