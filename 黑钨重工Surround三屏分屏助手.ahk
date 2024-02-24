@@ -18,23 +18,6 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
 }
 
 Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
-if (A_TickCount<60000) ;开机60秒内启用延时自启
-{
-  Critical On
-  StartTime := A_TickCount
-  Loop
-  {
-    Sleep, 1000
-    ElapsedTime := A_TickCount - StartTime
-    if (ElapsedTime>30000) ;软件开机后延时30秒启动
-    {
-      Critical Off
-      Reload
-    }
-  }
-}
-
-
 Process, Priority, , Realtime
 #MenuMaskKey vkE8
 #WinActivateForce
@@ -64,6 +47,7 @@ Global hPic
 MButton_presses:=0
 running:=1 ;1为运行 0为暂停
 Menu, Tray, NoStandard ;不显示默认的AHK右键菜单
+Menu, Tray, Add, 屏幕设置, 屏幕设置 ;添加新的右键菜单
 Menu, Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
 Menu, Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
 Menu, Tray, Add
@@ -146,7 +130,12 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, MediaWindow, Settings.ini, 设置, 呼出播放器 ;从ini文件读取设置
   
   IniRead, 上组合键, Settings.ini, 设置, 双击箭头上输出组合键 ;从ini文件读取设置
-  IniRead, 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;从ini文件读取设置
+  IniRead, 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;
+  
+  IniRead, BKXZ, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
+  
+  IniRead, KDXZ, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
+  IniRead, GDXZ, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
 }
 else ;如果配置文件不存在则新建
 {
@@ -189,33 +178,30 @@ else ;如果配置文件不存在则新建
   
   IniWrite, %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
   IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;写入设置到ini文件
+  
+  BKXZ:=0
+  IniWrite, %BKXZ%, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
+  
+  KDXZ:=Ceil(16*(A_ScreenHeight/1080)) ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
+  GDXZ:=Ceil(8*(A_ScreenHeight/1080)) ;高度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
+  IniWrite, %KDXZ%, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
+  IniWrite, %GDXZ%, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
 }
 
-KDXZ:=16 ;宽度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
-GDXZ:=8 ;高度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
+SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
+SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
+RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
 
-FJL:=Round(A_ScreenWidth/3) ;左分界线
-FJR:=Round(A_ScreenWidth/3)*2 ;右分界线
-WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
-SH:=A_ScreenHeight+GDXZ ;屏幕高度
-if (A_ScreenHeight=1080) ;1080P屏宽度
-{
-  SW:=120*16+KDXZ ;第二个数字填屏幕长宽比的长比例 16：9就填16 21：9就填21
-}
-else if (A_ScreenHeight=1440) ;2K屏宽度
-{
-  SW:=160*16+KDXZ ;第二个数字填屏幕长宽比的长比例 16：9就填16 21：9就填21
-}
-else if (A_ScreenHeight=2160) ;4K屏宽度
-{
-  SW:=240*16+KDXZ ;第二个数字填屏幕长宽比的长比例 16：9就填16 21：9就填21
-}
-YDL:=Round(0-KDXZ/2) ;左边屏幕左上角原点X
+FJL:=Floor(A_ScreenWidth/3-BKXZ/2) ;左分界线
+FJR:=Ceil(A_ScreenWidth/3*2+BKXZ/2) ;右分界线
 YDY:=0 ;屏幕原点Y
-YDM:=(A_ScreenWidth-SW*3)/2+SW ;中间屏幕左上角原点X
-YDR:=Round((A_ScreenWidth-SW*3)+SW*2+KDXZ/2) ;右边屏幕左上角原点X
-ScreenBottom:=A_ScreenHeight-Round(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
-ScreenBottomMax:=A_ScreenHeight-Round(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
+YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
+YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
+YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
+
+WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
+ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
+ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
 ; MsgBox %SW% %SH%
 
 HSJ:=0 ;后视镜打开状态
@@ -244,6 +230,44 @@ TaskBar:=1 ;任务栏状态 1开启 0关闭
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
 return
+
+屏幕设置:
+OldBKXZ:=BKXZ
+OldGDXZ:=GDXZ
+OldKDXZ:=KDXZ
+Gui 屏幕设置:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
+Gui 屏幕设置:Font, s9, Segoe UI
+Gui 屏幕设置:Add, Picture, x-3 y-97 w1000 h600, %A_ScriptDir%\3屏示意图.jpg
+Gui 屏幕设置:Add, Button, x778 y361 w94 h51 GButton确认2, &确认
+Gui 屏幕设置:Add, Button, x877 y361 w94 h51 GButton取消2, &取消
+
+Gui 屏幕设置:Add, Text, x387 y19 w120 h23 +0x200, 边框宽度
+Gui 屏幕设置:Add, Edit, x387 y42 w120 h21 Number vBKXZ, %BKXZ%
+
+Gui 屏幕设置:Add, Text, x700 y168 w120 h23 +0x200, 屏幕额外高度
+Gui 屏幕设置:Add, Edit, x699 y191 w122 Number vGDXZ, %GDXZ%
+
+Gui 屏幕设置:Add, Text, x438 y338 w120 h23 +0x200, 屏幕额外宽度
+Gui 屏幕设置:Add, Edit, x438 y361 w120 h21 Number vKDXZ, %KDXZ%
+
+Gui 屏幕设置:Show, w995 h433, 屏幕设置
+Return
+
+Button确认2:
+Gui, 屏幕设置:Submit, NoHide
+Gui, 屏幕设置:Destroy
+IniWrite, %BKXZ%, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
+IniWrite, %KDXZ%, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
+IniWrite, %GDXZ%, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
+return
+
+Button取消2:
+BKXZ:=OldBKXZ
+GDXZ:=OldGDXZ
+KDXZ:=OldKDXZ
+Gui, 屏幕设置:Destroy
+return
+
 
 黑名单:
 黑名单:=0
@@ -772,6 +796,10 @@ if (MButton_presses>0) ;因为键击记录不是0 证明这不是首次按下
 }
 else ;因为键击记录是0 证明这是首次按下 把键击记录次数设为 1 并启动计时器
 {
+  ; ToolTip 关闭后视镜
+  WinHide, ahk_id %MagnifierWindowID%
+  HSJM:=0
+  
   MButton_presses:=1
   if (MButtonHotkey=0)
   {
@@ -1347,11 +1375,6 @@ return
 
 暂停运行: ;模式切换
 Critical, On
-if !GetKeyState("MButton", "P")
-{
-  Send {MButton Up}
-}
-
 if (running=0)
 {
   Menu, Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
@@ -1420,8 +1443,16 @@ else
     Hotkey Alt, Off ;关闭Alt键的热键
   }
 }
-Critical, Off
 SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+loop 10
+{
+  if !GetKeyState("MButton", "P")
+  {
+    Send {MButton Up}
+  }
+  Sleep 10
+}
+Critical, Off
 return
 
 管理权限: ;模式切换
@@ -1578,8 +1609,6 @@ IniWrite, %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;
 return
 
 Button取消:
-GuiEscape:
-GuiClose:
 上组合键:=旧上组合键
 下组合键:=旧下组合键
 Gui, 快捷键:Destroy
@@ -1602,34 +1631,31 @@ Loop
     DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Lefty_Right)
     Loop  
     {
+      DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Lefty_Right)
+      媒体快捷键按下时长:=Round((KeyUp_Lefty_Right-KeyDown_Lefty_Right)/freq*1000, 2)
       ; ToolTip LR
-      if !GetKeyState("Left", "P") and !GetKeyState("Right", "P")
+      if (媒体快捷键按下时长>1000) and (媒体快捷键=1)
       {
-        DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Lefty_Right)
-        媒体快捷键按下时长:=Round((KeyUp_Lefty_Right-KeyDown_Lefty_Right)/freq*1000, 2)
+        媒体快捷键:=0
+        Hotkey, ~Left, Off
+        Hotkey, ~Right, Off
+        Hotkey, ~Up, Off
+        Hotkey, ~Down, Off
+        Loop 20
+        {
+          ToolTip 媒体快捷键已关闭
+          Sleep 30
+        }
+        ToolTip
+        暂停:=0
+        Return
+      }
+      else if !GetKeyState("Left", "P") and !GetKeyState("Right", "P")
+      {
         ; ToolTip %媒体快捷键% %媒体快捷键按下时长%
-        if (媒体快捷键按下时长>500) and (媒体快捷键=1)
-        {
-          媒体快捷键:=0
-          Hotkey, ~Left, Off
-          Hotkey, ~Right, Off
-          Hotkey, ~Up, Off
-          Hotkey, ~Down, Off
-          Loop 20
-          {
-            ToolTip 媒体快捷键已关闭
-            Sleep 30
-          }
-          ToolTip
-          暂停:=0
-          Return
-        }
-        else
-        {
-          Send {Media_Play_Pause}
-          暂停:=0
-          Return
-        }
+        Send {Media_Play_Pause}
+        暂停:=0
+        Return
       }
       Sleep 10
     }
@@ -1645,7 +1671,7 @@ Loop
       {
         DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Up_Down)
         清除播放器快捷呼出设置记录时间:=Round((KeyUp_Up_Down-KeyDown_Up_Down)/freq*1000, 2)
-        if (清除播放器快捷呼出设置记录时间>500)
+        if (清除播放器快捷呼出设置记录时间>2000)
         {
           ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置 
           MediaWindow:=""
