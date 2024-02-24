@@ -259,6 +259,28 @@ Gui, 屏幕设置:Destroy
 IniWrite, %BKXZ%, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
 IniWrite, %KDXZ%, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
 IniWrite, %GDXZ%, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
+SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
+SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
+RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
+
+FJL:=Floor(A_ScreenWidth/3-BKXZ/2) ;左分界线
+FJR:=Ceil(A_ScreenWidth/3*2+BKXZ/2) ;右分界线
+YDY:=0 ;屏幕原点Y
+YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
+YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
+YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
+
+WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
+ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
+ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
+
+HSJ:=0 ;后视镜打开状态
+HSJM:=0 ;后视镜移动状态
+rWidth:=Round(SW*(640/1920)) ;后视镜宽度
+rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
+HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
+HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
+HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
 return
 
 Button取消2:
