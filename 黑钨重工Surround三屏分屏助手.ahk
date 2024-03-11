@@ -136,6 +136,9 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   
   IniRead, KDXZ, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
   IniRead, GDXZ, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
+  
+  IniRead, 左边快捷呼出窗口, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+  IniRead, 右边快捷呼出窗口, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
 }
 else ;如果配置文件不存在则新建
 {
@@ -600,9 +603,84 @@ return
 ~LButton:: ;左键
 Critical, On
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, , WinSY ;;获取鼠标在屏幕中的位置
+MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
+
+if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
+{
+  if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+  {
+    左边快捷呼出窗口:=""
+    IniWrite, %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+  }
+  else
+  {
+    if (已激活左边快捷呼出窗口=1)
+    {
+      ToolTip 隐藏左边快捷呼出窗口
+      WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+      已激活左边快捷呼出窗口:=0
+    }
+    else
+    {
+      IfWinNotActive ahk_id %左边快捷呼出窗口%
+      {
+        ToolTip 激活左边快捷呼出窗口
+        WinActivate ahk_id %左边快捷呼出窗口% ;激活窗口
+        已激活左边快捷呼出窗口:=1
+        激活:=1
+      }
+    }
+  }
+}
+
+if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
+{
+  if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+  {
+    右边快捷呼出窗口:=""
+    IniWrite, %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
+  }
+  else
+  {
+    if (已激活右边快捷呼出窗口=1)
+    {
+      ToolTip 隐藏右边快捷呼出窗口
+      WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+      已激活右边快捷呼出窗口:=0
+    }
+    else
+    {
+      IfWinNotActive ahk_id %右边快捷呼出窗口%
+      {
+        ToolTip 激活右边快捷呼出窗口
+        WinActivate ahk_id %右边快捷呼出窗口% ;激活窗口
+        已激活右边快捷呼出窗口:=1
+        激活:=1
+      }
+    }
+  }
+}
+
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
+
+if (激活!=1)
+{
+  if (WinID!=左边快捷呼出窗口)
+  {
+    已激活左边快捷呼出窗口:=0
+  }
+  
+  if (WinID!=右边快捷呼出窗口)
+  {
+    已激活右边快捷呼出窗口:=0
+  }
+}
+else
+{
+  激活:=0
+}
+
 WinGetTitle, WinName, ahk_id %WinID% ;获取窗口类名
 WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
@@ -640,7 +718,7 @@ else
   }
 }
 
-WinGetPos, , , WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
+WinGetPos, WinXHistory, WinYHistory, WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
 if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
@@ -748,6 +826,29 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       Sleep 30
     }
     Critical Off  
+  }
+  else
+  {
+    CoordMode, Mouse, Screen
+    MouseGetPos, SX, SY
+    if (SX>=FJL) and (SX<=FJL+BKXZ) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd")
+    {
+      左边快捷呼出窗口:=WinID
+      IniWrite, %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+      左边快捷呼出窗口X:=WinXHistory
+      左边快捷呼出窗口Y:=WinYHistory
+      WinMove ahk_id %左边快捷呼出窗口%, , 左边快捷呼出窗口X, 左边快捷呼出窗口Y
+      WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+    }
+    else if (SX<=FJR) and (SX>=FJR-BKXZ) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd")
+    {
+      右边快捷呼出窗口:=WinID
+      IniWrite, %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
+      右边快捷呼出窗口X:=WinXHistory
+      右边快捷呼出窗口Y:=WinYHistory
+      WinMove ahk_id %右边快捷呼出窗口%, , 右边快捷呼出窗口X, 右边快捷呼出窗口Y
+      WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+    }
   }
 }
 ToolTip
@@ -1421,7 +1522,7 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活窗口`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 进阶功能:
@@ -1730,7 +1831,7 @@ Loop
 {
   DllCall("QueryPerformanceCounter", "Int64*", KeyMediaUp)
   媒体快捷键按下时长:=Round((KeyMediaUp-KeyMediaDown)/freq*1000, 2)
-  ; ToolTip 媒体快捷键按下时长%媒体快捷键按下时长%ms 最近按键%最近按键%, , ,2
+  ToolTip 媒体快捷键按下时长%媒体快捷键按下时长%ms 最近按键%最近按键%, , ,2
   
   if (最近按键="Left") and (媒体快捷键按下时长<=双击限时) and GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
   {
