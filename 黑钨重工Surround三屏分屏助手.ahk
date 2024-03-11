@@ -189,6 +189,11 @@ else ;如果配置文件不存在则新建
   GDXZ:=Ceil(8*(A_ScreenHeight/1080)) ;高度修正 如果全屏后窗口仍然没有填满屏幕增加这个值 一般是8的倍数
   IniWrite, %KDXZ%, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
   IniWrite, %GDXZ%, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
+  
+  左边快捷呼出窗口:=""
+  IniWrite, %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+  右边快捷呼出窗口:=""
+  IniWrite, %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
 }
 
 SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
@@ -1522,7 +1527,7 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活窗口`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
 return
 
 进阶功能:
@@ -1780,28 +1785,32 @@ if GetKeyState("Right", "P")
 {
   Return
 }
-goto KeyMedia
+SetTimer, KeyMedia, -1
+Return
 
 Right::
 if GetKeyState("Left", "P")
 {
   Return
 }
-goto KeyMedia
+SetTimer, KeyMedia, -1
+Return
 
 Up::
 if GetKeyState("Down", "P")
 {
   Return
 }
-goto KeyMedia
+SetTimer, KeyMedia, -1
+Return
 
 Down::
 if GetKeyState("Up", "P")
 {
   Return
 }
-goto KeyMedia
+SetTimer, KeyMedia, -1
+Return
 
 KeyMedia:
 双击限时:=200
@@ -1831,7 +1840,7 @@ Loop
 {
   DllCall("QueryPerformanceCounter", "Int64*", KeyMediaUp)
   媒体快捷键按下时长:=Round((KeyMediaUp-KeyMediaDown)/freq*1000, 2)
-  ToolTip 媒体快捷键按下时长%媒体快捷键按下时长%ms 最近按键%最近按键%, , ,2
+  ; ToolTip 媒体快捷键按下时长%媒体快捷键按下时长%ms 最近按键%最近按键%, , ,2
   
   if (最近按键="Left") and (媒体快捷键按下时长<=双击限时) and GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
   {
@@ -2145,6 +2154,18 @@ if (MISX<FJL)
       HSJM:=1
     }
   }
+  
+  快捷呼出计时:=""
+  if (停留呼出左边快捷窗口=1)
+  {
+    WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+    停留呼出左边快捷窗口:=0
+  }
+  if (停留呼出右边快捷窗口=1)
+  {
+    WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+    停留呼出右边快捷窗口:=0
+  }
 }
 else if (MISX>FJR)
 {
@@ -2168,8 +2189,20 @@ else if (MISX>FJR)
       HSJM:=1
     }
   }
+  
+  快捷呼出计时:=""
+  if (停留呼出左边快捷窗口=1)
+  {
+    WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+    停留呼出左边快捷窗口:=0
+  }
+  if (停留呼出右边快捷窗口=1)
+  {
+    WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+    停留呼出右边快捷窗口:=0
+  }
 }
-else
+else if (MISX>FJL+BKXZ) and (MISX<FJR-BKXZ)
 {
   屏幕实时位置:=2
   ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
@@ -2178,6 +2211,62 @@ else
     ; ToolTip 关闭后视镜
     WinHide, ahk_id %MagnifierWindowID%
     HSJM:=0
+  }
+  
+  快捷呼出计时:=""
+  if (停留呼出左边快捷窗口=1)
+  {
+    WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+    停留呼出左边快捷窗口:=0
+  }
+  if (停留呼出右边快捷窗口=1)
+  {
+    WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+    停留呼出右边快捷窗口:=0
+  }
+}
+else if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
+{
+  if (快捷呼出计时="")
+  {
+    快捷呼出计时:=A_TickCount
+  }
+  
+  停留时间:=A_TickCount-快捷呼出计时
+  if (停留时间>800)
+  {
+    if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+    {
+      左边快捷呼出窗口:=""
+      IniWrite, %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+    }
+    else
+    {
+      WinActivate ahk_id %左边快捷呼出窗口% ;激活窗口
+      停留呼出左边快捷窗口:=1
+    }
+  }
+}
+else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
+{
+  if (快捷呼出计时="")
+  {
+    快捷呼出计时:=A_TickCount
+  }
+  
+  停留时间:=A_TickCount-快捷呼出计时
+  if (停留时间>800)
+  {
+    if (WinExist("ahk_id" 右边快捷呼出窗口)=0)
+    {
+      右边快捷呼出窗口:=""
+      IniWrite, %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
+    }
+    else
+    {
+      WinActivate ahk_id %右边快捷呼出窗口% ;激活窗口
+      停留呼出右边快捷窗口:=1
+    }
   }
 }
 return
