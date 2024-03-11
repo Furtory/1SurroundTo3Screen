@@ -1675,9 +1675,34 @@ Gui, 快捷键:Destroy
 return
 
 Left::
+if GetKeyState("Right", "P")
+{
+  Return
+}
+goto KeyMedia
+
 Right::
+if GetKeyState("Left", "P")
+{
+  Return
+}
+goto KeyMedia
+
 Up::
+if GetKeyState("Down", "P")
+{
+  Return
+}
+goto KeyMedia
+
 Down::
+if GetKeyState("Up", "P")
+{
+  Return
+}
+goto KeyMedia
+
+KeyMedia:
 双击限时:=200
 if (KeyMediaDown="")
 {
@@ -1781,9 +1806,14 @@ Loop
         清除播放器快捷呼出设置记录时间:=Round((KeyUp_Up_Down-KeyDown_Up_Down)/freq*1000, 2)
         if (清除播放器快捷呼出设置记录时间>2000)
         {
-          ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置 
           MediaWindow:=""
           IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+          Loop 20
+          {
+            ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置 
+            Sleep 30
+          }
+          ToolTip
           Return
         }
         else
@@ -1795,21 +1825,36 @@ Loop
             MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
             WinGetClass, MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
             IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-            ToolTip 已设置%MediaWindow%为播放器快捷呼出
-            SetTimer, 关闭提示, -500
+            
+            Loop 20
+            {
+              ToolTip 已设置%MediaWindow%为播放器快捷呼出 
+              Sleep 30
+            }
+            ToolTip
           }
           else if (WindowID!=MediaWindow)
           {
             WinActivate, ahk_class %MediaWindow%
             WinShow, ahk_class %MediaWindow%
-            ToolTip 快捷呼出%MediaWindow%播放器
-            SetTimer, 关闭提示, -500
+            
+            Loop 20
+            {
+              ToolTip 快捷呼出%MediaWindow%播放器 
+              Sleep 30
+            }
+            ToolTip
           }
           else
           {
             WinMinimize, ahk_class %MediaWindow%
-            ToolTip 快捷关闭%MediaWindow%播放器
-            SetTimer, 关闭提示, -500
+            
+            Loop 20
+            {
+              ToolTip 快捷关闭%MediaWindow%播放器 
+              Sleep 30
+            }
+            ToolTip
           }
           Return
         }
