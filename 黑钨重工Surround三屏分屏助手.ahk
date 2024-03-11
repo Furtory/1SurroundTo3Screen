@@ -215,6 +215,7 @@ HWNDarr:=[WinExist("ahk_class AHKEditor"), hGui]  ; 不需要显示后视镜窗�
 黑名单:=0
 媒体快捷键:=1
 暂停:=0
+KeyMediaDown:=""
 SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 
 FDJ:=0 ;放大镜打开状态
@@ -232,6 +233,11 @@ TopWindowTransparent:=0 ;顶置窗口穿透
 return
 
 屏幕设置:
+If (WinExist("屏幕设置")!=0)
+{
+  WinActivate, 屏幕设置
+  Return
+}
 OldBKXZ:=BKXZ
 OldGDXZ:=GDXZ
 OldKDXZ:=KDXZ
@@ -651,6 +657,13 @@ if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗�
   if (MoveSpeed>Round(A_ScreenHeight*(1500/1080))) ;如果鼠标移动速度超过1500像素/秒
   {
     WinClose, ahk_id %WinID% ;关闭窗口
+    WinGetTitle, WinTitleName, ahk_id %WinID%
+    Loop 20
+    {
+      ToolTip 窗口%WinTitleName%已关闭
+      Sleep 30
+    }
+    Critical Off  
   }
   else if (WinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) and (WinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) ;如果鼠标移动了窗口低于屏幕顶部范围
   {
@@ -663,8 +676,15 @@ if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗�
 else if (WinWY<WinTop) ;鼠标点击在窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
+  DllCall("QueryPerformanceFrequency", "Int64*", freq)
+  DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop) ;第一次记录时间
   LoopTimes:=20 ;检测2秒
   gosub AeroShake ;跳转检测程序
+  DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
+  MouseGetPos, , NewWinSY
+  下移距离:=NewWinSY-WinSY
+  MoveDownSpeed:=Round(Abs(下移距离)/((LBUpOnTop-LBDownOnTop)/freq*1000)*1000) ;移动速度=移动距离/时间
+  ; ToolTip, 下移距离%下移距离% MoveDownSpeed%MoveDownSpeed%, , ,2
   if (摇晃次数>3) and (总移动距离>=Round(A_ScreenHeight*(800/1080)))
   {
     ; ToolTip %窗口样式%
@@ -691,9 +711,10 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       LastWinTop:=WinID
       WinSet, AlwaysOnTop, On, ahk_id %LastWinTop%  ;切换窗口的顶置状态
       IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
+      WinGetTitle, WinTitleName, ahk_id %LastWinTop% 
       Loop 20
       {
-        ToolTip 窗口%LastWinTop%设为总是顶置 O
+        ToolTip 窗口%WinTitleName%设为总是顶置 O
         Sleep 30
       }
       Critical Off
@@ -707,14 +728,26 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       TopOpacity:=255
       WinSet, Transparent, %TopOpacity%, ahk_id %LastWinTop%
       LastWinTop:=""
+      WinGetTitle, WinTitleName, ahk_id %LastWinTop% 
       IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
       Loop 20
       {
-        ToolTip 窗口%LastWinTop%取消总是顶置 -
+        ToolTip 窗口%WinTitleName%取消总是顶置 -
         Sleep 30
       }
       Critical Off  
     }
+  }
+  else if (下移距离>Round(A_ScreenHeight*(600/1080))) and (MoveDownSpeed>1500)
+  {
+    WinClose, ahk_id %WinID% ;关闭窗口
+    WinGetTitle, WinTitleName, ahk_id %WinID%
+    Loop 20
+    {
+      ToolTip 窗口%WinTitleName%已关闭
+      Sleep 30
+    }
+    Critical Off  
   }
 }
 ToolTip
@@ -751,7 +784,7 @@ AeroShake:
 移动距离:=0
 总移动距离:=0
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, WinSX ;;获取鼠标在屏幕中的位置
+MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
 Loop %LoopTimes% ;监测时间1次循环等于0.15秒
 {
   ; ToolTip 摇晃次数:%摇晃次数%`n移动速度:%MoveSpeed%
@@ -765,12 +798,12 @@ Loop %LoopTimes% ;监测时间1次循环等于0.15秒
   移动距离:=Abs(WinSX-OldWinSX)
   总移动距离:=总移动距离+移动距离
   按下时间:=(LBUp-LBDown)/freq*1000 ;按下时间=第二次记录时间-第一次记录时间
-  MoveSpeed:=Round(移动距离/按下时间*1000) ;移动速度=移动距离/时间
+  MoveSpeed:=Round(移动距离/按下时间)*1000 ;移动速度=移动距离/时间
   if !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") ;左键抬起则暂停
   {
     break
   }
-  else if (MoveSpeed<=Round(A_ScreenHeight*(1200/1080))) ;如果速度小于100像素/秒
+  else if (MoveSpeed<=Round(A_ScreenHeight*(1200/1080))) ;如果速度小于1200像素/秒
   {
     continue ;不记录
   }
@@ -1600,6 +1633,11 @@ Alt_presses := 0
 return
 
 媒体快捷:
+If (WinExist("媒体快捷键设置")!=0)
+{
+  WinActivate, 媒体快捷键设置
+  Return
+}
 旧上组合键:=上组合键
 旧下组合键:=下组合键
 Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
@@ -1636,18 +1674,68 @@ Button取消:
 Gui, 快捷键:Destroy
 return
 
-~Left::
-~Right::
-~Up::
-~Down::
-if (暂停=1)
+Left::
+Right::
+Up::
+Down::
+双击限时:=200
+if (KeyMediaDown="")
 {
-  Return
+  DllCall("QueryPerformanceFrequency", "Int64*", freq)
+  DllCall("QueryPerformanceCounter", "Int64*", KeyMediaDown)
+  最近按键:=A_PriorKey
 }
-暂停:=1
+else
+{
+  DllCall("QueryPerformanceCounter", "Int64*", KeyMediaUp)
+  媒体快捷键按下时长:=Round((KeyMediaUp-KeyMediaDown)/freq*1000, 2)
+  if (媒体快捷键按下时长>双击限时) ;超过限时 重新记录按下时间
+  {
+    DllCall("QueryPerformanceFrequency", "Int64*", freq)
+    DllCall("QueryPerformanceCounter", "Int64*", KeyMediaDown)
+    最近按键:="无"
+  }
+  else
+  {
+    最近按键:=A_PriorKey
+  }
+}
+
 Loop
 {
-  if GetKeyState("Left", "P") and GetKeyState("Right", "P")
+  DllCall("QueryPerformanceCounter", "Int64*", KeyMediaUp)
+  媒体快捷键按下时长:=Round((KeyMediaUp-KeyMediaDown)/freq*1000, 2)
+  ; ToolTip 媒体快捷键按下时长%媒体快捷键按下时长%ms 最近按键%最近按键%, , ,2
+  
+  if (最近按键="Left") and (媒体快捷键按下时长<=双击限时) and GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+  {
+    ToolTip 上一曲
+    Send {Media_Next}
+    KeyWait, Left
+    SetTimer, 关闭提示, -500
+  }
+  else if (最近按键="Right") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+  {
+    ToolTip 下一曲
+    Send {Media_Next}
+    KeyWait, Right
+    SetTimer, 关闭提示, -500
+  }
+  else if (最近按键="Up") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+  {
+    ToolTip 喜欢歌曲
+    Send %上组合键%
+    KeyWait, Up
+    SetTimer, 关闭提示, -500
+  }
+  else if (最近按键="Down") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and GetKeyState("Down", "P")
+  {
+    ToolTip 歌曲歌词
+    Send %下组合键%
+    KeyWait, Down
+    SetTimer, 关闭提示, -500
+  }
+  else if GetKeyState("Left", "P") and GetKeyState("Right", "P") and (媒体快捷键按下时长<=双击限时)
   {
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Lefty_Right)
@@ -1659,30 +1747,28 @@ Loop
       if (媒体快捷键按下时长>1000) and (媒体快捷键=1)
       {
         媒体快捷键:=0
-        Hotkey, ~Left, Off
-        Hotkey, ~Right, Off
-        Hotkey, ~Up, Off
-        Hotkey, ~Down, Off
+        Hotkey, Left, Off
+        Hotkey, Right, Off
+        Hotkey, Up, Off
+        Hotkey, Down, Off
         Loop 20
         {
           ToolTip 媒体快捷键已关闭
           Sleep 30
         }
         ToolTip
-        暂停:=0
         Return
       }
       else if !GetKeyState("Left", "P") and !GetKeyState("Right", "P")
       {
         ; ToolTip %媒体快捷键% %媒体快捷键按下时长%
         Send {Media_Play_Pause}
-        暂停:=0
         Return
       }
       Sleep 10
     }
   }
-  else if GetKeyState("Up", "P") and GetKeyState("Down", "P")
+  else if GetKeyState("Up", "P") and GetKeyState("Down", "P") and (媒体快捷键按下时长<=双击限时)
   {
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Up_Down)
@@ -1698,7 +1784,6 @@ Loop
           ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置 
           MediaWindow:=""
           IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-          暂停:=0
           Return
         }
         else
@@ -1726,12 +1811,57 @@ Loop
             ToolTip 快捷关闭%MediaWindow%播放器
             SetTimer, 关闭提示, -500
           }
-          暂停:=0
           Return
         }
       }
       Sleep 10
     }
+  }
+  else if (媒体快捷键按下时长>双击限时)
+  {
+    if GetKeyState("Left", "P")
+    {
+      Send {Left Down}
+    }
+    if GetKeyState("Right", "P")
+    {
+      Send {Right Down}
+    }
+    if GetKeyState("Up", "P")
+    {
+      Send {Up Down}
+    }
+    if GetKeyState("Down", "P")
+    {
+      Send {Down Down}
+    }
+    
+    Loop
+    {
+      if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+      {
+        break
+      }
+      Sleep 10
+    }
+    
+    if !GetKeyState("Left", "P")
+    {
+      Send {Left Up}
+    }
+    if !GetKeyState("Right", "P")
+    {
+      Send {Right Up}
+    }
+    if !GetKeyState("Up", "P")
+    {
+      Send {Up Up}
+    }
+    if !GetKeyState("Down", "P")
+    {
+      Send {Down Up}
+    }
+    break
   }
   
   if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
@@ -1740,58 +1870,6 @@ Loop
   }
   Sleep 10
 }
-if (Media_presses > 0) ;后续的按下
-{
-  Media_presses_New:=StrReplace(A_ThisHotkey,"~")
-  if (Media_presses_New=Media_presses_History)
-  {
-    Media_presses += 1 ;2
-  }
-  else if (Media_presses_New!=Media_presses_History)
-  {
-    Media_presses := 0
-    SetTimer, KeyMedia, Delete
-  }
-  暂停:=0
-  return
-}
-else ;第一次按下
-{
-  Media_presses_History:=StrReplace(A_ThisHotkey,"~")
-  Media_presses := 1
-  SetTimer, KeyMedia, -400
-  暂停:=0
-  return
-}
-暂停:=0
-return
-
-KeyMedia:
-if (Media_presses >= 2) ;双击
-{
-  if (A_PriorKey="Left")
-  {
-    ToolTip 上一曲
-    Send {Media_Next}
-  }
-  else if (A_PriorKey="Right")
-  {
-    ToolTip 下一曲
-    Send {Media_Next}
-  }
-  else if (A_PriorKey="Up")
-  {
-    ToolTip 喜欢歌曲
-    Send %上组合键%
-  }
-  else if (A_PriorKey="Down")
-  {
-    ToolTip 歌曲歌词
-    Send %下组合键%
-  }
-  SetTimer, 关闭提示, -500
-}
-Media_presses := 0
 return
 
 屏幕监测:
