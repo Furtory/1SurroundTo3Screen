@@ -212,12 +212,14 @@ else ;如果配置文件不存在则新建
   IniWrite, %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
 }
 
+; MsgBox %A_ScreenWidth% %A_ScreenHeight%
+
 SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
 SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
 RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
 
-FJL:=Floor(A_ScreenWidth/3-BKXZ/2) ;左分界线
-FJR:=Ceil(A_ScreenWidth/3*2+BKXZ/2) ;右分界线
+FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
+FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
 YDY:=0 ;屏幕原点Y
 YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
 YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
@@ -1830,6 +1832,7 @@ IniRead, 高效模式, Settings.ini, 设置, 高效模式
 Return
 
 Left::
+SetTimer, 重启高效模式, Delete
 if GetKeyState("Right", "P")
 {
   Return
@@ -1838,6 +1841,7 @@ SetTimer, KeyMedia, -1
 Return
 
 Right::
+SetTimer, 重启高效模式, Delete
 if GetKeyState("Left", "P")
 {
   Return
@@ -1846,6 +1850,7 @@ SetTimer, KeyMedia, -1
 Return
 
 Up::
+SetTimer, 重启高效模式, Delete
 if GetKeyState("Down", "P")
 {
   Return
@@ -1854,6 +1859,7 @@ SetTimer, KeyMedia, -1
 Return
 
 Down::
+SetTimer, 重启高效模式, Delete
 if GetKeyState("Up", "P")
 {
   Return
@@ -1899,31 +1905,83 @@ Loop
   
   if (最近按键="Left") and (媒体快捷键按下时长<=双击限时) and GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
   {
-    ToolTip 上一曲
-    Send {Media_Next}
-    KeyWait, Left
-    SetTimer, 关闭提示, -500
+    Send {Media_Prev}
+    Loop
+    {
+      ToolTip 上一曲
+      Sleep 30
+      
+      if !GetKeyState("Left", "P")
+      {
+        Loop 20
+        {
+          ToolTip 上一曲
+          Sleep 30
+        }
+        ToolTip
+        break
+      }
+    }
   }
   else if (最近按键="Right") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
   {
-    ToolTip 下一曲
     Send {Media_Next}
-    KeyWait, Right
-    SetTimer, 关闭提示, -500
+    Loop
+    {
+      ToolTip 下一曲
+      Sleep 30
+      
+      if !GetKeyState("Right", "P")
+      {
+        Loop 20
+        {
+          ToolTip 下一曲
+          Sleep 30
+        }
+        ToolTip
+        break
+      }
+    }
   }
   else if (最近按键="Up") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and GetKeyState("Up", "P") and !GetKeyState("Down", "P")
   {
-    ToolTip 喜欢歌曲
     Send %上组合键%
-    KeyWait, Up
-    SetTimer, 关闭提示, -500
+    Loop
+    {
+      ToolTip 喜欢歌曲
+      Sleep 30
+      
+      if !GetKeyState("Up", "P")
+      {
+        Loop 20
+        {
+          ToolTip 喜欢歌曲
+          Sleep 30
+        }
+        ToolTip
+        break
+      }
+    }
   }
   else if (最近按键="Down") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and GetKeyState("Down", "P")
   {
-    ToolTip 歌曲歌词
     Send %下组合键%
-    KeyWait, Down
-    SetTimer, 关闭提示, -500
+    Loop
+    {
+      ToolTip 歌曲歌词
+      Sleep 30
+      
+      if !GetKeyState("Down", "P")
+      {
+        Loop 20
+        {
+          ToolTip 歌曲歌词
+          Sleep 30
+        }
+        ToolTip
+        break
+      }
+    }
   }
   else if GetKeyState("Left", "P") and GetKeyState("Right", "P") and (媒体快捷键按下时长<=双击限时)
   {
@@ -1947,12 +2005,16 @@ Loop
           Sleep 30
         }
         ToolTip
+        SetTimer, 重启高效模式, -100
+        Critical Off
         Return
       }
       else if !GetKeyState("Left", "P") and !GetKeyState("Right", "P")
       {
         ; ToolTip %媒体快捷键% %媒体快捷键按下时长%
         Send {Media_Play_Pause}
+        SetTimer, 重启高效模式, -100
+        Critical Off
         Return
       }
       Sleep 10
@@ -1979,6 +2041,8 @@ Loop
             Sleep 30
           }
           ToolTip
+          SetTimer, 重启高效模式, -100
+          Critical Off
           Return
         }
         else
@@ -2021,6 +2085,8 @@ Loop
             }
             ToolTip
           }
+          SetTimer, 重启高效模式, -100
+          Critical Off
           Return
         }
       }
@@ -2080,7 +2146,7 @@ Loop
   }
   Sleep 10
 }
-SetTimer, 重启高效模式, -50
+SetTimer, 重启高效模式, -100
 Critical Off
 return
 
