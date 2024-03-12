@@ -57,6 +57,7 @@ Menu, Tray, Add, 兼容模式, 兼容模式 ;添加新的右键菜单
 Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
 Menu, Tray, Add, 开机自启, 开机自启 ;添加新的右键菜单
 Menu, Tray, Add
+Menu, Tray, Add, 高效模式, 高效模式 ;添加新的右键菜单
 Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
 Menu, Tray, Add, 重启软件, 重启脚本 ;添加新的右键菜单
 Menu, Tray, Add, 退出软件, 退出软件 ;添加新的右键菜单
@@ -102,6 +103,16 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
     Menu, Tray, Check, 兼容模式 ;右键菜单打勾
   }
   
+  IniRead, 高效模式, Settings.ini, 设置, 高效模式
+  if (高效模式=0)
+  {
+    Menu, Tray, UnCheck, 高效模式 ;右键菜单不打勾
+  }
+  else
+  {
+    Menu, Tray, Check, 高效模式 ;右键菜单打勾
+  }
+  
   IniRead, AdminMode, Settings.ini, 设置, 管理权限 ;从ini文件读取设置
   if (AdminMode=0)
   {
@@ -144,9 +155,14 @@ else ;如果配置文件不存在则新建
 {
   antialize:=1
   IniWrite, %antialize%, Settings.ini, 设置, 锐化算法 ;写入设置到ini文件
+  Menu, Tray, Check, 锐化算法 ;右键菜单打勾
   
   CompatibleMode:=0
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
+  
+  高效模式:=1
+  IniWrite, %高效模式%, Settings.ini, 设置, 高效模式 ;写入设置到ini文件
+  Menu, Tray, Check, 高效模式 ;右键菜单打勾
   
   AdminMode:=0
   IniWrite, %AdminMode%, Settings.ini, 设置, 管理权限 ;写入设置到ini文件
@@ -1150,7 +1166,8 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
       }
       
-      ToolTip 发送%WinID%窗口到右边屏幕
+      WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+      ToolTip 发送%ActiveWindowID%窗口到右边屏幕
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1175,7 +1192,8 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
       }
       
-      ToolTip 发送%WinID%窗口到中间屏幕
+      WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+      ToolTip 发送%ActiveWindowID%窗口到中间屏幕
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1203,7 +1221,8 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
       }
       
-      ToolTip 发送%WinID%窗口到左边屏幕
+      WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+      ToolTip 发送%ActiveWindowID%窗口到左边屏幕
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1228,7 +1247,8 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
       }
       
-      ToolTip 发送%WinID%窗口到右边屏幕
+      WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+      ToolTip 发送%ActiveWindowID%窗口到右边屏幕
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1256,7 +1276,8 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
       }
       
-      ToolTip 发送%WinID%窗口到左边屏幕
+      WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+      ToolTip 发送%ActiveWindowID%窗口到左边屏幕
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1281,7 +1302,8 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
         IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
       }
       
-      ToolTip 发送%WinID%窗口到中间屏幕
+      WinGetTitle, ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+      ToolTip 发送%ActiveWindowID%窗口到中间屏幕
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
@@ -1533,7 +1555,7 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
@@ -1655,6 +1677,23 @@ else
   CompatibleMode:=1
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
   Menu, Tray, Check, 兼容模式 ;右键菜单打勾
+}
+Critical, Off
+return
+
+高效模式: ;模式切换
+Critical, On
+if (高效模式=1)
+{
+  高效模式:=0
+  IniWrite, %高效模式%, Settings.ini, 设置, 高效模式 ;写入设置到ini文件
+  Menu, Tray, UnCheck, 高效模式 ;右键菜单不打勾
+}
+else
+{
+  高效模式:=1
+  IniWrite, %高效模式%, Settings.ini, 设置, 高效模式 ;写入设置到ini文件
+  Menu, Tray, Check, 高效模式 ;右键菜单打勾
 }
 Critical, Off
 return
@@ -1786,6 +1825,10 @@ Button取消:
 Gui, 快捷键:Destroy
 return
 
+重启高效模式:
+IniRead, 高效模式, Settings.ini, 设置, 高效模式
+Return
+
 Left::
 if GetKeyState("Right", "P")
 {
@@ -1819,6 +1862,12 @@ SetTimer, KeyMedia, -1
 Return
 
 KeyMedia:
+Critical On
+if (高效模式=1)
+{
+  高效模式:=0
+}
+
 双击限时:=200
 if (KeyMediaDown="")
 {
@@ -2031,6 +2080,8 @@ Loop
   }
   Sleep 10
 }
+SetTimer, 重启高效模式, -50
+Critical Off
 return
 
 屏幕监测:
@@ -2342,9 +2393,6 @@ else if (TaskBar=0) ;如果任务栏处于隐藏状态
 return
 
 后视镜:
-; ToolTip 打开后视镜
-; Return
-; /*
 Ptr := A_PtrSize ? "UPtr" : "UInt"
 if !DllCall("GetModuleHandle", "str", "gdiplus", Ptr)
 	DllCall("LoadLibrary", "str", "gdiplus")
@@ -2407,6 +2455,15 @@ VarSetCapacity(RECT, 16, 0)
 
 Loop
 {
+  if (高效模式=0)
+  {
+    if (HSJM=0) or (running=0) ;自动暂停
+    {
+      WinHide, ahk_id %MagnifierWindowID%
+      HSJ:=0
+      break
+    }
+  }
   CoordMode Mouse, Screen ;以屏幕为基准
 	MouseGetPos, MXS, MYS
 	NumPut(MXS - rWidth/2, RECT, 0, "Int")
