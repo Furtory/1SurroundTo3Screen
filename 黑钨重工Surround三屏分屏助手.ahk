@@ -1350,13 +1350,14 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         WinGet, 窗口状态, MinMax, ahk_id %MasterWinIDL%
         if (窗口状态=-1)
         {
-          WinRestore, ahk_id %MasterWinIDL% ;还原主窗口
+          WinRestore, ahk_id %MasterWinIDL% ;还原左边主窗口
         }
         else
         {
           WinActivate, ahk_id %MasterWinIDL%
         }
-        ToolTip 还原左边屏幕%MasterWinIDL%主窗口
+        WinGetTitle, ActiveWindowID, ahk_id %MasterWinIDL% ;根据句柄获取窗口的名字
+        ToolTip 还原左边屏幕%ActiveWindowID%主窗口
       }
       else
       {
@@ -1371,13 +1372,14 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         WinGet, 窗口状态, MinMax, ahk_id %MiniWinIDL%
         if (窗口状态=-1)
         {
-          WinRestore, ahk_id %MiniWinIDL% ;还原主窗口
+          WinRestore, ahk_id %MiniWinIDL% ;还原最近被最小化左边窗口
         }
         else
         {
           WinActivate, ahk_id %MiniWinIDL%
         }
-        ToolTip 还原最近最小化%MiniWinIDL%窗口
+        WinGetTitle, ActiveWindowID, ahk_id %MiniWinIDL% ;根据句柄获取窗口的名字
+        ToolTip 还原最近最小化%ActiveWindowID%窗口
       }
       else
       {
@@ -1395,13 +1397,14 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         WinGet, 窗口状态, MinMax, ahk_id %MasterWinIDM%
         if (窗口状态=-1)
         {
-          WinRestore, ahk_id %MasterWinIDM% ;还原主窗口
+          WinRestore, ahk_id %MasterWinIDM% ;还原中间主窗口
         }
         else
         {
           WinActivate, ahk_id %MasterWinIDM%
         }
-        ToolTip 还原中间屏幕%MasterWinIDM%主窗口
+        WinGetTitle, ActiveWindowID, ahk_id %MasterWinIDM% ;根据句柄获取窗口的名字
+        ToolTip 还原中间屏幕%ActiveWindowID%主窗口
       }
       else
       {
@@ -1416,13 +1419,14 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         WinGet, 窗口状态, MinMax, ahk_id %MiniWinIDM%
         if (窗口状态=-1)
         {
-          WinRestore, ahk_id %MiniWinIDM% ;还原主窗口
+          WinRestore, ahk_id %MiniWinIDM% ;还原最近被最小化中间窗口
         }
         else
         {
           WinActivate, ahk_id %MiniWinIDM%
         }
-        ToolTip 还原最近最小化%MiniWinIDM%窗口
+        WinGetTitle, ActiveWindowID, ahk_id %MiniWinIDM% ;根据句柄获取窗口的名字
+        ToolTip 还原最近最小化%ActiveWindowID%窗口
       }
       else
       {
@@ -1440,13 +1444,14 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         WinGet, 窗口状态, MinMax, ahk_id %MasterWinIDR%
         if (窗口状态=-1)
         {
-          WinRestore, ahk_id %MasterWinIDR% ;还原主窗口
+          WinRestore, ahk_id %MasterWinIDR% ;还原右边主窗口
         }
         else
         {
           WinActivate, ahk_id %MasterWinIDR%
         }
-        ToolTip 还原右边屏幕%MasterWinIDR%主窗口
+        WinGetTitle, ActiveWindowID, ahk_id %MasterWinIDR% ;根据句柄获取窗口的名字
+        ToolTip 还原右边屏幕%ActiveWindowID%主窗口
       }
       else
       {
@@ -1461,13 +1466,14 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         WinGet, 窗口状态, MinMax, ahk_id %MiniWinIDR%
         if (窗口状态=-1)
         {
-          WinRestore, ahk_id %MiniWinIDR% ;还原主窗口
+          WinRestore, ahk_id %MiniWinIDR% ;还原最近被最小化右边窗口
         }
         else
         {
           WinActivate, ahk_id %MiniWinIDR%
         }
-        ToolTip 还原最近最小化%MiniWinIDR%窗口
+        WinGetTitle, ActiveWindowID, ahk_id %MiniWinIDR% ;根据句柄获取窗口的名字
+        ToolTip 还原最近最小化%ActiveWindowID%窗口
       }
       else
       {
@@ -1527,11 +1533,11 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
-MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在QQ群`n1群763625227 2群643763519
+MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 暂停运行: ;模式切换
@@ -2156,12 +2162,12 @@ if (MISX<FJL)
   }
   
   快捷呼出计时:=""
-  if (停留呼出左边快捷窗口=1)
+  if (停留呼出左边快捷窗口=1) and (已激活左边快捷呼出窗口=0)
   {
     WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
     停留呼出左边快捷窗口:=0
   }
-  if (停留呼出右边快捷窗口=1)
+  if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
   {
     WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
     停留呼出右边快捷窗口:=0
@@ -2191,12 +2197,12 @@ else if (MISX>FJR)
   }
   
   快捷呼出计时:=""
-  if (停留呼出左边快捷窗口=1)
+  if (停留呼出左边快捷窗口=1) and (已激活左边快捷呼出窗口=0)
   {
     WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
     停留呼出左边快捷窗口:=0
   }
-  if (停留呼出右边快捷窗口=1)
+  if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
   {
     WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
     停留呼出右边快捷窗口:=0
@@ -2214,18 +2220,18 @@ else if (MISX>FJL+BKXZ) and (MISX<FJR-BKXZ)
   }
   
   快捷呼出计时:=""
-  if (停留呼出左边快捷窗口=1)
+  if (停留呼出左边快捷窗口=1) and (已激活左边快捷呼出窗口=0)
   {
     WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
     停留呼出左边快捷窗口:=0
   }
-  if (停留呼出右边快捷窗口=1)
+  if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
   {
     WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
     停留呼出右边快捷窗口:=0
   }
 }
-else if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
+else if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="") and (已激活左边快捷呼出窗口=0)
 {
   if (快捷呼出计时="")
   {
@@ -2233,7 +2239,7 @@ else if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
   }
   
   停留时间:=A_TickCount-快捷呼出计时
-  if (停留时间>800)
+  if (停留时间>800) and (已激活左边快捷呼出窗口=0) and (停留呼出左边快捷窗口!=1) and !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") and !GetKeyState("RButton", "P")
   {
     if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
     {
@@ -2247,7 +2253,7 @@ else if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
     }
   }
 }
-else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
+else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="") and (已激活右边快捷呼出窗口=0)
 {
   if (快捷呼出计时="")
   {
@@ -2255,7 +2261,7 @@ else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
   }
   
   停留时间:=A_TickCount-快捷呼出计时
-  if (停留时间>800)
+  if (停留时间>800) and (已激活右边快捷呼出窗口=0) and (停留呼出右边快捷窗口!=1) and !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") and !GetKeyState("RButton", "P")
   {
     if (WinExist("ahk_id" 右边快捷呼出窗口)=0)
     {
