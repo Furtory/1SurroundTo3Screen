@@ -295,8 +295,8 @@ SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
 SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
 RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
 
-FJL:=Floor(A_ScreenWidth/3-BKXZ/2) ;左分界线
-FJR:=Ceil(A_ScreenWidth/3*2+BKXZ/2) ;右分界线
+FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
+FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
 YDY:=0 ;屏幕原点Y
 YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
 YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
@@ -305,6 +305,7 @@ YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
 WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
 ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
 ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
+; MsgBox %SW% %SH%
 
 HSJ:=0 ;后视镜打开状态
 HSJM:=0 ;后视镜移动状态
@@ -2005,7 +2006,7 @@ Loop
           Sleep 30
         }
         ToolTip
-        SetTimer, 重启高效模式, -100
+        SetTimer, 重启高效模式, -150
         Critical Off
         Return
       }
@@ -2013,7 +2014,7 @@ Loop
       {
         ; ToolTip %媒体快捷键% %媒体快捷键按下时长%
         Send {Media_Play_Pause}
-        SetTimer, 重启高效模式, -100
+        SetTimer, 重启高效模式, -150
         Critical Off
         Return
       }
@@ -2041,7 +2042,7 @@ Loop
             Sleep 30
           }
           ToolTip
-          SetTimer, 重启高效模式, -100
+          SetTimer, 重启高效模式, -150
           Critical Off
           Return
         }
@@ -2085,7 +2086,7 @@ Loop
             }
             ToolTip
           }
-          SetTimer, 重启高效模式, -100
+          SetTimer, 重启高效模式, -150
           Critical Off
           Return
         }
@@ -2146,7 +2147,7 @@ Loop
   }
   Sleep 10
 }
-SetTimer, 重启高效模式, -100
+SetTimer, 重启高效模式, -150
 Critical Off
 return
 
@@ -2174,6 +2175,7 @@ else if (Alt自动暂停=1)
   Return
 }
 
+; ToolTip 防误触时间%防误触时间%ms
 if (MISY<3) ;如果鼠标贴着屏幕顶部
 {
   Critical, On
@@ -2197,22 +2199,38 @@ if (MISY<3) ;如果鼠标贴着屏幕顶部
 }
 else if (MISY>=A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
 {
-  WinShow, ahk_class Shell_TrayWnd ;显示任务栏
-  TaskBar:=1
-  任务栏计时器:=0
+  if (KeyDown_屏幕底部="")
+  {
+    DllCall("QueryPerformanceFrequency", "Int64*", freq)
+    DllCall("QueryPerformanceCounter", "Int64*", KeyDown_屏幕底部)
+  }
+  else
+  {
+    DllCall("QueryPerformanceCounter", "Int64*", KeyUp_屏幕底部)
+    防误触时间:=Round((KeyUp_屏幕底部-KeyDown_屏幕底部)/freq*1000, 2)
+    if (防误触时间>150)
+    {
+      WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+      TaskBar:=1
+      任务栏计时器:=0
+    }
+  }
 }
 else if (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
 {
   任务栏计时器:=0
+  KeyDown_屏幕底部:=""
 }
 else if (TaskBar=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
 {
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
   任务栏计时器:=1
+  KeyDown_屏幕底部:=""
 }
 else if (TaskBar=1) and (MISY<ScreenBottom) and (MISY>ScreenBottomMax) ;如果鼠标处于预览窗口范围 且任务栏处于激活状态 等待3秒才隐藏任务栏
 {
+  KeyDown_屏幕底部:=""
   DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
   记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
   ; ToolTip 记录时间%记录时间%ms %WinName% %MISY% %MISX%
@@ -2228,10 +2246,12 @@ else if (TaskBar=1) and (MISY<ScreenBottomMax) ;如果鼠标离开预览窗口�
   WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
   DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   TaskBar:=0
+  KeyDown_屏幕底部:=""
 }
 else if (TaskBar=0) ;如果任务栏处于隐藏状态
 {
   TaskbarID:=""
+  KeyDown_屏幕底部:=""
   WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
   if (TaskbarID!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
   {
@@ -2243,14 +2263,14 @@ else if (TaskBar=0) ;如果任务栏处于隐藏状态
       {
         break
       }
-      else if (A_Index>=100)
+      else if (A_Index>=20)
       {
         WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
         DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
         TaskBar:=0
         break
       }
-      Sleep 30
+      Sleep 50
     }
   }
 }
