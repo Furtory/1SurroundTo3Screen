@@ -56,6 +56,7 @@ Menu, Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
 Menu, Tray, Add, 兼容模式, 兼容模式 ;添加新的右键菜单
 Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
 Menu, Tray, Add, 开机自启, 开机自启 ;添加新的右键菜单
+Menu, Tray, Add, Groupy, Groupy ;添加新的右键菜单
 Menu, Tray, Add
 Menu, Tray, Add, 高效模式, 高效模式 ;添加新的右键菜单
 Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
@@ -101,6 +102,18 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   else
   {
     Menu, Tray, Check, 兼容模式 ;右键菜单打勾
+  }
+  
+  IniRead, Groupy, Settings.ini, 设置, Groupy
+  if (Groupy=0)
+  {
+    GroupyH:=0
+    Menu, Tray, UnCheck, Groupy ;右键菜单不打勾
+  }
+  else
+  {
+    GroupyH:=Round(A_ScreenHeight*(35/1080))
+    Menu, Tray, Check, Groupy ;右键菜单打勾
   }
   
   IniRead, 高效模式, Settings.ini, 设置, 高效模式
@@ -160,6 +173,9 @@ else ;如果配置文件不存在则新建
   CompatibleMode:=0
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
   
+  Groupy:=0
+  IniWrite, %Groupy%, Settings.ini, 设置, Groupy ;写入设置到ini文件
+  
   高效模式:=1
   IniWrite, %高效模式%, Settings.ini, 设置, 高效模式 ;写入设置到ini文件
   Menu, Tray, Check, 高效模式 ;右键菜单打勾
@@ -214,29 +230,7 @@ else ;如果配置文件不存在则新建
 
 ; MsgBox %A_ScreenWidth% %A_ScreenHeight%
 
-SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
-SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
-RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
-
-FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
-FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
-YDY:=0 ;屏幕原点Y
-YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
-YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
-YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
-
-WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
-ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
-ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
-; MsgBox %SW% %SH%
-
-HSJ:=0 ;后视镜打开状态
-HSJM:=0 ;后视镜移动状态
-rWidth:=Round(SW*(640/1920)) ;后视镜宽度
-rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
-HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
-HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
-HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
+更新数据()
 HWNDarr:=[WinExist("ahk_class AHKEditor"), hGui]  ; 不需要显示后视镜窗口的黑名单 填WinTitle
 黑名单:=0
 媒体快捷键:=1
@@ -252,11 +246,41 @@ Ry := Round(A_ScreenHeight*(100/1080))
 Zx := Rx/zoom
 Zy := Ry/zoom
 
-TaskBar:=1 ;任务栏状态 1开启 0关闭
-
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
+
+任务栏计时器:=0
+KeyDown_屏幕底部:=""
+
 return
+
+更新数据(){
+  Global
+  
+  SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
+  SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
+  RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
+  
+  FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
+  FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
+  YDY:=0 ;屏幕原点Y
+  YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
+  YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
+  YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
+  
+  WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
+  ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(40/1080)) ;屏幕底部识别分界线
+  ; ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏缩略图识别分界线
+  ; MsgBox %SW% %SH%
+  
+  HSJ:=0 ;后视镜打开状态
+  HSJM:=0 ;后视镜移动状态
+  rWidth:=Round(SW*(640/1920)) ;后视镜宽度
+  rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
+  HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
+  HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
+  HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
+}
 
 屏幕设置:
 If (WinExist("屏幕设置")!=0)
@@ -291,29 +315,7 @@ Gui, 屏幕设置:Destroy
 IniWrite, %BKXZ%, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
 IniWrite, %KDXZ%, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
 IniWrite, %GDXZ%, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
-SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
-SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
-RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
-
-FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
-FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
-YDY:=0 ;屏幕原点Y
-YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
-YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
-YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
-
-WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
-ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(50/1080)) ;屏幕底部识别分界线
-ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏识别分界线
-; MsgBox %SW% %SH%
-
-HSJ:=0 ;后视镜打开状态
-HSJM:=0 ;后视镜移动状态
-rWidth:=Round(SW*(640/1920)) ;后视镜宽度
-rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
-HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
-HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
-HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
+更新数据()
 return
 
 Button取消2:
@@ -326,7 +328,7 @@ return
 
 黑名单:
 黑名单:=0
-if (WinName="WorkerW") or (WinName="_cls_desk_") or (WinName="Progman") or (WinName="ActualTools_MultiMonitorTaskbar") or (WinName="SciTEWindow") ;黑名单列表 双引号内填类名 ahk_class
+if (WinClassName="WorkerW") or (WinClassName="_cls_desk_") or (WinClassName="Progman") or (WinClassName="ActualTools_MultiMonitorTaskbar") ;or (WinClassName="SciTEWindow") ;黑名单列表 双引号内填类名 ahk_class
 {
   Critical, Off
   黑名单:=1 ;如果在黑名单列表的窗口内操作则不执行
@@ -368,7 +370,7 @@ else
 {
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, WX, WY, WinID ;获取鼠标在窗口中的位置
-  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
   gosub 黑名单
   if (黑名单=1)
   {
@@ -382,21 +384,42 @@ else
   {
     ToolTip 最大化%WinID%窗口
     WinRestore, ahk_id %WinID%
-    WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    if (Groupy=1)
+    {
+      WinMove, ahk_id %WinID%, ,YDL ,YDY+GroupyH ,SW ,SH-GroupyH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
+    else
+    {
+      WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
   else if (WinInScreenX>FJL) and (WinInScreenX<FJR) and (WY<WinTop) ;点击的窗口在中间屏幕 并且 点击位置在窗口顶部
   {
     ToolTip 最大化%WinID%窗口
     WinRestore, ahk_id %WinID%
-    WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    if (Groupy=1)
+    {
+      WinMove, ahk_id %WinID%, ,YDM ,YDY+GroupyH ,SW ,SH-GroupyH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
+    else
+    {
+      WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
   else if (WinInScreenX>FJR) and (WY<WinTop) ;点击的窗口在右边屏幕 并且 点击位置在窗口顶部
   {
     ToolTip 最大化%WinID%窗口
     WinRestore, ahk_id %WinID%
-    WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    if (Groupy=1)
+    {
+      WinMove, ahk_id %WinID%, ,YDR ,YDY+GroupyH ,SW ,SH-GroupyH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
+    else
+    {
+      WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
     SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
   }
 }
@@ -439,7 +462,7 @@ else
 {
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
   gosub 黑名单
   if (黑名单=1)
   {
@@ -490,7 +513,7 @@ return
 Critical, On
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
-WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
 gosub 黑名单
 if (黑名单=1)
 {
@@ -540,7 +563,7 @@ return
 Critical, On
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
-WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
 ; ToolTip %窗口样式%
@@ -578,7 +601,7 @@ else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状
       Send {LButton Up} ;抬起左键后再调整透明度
     }
     
-    WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+    WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
     LastWinTop:=WinID
     IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
     Loop
@@ -705,7 +728,7 @@ else
   激活:=0
 }
 
-WinGetTitle, WinName, ahk_id %WinID% ;获取窗口类名
+WinGetTitle, WinClassName, ahk_id %WinID% ;获取窗口类名
 WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
@@ -717,7 +740,7 @@ if (WinExist("ahk_id" LastWinTop)=0) ;如果被总是顶置的窗口不存在 �
 }
 else
 {
-  if (窗口样式=1) and (WinName!="QQ") and (WinName!="任务管理器") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置
+  if (窗口样式=1) and (WinClassName!="QQ") and (WinClassName!="任务管理器") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置
   { 
     if (OldLastWinTop!="") and (WinID!=OldLastWinTop) ;上次被总是顶置的窗口 点击的窗口不是设置了鼠标穿透的
     {
@@ -743,7 +766,7 @@ else
 }
 
 WinGetPos, WinXHistory, WinYHistory, WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
-if (WinWY<WinTop) and (WinW>=SW) and (WinH>=SH) ;鼠标点击在最大化的窗口顶部
+if (WinWY<WinTop+GroupyH) and (WinW>=SW) and (WinH>=SH-GroupyH) ;鼠标点击在最大化的窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -1003,7 +1026,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
 
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos, MXOld, MYOld, WinID ;获取鼠标在屏幕中的位置
-  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
   
   if (MXOld<FJL)
   {
@@ -1318,7 +1341,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-  WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
   DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
   按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
   if (按下时间>500) ;长按时间大于500ms将当前窗口填满所有屏幕
@@ -1520,12 +1543,12 @@ return
 ~^c:: ;Ctrl+C
 Critical, On
 MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-WinGetClass, WinName, ahk_id %WinID% ;获取窗口类名
+WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
 if (WY<WinTop) ;点击位置在窗口顶部
 {
-  BlackList:=" or (WinName=双引号窗口类名双引号)" ;黑名单格式
+  BlackList:=" or (WinClassName=双引号窗口类名双引号)" ;黑名单格式
   StringReplace, BlackList, BlackList, 双引号,`" ,A ;“ 双引号 ”替换为“ " ”
-  StringReplace, BlackList, BlackList, 窗口类名,%WinName% ,A ;填入刚刚获取的窗口类名
+  StringReplace, BlackList, BlackList, 窗口类名,%WinClassName% ,A ;填入刚刚获取的窗口类名
   Clipboard:=BlackList ;黑名单复制到剪贴板
   loop 20
   {
@@ -1615,7 +1638,6 @@ else
   {
     WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
     DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-    TaskBar:=0
   }
   else
   {
@@ -1680,6 +1702,25 @@ else
   CompatibleMode:=1
   IniWrite, %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
   Menu, Tray, Check, 兼容模式 ;右键菜单打勾
+}
+Critical, Off
+return
+
+Groupy: ;模式切换
+Critical, On
+if (Groupy=1)
+{
+  Groupy:=0
+  GroupyH:=0
+  IniWrite, %Groupy%, Settings.ini, 设置, Groupy ;写入设置到ini文件
+  Menu, Tray, UnCheck, Groupy ;右键菜单不打勾
+}
+else
+{
+  Groupy:=1
+  GroupyH:=Round(A_ScreenHeight*(35/1080))
+  IniWrite, %Groupy%, Settings.ini, 设置, Groupy ;写入设置到ini文件
+  Menu, Tray, Check, Groupy ;右键菜单打勾
 }
 Critical, Off
 return
@@ -2153,10 +2194,13 @@ return
 
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
-WinGetClass, WinName, A ;ahk_id 获取窗口类名
-; ToolTip %WinName%
-if (WinName!="") and (WinName=BlackListWindow) and (running=1) ;自动暂停黑名单
+MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
+WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
+WinGet, WinExeName, ProcessName , ahk_id %AWinID%
+任务栏激活:=WinActive("ahk_class Shell_TrayWnd")!=0
+任务栏存在:=WinExist("ahk_class Shell_TrayWnd")!=0
+; ToolTip Exe %WinExeName%   Class %WinClassName%`n任务栏激活 %任务栏激活%   任务栏存在 %任务栏存在%
+if (WinClassName!="") and (WinClassName=BlackListWindow) and (running=1) ;自动暂停黑名单
 {
   Alt自动暂停:=1
   gosub 暂停运行
@@ -2164,7 +2208,7 @@ if (WinName!="") and (WinName=BlackListWindow) and (running=1) ;自动暂停黑�
   ToolTip
   Return
 }
-else if (WinName!="") and (WinName!=BlackListWindow) and (Alt自动暂停=1) and (running=0) ;恢复运行
+else if (WinClassName!="") and (WinClassName!=BlackListWindow) and (Alt自动暂停=1) and (running=0) ;恢复运行
 {
   gosub 暂停运行
   Alt自动暂停:=0
@@ -2197,9 +2241,9 @@ if (MISY<3) ;如果鼠标贴着屏幕顶部
   }
   Critical, Off
 }
-else if (MISY>=A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
+else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) ;如果鼠标贴着屏幕底部
 {
-  if (KeyDown_屏幕底部="")
+  if (KeyDown_屏幕底部="") ;开始计时
   {
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", KeyDown_屏幕底部)
@@ -2211,66 +2255,39 @@ else if (MISY>=A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
     if (防误触时间>150)
     {
       WinShow, ahk_class Shell_TrayWnd ;显示任务栏
-      TaskBar:=1
       任务栏计时器:=0
     }
   }
 }
-else if (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
+else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
 {
   任务栏计时器:=0
   KeyDown_屏幕底部:=""
 }
-else if (TaskBar=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
 {
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
   任务栏计时器:=1
   KeyDown_屏幕底部:=""
 }
-else if (TaskBar=1) and (MISY<ScreenBottom) and (MISY>ScreenBottomMax) ;如果鼠标处于预览窗口范围 且任务栏处于激活状态 等待3秒才隐藏任务栏
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
-  KeyDown_屏幕底部:=""
-  DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
-  记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
-  ; ToolTip 记录时间%记录时间%ms %WinName% %MISY% %MISX%
-  if (记录时间>800)
+  if (WinExeName="WinExeName") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
   {
-    WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-    TaskBar:=0
+    任务栏计时器:=0
+    KeyDown_屏幕底部:=""
   }
-}
-else if (TaskBar=1) and (MISY<ScreenBottomMax) ;如果鼠标离开预览窗口范围 且任务栏处于激活状态 隐藏任务栏
-{
-  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-  TaskBar:=0
-  KeyDown_屏幕底部:=""
-}
-else if (TaskBar=0) ;如果任务栏处于隐藏状态
-{
-  TaskbarID:=""
-  KeyDown_屏幕底部:=""
-  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  if (TaskbarID!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
+  else
   {
-    Loop
+    KeyDown_屏幕底部:=""
+    DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
+    记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
+    ; ToolTip 记录时间%记录时间%ms %WinClassName% %MISY% %MISX%
+    if (记录时间>800)
     {
-      CoordMode Mouse, Screen ;以屏幕为基准
-      MouseGetPos, , MISY ;获取鼠标在屏幕中的位置
-      if (MISY>A_ScreenHeight-3)
-      {
-        break
-      }
-      else if (A_Index>=20)
-      {
-        WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-        DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-        TaskBar:=0
-        break
-      }
-      Sleep 50
+      WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+      DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
     }
   }
 }
@@ -2414,65 +2431,95 @@ else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="") an
 }
 return
 
+; ~$LWin::
+; KD:=""
+; Loop
+; {
+  ; ih := InputHook(Options)
+  ; ih.KeyOpt("{All}", "E")  ; 结束
+  ; ih.Start()
+  ; ErrorLevel := ih.Wait()  ; 将 EndReason 存储在 ErrorLevel 中
+  ; KD:=ih.EndKey
+  ; ToolTip KD%KD%
+  ; Sleep 10
+  ; if !GetKeyState("LWin", "P")
+    ; break
+; }
+; MsgBox KD%KD%
+; if (KD!="LWin")
+; {
+  ; MsgBox 1
+  ; 任务栏计时器:=1
+  ; DllCall("QueryPerformanceFrequency", "Int64*", freq)
+  ; DllCall("QueryPerformanceCounter", "Int64*", KeyDown_屏幕底部)
+  ; WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+  ; Loop
+  ; {
+    ; Sleep 30
+    ; If (WinActive("ahk_class Shell_TrayWnd")!=0)
+    ; {
+      ; break
+    ; }
+    ; else
+    ; {
+      ; WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+    ; }
+  ; }
+; }
+; Return
+
 自动隐藏任务栏:
 CoordMode Mouse, Screen ;以屏幕为基准
-MouseGetPos, MISX, MISY ;获取鼠标在屏幕中的位置
-if (MISY>=A_ScreenHeight-3) ;如果鼠标贴着屏幕底部
+MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
+WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
+WinGet, WinExeName, ProcessName , ahk_id %AWinID%
+if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) ;如果鼠标贴着屏幕底部
 {
-  WinShow, ahk_class Shell_TrayWnd ;显示任务栏
-  TaskBar:=1
-  任务栏计时器:=0
+  if (KeyDown_屏幕底部="") ;开始计时
+  {
+    DllCall("QueryPerformanceFrequency", "Int64*", freq)
+    DllCall("QueryPerformanceCounter", "Int64*", KeyDown_屏幕底部)
+  }
+  else
+  {
+    DllCall("QueryPerformanceCounter", "Int64*", KeyUp_屏幕底部)
+    防误触时间:=Round((KeyUp_屏幕底部-KeyDown_屏幕底部)/freq*1000, 2)
+    if (防误触时间>150)
+    {
+      WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+      任务栏计时器:=0
+    }
+  }
 }
-else if (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
+else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) ;如果鼠标回到任务栏重新开始计时
 {
   任务栏计时器:=0
+  KeyDown_屏幕底部:=""
 }
-else if (TaskBar=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
 {
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
   任务栏计时器:=1
+  KeyDown_屏幕底部:=""
 }
-else if (TaskBar=1) and (MISY<ScreenBottom) and (MISY>ScreenBottomMax) ;如果鼠标处于预览窗口范围 且任务栏处于激活状态 等待3秒才隐藏任务栏
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
-  DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
-  记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
-  ; ToolTip 记录时间%记录时间%ms %WinName% %MISY% %MISX%
-  if (记录时间>800)
+  if (WinExeName="WinExeName") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
   {
-    WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-    TaskBar:=0
+    任务栏计时器:=0
+    KeyDown_屏幕底部:=""
   }
-}
-else if (TaskBar=1) and (MISY<ScreenBottomMax) ;如果鼠标离开预览窗口范围 且任务栏处于激活状态 隐藏任务栏
-{
-  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-  TaskBar:=0
-}
-else if (TaskBar=0) ;如果任务栏处于隐藏状态
-{
-  TaskbarID:=""
-  WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-  if (TaskbarID!="") ;弹出的窗口唤醒任务栏后延迟3秒后再隐藏任务栏
+  else
   {
-    Loop
+    KeyDown_屏幕底部:=""
+    DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
+    记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
+    ; ToolTip 记录时间%记录时间%ms %WinClassName% %MISY% %MISX%
+    if (记录时间>800)
     {
-      CoordMode Mouse, Screen ;以屏幕为基准
-      MouseGetPos, , MISY ;获取鼠标在屏幕中的位置
-      if (MISY>A_ScreenHeight-3)
-      {
-        break
-      }
-      else if (A_Index>=100)
-      {
-        WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
-        DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-        TaskBar:=0
-        break
-      }
-      Sleep 30
+      WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
+      DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
     }
   }
 }
