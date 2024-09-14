@@ -1389,7 +1389,8 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
     Return
   }
   
-  if (屏幕实时位置=1) and (MiniWinIDL!=0) ;鼠标在左边屏幕 有左边最小化窗口的历史记录
+  ; ToolTip 屏幕实时位置%屏幕实时位置%`n`n左边屏幕主窗口:%MasterWinIDL%`n左边屏幕最近最小化:%MiniWinIDL%`n`n中间屏幕主窗口:%MasterWinIDM%`n中间屏幕最近最小化:%MiniWinIDM%`n`n右边屏幕主窗口:%MasterWinIDR%`n右边屏幕最近最小化:%MiniWinIDR%, , ,2
+  if (屏幕实时位置=1) ;鼠标在左边屏幕 有左边最小化窗口的历史记录
   {
     If (WinActive("ahk_id" MasterWinIDL)=0) and (MasterWinIDL!=0) ;主窗口
     {
@@ -1405,7 +1406,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
           WinActivate, ahk_id %MasterWinIDL%
         }
         WinGetTitle, ActiveWindowID, ahk_id %MasterWinIDL% ;根据句柄获取窗口的名字
-        ToolTip 还原左边屏幕%ActiveWindowID%主窗口
+        ToolTip L-还原左边屏幕%ActiveWindowID%主窗口
       }
       else
       {
@@ -1413,7 +1414,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
         IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
       }
     }
-    else If (WinActive("ahk_id" MiniWinIDL)=0) and (MasterWinIDL!=0) ;被最小化的窗口
+    else If (WinActive("ahk_id" MiniWinIDL)=0) and (MiniWinIDL!=0) ;被最小化的窗口
     {
       if (WinExist("ahk_id" MiniWinIDL)!=0)
       {
@@ -1427,7 +1428,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
           WinActivate, ahk_id %MiniWinIDL%
         }
         WinGetTitle, ActiveWindowID, ahk_id %MiniWinIDL% ;根据句柄获取窗口的名字
-        ToolTip 还原最近最小化%ActiveWindowID%窗口
+        ToolTip L-还原左边屏幕最近最小化%ActiveWindowID%窗口
       }
       else
       {
@@ -1436,7 +1437,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
       }
     }
   }
-  else if (屏幕实时位置=2) and (MiniWinIDM!=0) ;鼠标在中间屏幕 有中间最小化窗口的历史记录
+  else if (屏幕实时位置=2) ;鼠标在中间屏幕 有中间最小化窗口的历史记录
   {
     If (WinActive("ahk_id" MasterWinIDM)=0) and (MasterWinIDM!=0) ;主窗口
     {
@@ -1452,7 +1453,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
           WinActivate, ahk_id %MasterWinIDM%
         }
         WinGetTitle, ActiveWindowID, ahk_id %MasterWinIDM% ;根据句柄获取窗口的名字
-        ToolTip 还原中间屏幕%ActiveWindowID%主窗口
+        ToolTip M-还原中间屏幕%ActiveWindowID%主窗口
       }
       else
       {
@@ -1474,7 +1475,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
           WinActivate, ahk_id %MiniWinIDM%
         }
         WinGetTitle, ActiveWindowID, ahk_id %MiniWinIDM% ;根据句柄获取窗口的名字
-        ToolTip 还原最近最小化%ActiveWindowID%窗口
+        ToolTip M-还原中间屏幕最近最小化%ActiveWindowID%窗口
       }
       else
       {
@@ -1483,7 +1484,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
       }
     }
   }
-  else if (屏幕实时位置=3) and (MiniWinIDR!=0) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 
+  else if (屏幕实时位置=3) ;鼠标在右边屏幕 有右边最小化窗口的历史记录 
   {
     If (WinActive("ahk_id" MasterWinIDR)=0) and (MasterWinIDR!=0) ;主窗口
     {
@@ -1499,7 +1500,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
           WinActivate, ahk_id %MasterWinIDR%
         }
         WinGetTitle, ActiveWindowID, ahk_id %MasterWinIDR% ;根据句柄获取窗口的名字
-        ToolTip 还原右边屏幕%ActiveWindowID%主窗口
+        ToolTip R-还原右边屏幕%ActiveWindowID%主窗口
       }
       else
       {
@@ -1521,7 +1522,7 @@ if (MButton_presses=1) and (running=1) and (WY>WinTop) ;此键按下了一次 �
           WinActivate, ahk_id %MiniWinIDR%
         }
         WinGetTitle, ActiveWindowID, ahk_id %MiniWinIDR% ;根据句柄获取窗口的名字
-        ToolTip 还原最近最小化%ActiveWindowID%窗口
+        ToolTip R-还原右边屏幕最近最小化%ActiveWindowID%窗口
       }
       else
       {
@@ -2242,20 +2243,28 @@ if (MISY<3) ;如果鼠标贴着屏幕顶部
   }
   Critical, Off
 }
-else if (WinExist("ahk_class TaskListThumbnailWnd")!=0) or (WinExist("ahk_class DV2ControlHost")!=0) or (WinExist("ahk_class Windows.UI.Core.CoreWindow")!=0) or (WinExist("ahk_class Xaml_WindowedPopupClass")!=0) ;如果鼠标贴着屏幕底部
+else if (开始菜单=1) ;如果呼出了开始菜单
 {
-  if (开始菜单=1)
+  if (WinExist("ahk_class TaskListThumbnailWnd")!=0) or (WinExist("ahk_class DV2ControlHost")!=0) or (WinExist("ahk_class Windows.UI.Core.CoreWindow")!=0) or (WinExist("ahk_class Xaml_WindowedPopupClass")!=0) ;如果开始菜单显示了
   {
     WinShow, ahk_class Shell_TrayWnd ;显示任务栏
-    开始菜单:=2
+    开始菜单:=开始菜单+1
+  }
+  else ;一直没显示
+  {
+    开始菜单检测:=开始菜单检测+1
+    if (开始菜单检测>=5)
+    {
+      开始菜单:=0
+    }
   }
 }
-else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单=2) ;如果鼠标贴着屏幕底部
+else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单>1) ;如果开始菜单没有显示并且弹出过任务栏
 {
   DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   开始菜单:=0
 }
-else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单<=0) ;如果鼠标贴着屏幕底部
+else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单=0) ;如果鼠标贴着屏幕底部
 {
   if (KeyDown_屏幕底部="") ;开始计时
   {
@@ -2273,18 +2282,18 @@ else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单<=0) ;
     }
   }
 }
-else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) and (开始菜单<=0) ;如果鼠标回到任务栏重新开始计时
+else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) and (开始菜单=0) ;如果鼠标回到任务栏重新开始计时
 {
   任务栏计时器:=0
   KeyDown_屏幕底部:=""
 }
-else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) and (开始菜单<=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) and (开始菜单=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
 {
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
   任务栏计时器:=1
 }
-else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单<=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
   if (WinExeName="explorer.exe") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
   {
@@ -2445,6 +2454,7 @@ return
 
 ~$LWin::
 开始菜单:=1
+开始菜单检测:=0
 Return
 ; KeyList:="1234567890-=QWERTYUIOP[]\\ASDFGHJKL;'ZXCVBNM,./~"
 ; Loop, Parse, KeyList
