@@ -252,6 +252,7 @@ TopWindowTransparent:=0 ;顶置窗口穿透
 KeyDown_屏幕底部:=""
 
 更新数据()
+; MsgBox 屏幕高度%A_ScreenHeight%`n修正后屏幕高度%SH% 高度修正%GDXZ%`n`n屏幕宽度%A_ScreenWidth%`n修正后屏幕宽度%SW% 宽度修正%KDXZ%`n`n分界线 %FJL% %FJM% %FJR%`n原点 %YDL% %YDM% %YDR%
 SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 return
 
@@ -271,8 +272,6 @@ return
   
   WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
   ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(40/1080)) ;屏幕底部识别分界线
-  ; ScreenBottomMax:=A_ScreenHeight-Floor(A_ScreenHeight*(180/1080)) ;隐藏任务栏缩略图识别分界线
-  ; MsgBox %SW% %SH%
   
   HSJ:=0 ;后视镜打开状态
   HSJM:=0 ;后视镜移动状态
@@ -680,8 +679,7 @@ if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
     }
   }
 }
-
-if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
+else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
 {
   if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
   {
@@ -767,7 +765,7 @@ else
 }
 
 WinGetPos, WinXHistory, WinYHistory, WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
-if (WinWY<WinTop+GroupyH) and (WinW>=SW) and (WinH>=SH-GroupyH) ;鼠标点击在最大化的窗口顶部
+if (WinWY<WinTop+GroupyH) and (WinH>=SH-GroupyH) ;鼠标点击在最大化的窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -896,6 +894,14 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
       右边快捷呼出窗口Y:=WinYHistory
       WinMove ahk_id %右边快捷呼出窗口%, , 右边快捷呼出窗口X, 右边快捷呼出窗口Y
       WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+    }
+    else if (SX>=FJL-Round(RSW/5*2+KDXZ/2)) and (SX<=FJL) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶
+    {
+      WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+    }
+    else if (SX<=FJR+Round(RSW/5*2)) and (SX>=FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶
+    {
+      WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
     }
   }
 }
@@ -1583,7 +1589,7 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
@@ -2228,8 +2234,8 @@ WinGetPos, EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, Everythin
 if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
 {
   搜索栏:=1
-  if (EverythingToolbarX!=SW+KDXZ) or (EverythingToolbarY!=SH-Round(SH/3*2)-50) or (EverythingToolbarW!=Round(SW/3*2)) or (EverythingToolbarH!=Round(SH/3*2))
-    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , SW+KDXZ, SH-Round(SH/3*2)-50, Round(SW/3*2), Round(SH/3*2)
+  if (EverythingToolbarX!=RSW+BKXZ) or (EverythingToolbarY!=A_ScreenHeight-Round(A_ScreenHeight/3*2)-40-GDXZ/2) or (EverythingToolbarW!=Round(RSW/3*2)) or (EverythingToolbarH!=Round(A_ScreenHeight/3*2))
+    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , RSW+BKXZ, A_ScreenHeight-Round(A_ScreenHeight/3*2)-40-GDXZ/2, Round(RSW/3*2), Round(A_ScreenHeight/3*2)
 }
 else
 {
@@ -2519,7 +2525,7 @@ if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
 {
   搜索栏:=1
   if (EverythingToolbarX!=SW+KDXZ) or (EverythingToolbarY!=SH-Round(SH/3*2)-50) or (EverythingToolbarW!=Round(SW/3*2)) or (EverythingToolbarH!=Round(SH/3*2))
-    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , SW+KDXZ, SH-Round(SH/3*2)-50, Round(SW/3*2), Round(SH/3*2)
+    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , SW+KDXZ+5, SH-Round(SH/3*2)-50, Round(SW/3*2), Round(SH/3*2)
 }
 else
 {
