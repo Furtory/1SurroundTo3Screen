@@ -229,13 +229,11 @@ else ;如果配置文件不存在则新建
 
 ; MsgBox %A_ScreenWidth% %A_ScreenHeight%
 
-更新数据()
 HWNDarr:=[WinExist("ahk_class AHKEditor"), hGui]  ; 不需要显示后视镜窗口的黑名单 填WinTitle
 黑名单:=0
 媒体快捷键:=1
 暂停:=0
 KeyMediaDown:=""
-SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 
 FDJ:=0 ;放大镜打开状态
 FDJM:=0 ;放大镜移动状态
@@ -248,10 +246,13 @@ Zy := Ry/zoom
 TopOpacity:=255 ;顶置窗口透明度
 TopWindowTransparent:=0 ;顶置窗口穿透
 
+搜索栏:=0
 开始菜单:=0
 任务栏计时器:=0
 KeyDown_屏幕底部:=""
 
+更新数据()
+SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 return
 
 更新数据(){
@@ -2202,6 +2203,7 @@ WinGet, WinExeName, ProcessName , ahk_id %AWinID%
 任务栏存在:=WinExist("ahk_class Shell_TrayWnd")!=0
 ; ToolTip Exe %WinExeName%   Class %WinClassName%`n任务栏激活 %任务栏激活%   任务栏存在 %任务栏存在%
 ; ToolTip % WinExist("ahk_class TaskListThumbnailWnd") WinExist("ahk_class DV2ControlHost") WinExist("ahk_class Windows.UI.Core.CoreWindow") WinExist("ahk_class Xaml_WindowedPopupClass") 开始菜单
+; ToolTip % WinExist("ahk_exe EverythingToolbar.Launcher.exe") 搜索栏
 if (WinClassName!="") and (WinClassName=BlackListWindow) and (running=1) ;自动暂停黑名单
 {
   Alt自动暂停:=1
@@ -2219,6 +2221,21 @@ else if (WinClassName!="") and (WinClassName!=BlackListWindow) and (Alt自动暂
 else if (Alt自动暂停=1)
 {
   Return
+}
+
+;任务栏
+WinGetPos, EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
+if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
+{
+  搜索栏:=1
+  if (EverythingToolbarX!=SW+KDXZ) or (EverythingToolbarY!=SH-Round(SH/3*2)-50) or (EverythingToolbarW!=Round(SW/3*2)) or (EverythingToolbarH!=Round(SH/3*2))
+    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , SW+KDXZ, SH-Round(SH/3*2)-50, Round(SW/3*2), Round(SH/3*2)
+}
+else
+{
+  if (搜索栏=1)
+    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+  搜索栏:=0
 }
 
 ; ToolTip 防误触时间%防误触时间%ms
@@ -2264,7 +2281,7 @@ else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class 
   DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   开始菜单:=0
 }
-else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单=0) ;如果鼠标贴着屏幕底部
+else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单=0) and (搜索栏=0) ;如果鼠标贴着屏幕底部
 {
   if (KeyDown_屏幕底部="") ;开始计时
   {
@@ -2278,22 +2295,23 @@ else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单=0) ;�
     if (防误触时间>150)
     {
       WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+      WinSet, AlwaysOnTop, On, ahk_class Shell_TrayWnd
       任务栏计时器:=0
     }
   }
 }
-else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) and (开始菜单=0) ;如果鼠标回到任务栏重新开始计时
+else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) and (开始菜单=0) and (搜索栏=0) ;如果鼠标回到任务栏重新开始计时
 {
   任务栏计时器:=0
   KeyDown_屏幕底部:=""
 }
-else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) and (开始菜单=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) and (开始菜单=0) and (搜索栏=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
 {
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
   任务栏计时器:=1
 }
-else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
   if (WinExeName="explorer.exe") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
   {
@@ -2494,20 +2512,44 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
 WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
 WinGet, WinExeName, ProcessName , ahk_id %AWinID%
-if (WinExist("ahk_class TaskListThumbnailWnd")!=0) or (WinExist("ahk_class DV2ControlHost")!=0) or (WinExist("ahk_class Windows.UI.Core.CoreWindow")!=0) or (WinExist("ahk_class Xaml_WindowedPopupClass")!=0) ;如果鼠标贴着屏幕底部
+
+;任务栏
+WinGetPos, EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
+if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
 {
-  if (开始菜单=1)
+  搜索栏:=1
+  if (EverythingToolbarX!=SW+KDXZ) or (EverythingToolbarY!=SH-Round(SH/3*2)-50) or (EverythingToolbarW!=Round(SW/3*2)) or (EverythingToolbarH!=Round(SH/3*2))
+    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , SW+KDXZ, SH-Round(SH/3*2)-50, Round(SW/3*2), Round(SH/3*2)
+}
+else
+{
+  if (搜索栏=1)
+    DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+  搜索栏:=0
+}
+
+if (开始菜单=1) ;如果呼出了开始菜单
+{
+  if (WinExist("ahk_class TaskListThumbnailWnd")!=0) or (WinExist("ahk_class DV2ControlHost")!=0) or (WinExist("ahk_class Windows.UI.Core.CoreWindow")!=0) or (WinExist("ahk_class Xaml_WindowedPopupClass")!=0) ;如果开始菜单显示了
   {
     WinShow, ahk_class Shell_TrayWnd ;显示任务栏
-    开始菜单:=2
+    开始菜单:=开始菜单+1
+  }
+  else ;一直没显示
+  {
+    开始菜单检测:=开始菜单检测+1
+    if (开始菜单检测>=5)
+    {
+      开始菜单:=0
+    }
   }
 }
-else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单=2) ;如果鼠标贴着屏幕底部
+else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单>1) ;如果开始菜单没有显示并且弹出过任务栏
 {
   DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   开始菜单:=0
 }
-else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单<=0) ;如果鼠标贴着屏幕底部
+else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单=0) and (搜索栏=0) ;如果鼠标贴着屏幕底部
 {
   if (KeyDown_屏幕底部="") ;开始计时
   {
@@ -2521,22 +2563,23 @@ else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单<=0) ;
     if (防误触时间>150)
     {
       WinShow, ahk_class Shell_TrayWnd ;显示任务栏
+      WinSet, AlwaysOnTop, On, ahk_class Shell_TrayWnd
       任务栏计时器:=0
     }
   }
 }
-else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) and (开始菜单<=0) ;如果鼠标回到任务栏重新开始计时
+else if (任务栏存在=1) and (MISY<A_ScreenHeight-3) and (MISY>ScreenBottom) and (开始菜单=0) and (搜索栏=0) ;如果鼠标回到任务栏重新开始计时
 {
   任务栏计时器:=0
   KeyDown_屏幕底部:=""
 }
-else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) and (开始菜单<=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) and (开始菜单=0) and (搜索栏=0) ;如果鼠标离开任务栏 且任务栏处于激活状态 但是没有离开预览窗口范围 记录时间
 {
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
   任务栏计时器:=1
 }
-else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单<=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
+else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
   if (WinExeName="explorer.exe") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
   {
