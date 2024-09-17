@@ -251,8 +251,10 @@ TopWindowTransparent:=0 ;顶置窗口穿透
 任务栏计时器:=0
 KeyDown_屏幕底部:=""
 
+WheelUpRecord:=0
+WheelDownRecord:=0
+
 更新数据()
-; MsgBox 屏幕高度%A_ScreenHeight%`n修正后屏幕高度%SH% 高度修正%GDXZ%`n`n屏幕宽度%A_ScreenWidth%`n修正后屏幕宽度%SW% 宽度修正%KDXZ%`n`n分界线 %FJL% %FJM% %FJR%`n原点 %YDL% %YDM% %YDR%
 SetTimer, 屏幕监测, 100 ;监测鼠标位置打开后视镜
 return
 
@@ -280,6 +282,8 @@ return
   HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
   HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
   HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
+  
+  ; MsgBox 屏幕高度%A_ScreenHeight%`n修正后屏幕高度%SH% 高度修正%GDXZ%`n`n屏幕宽度%A_ScreenWidth%`n修正后屏幕宽度%SW% 宽度修正%KDXZ%`n`n分界线 %FJL% %FJM% %FJR%`n原点 %YDL% %YDM% %YDR%
 }
 
 屏幕设置:
@@ -335,12 +339,16 @@ if (WinClassName="WorkerW") or (WinClassName="_cls_desk_") or (WinClassName="Pro
 }
 return
 
-WheelUp:
-Hotkey, ~WheelUp, On
-return
-
 ~WheelUp:: ;触发按键 滚轮上
-Hotkey, ~WheelUp, Off
+if (A_TickCount-WheelUpRecord<=300)
+{
+  WheelUpRecord:=A_TickCount
+  Return
+}
+else
+{
+  WheelUpRecord:=A_TickCount
+}
 Critical, On
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MX, MY ;获取鼠标在屏幕中的位置
@@ -424,15 +432,18 @@ else
   }
 }
 Critical, Off
-SetTimer, WheelUp, -100
-return
-
-WheelDown:
-Hotkey, ~WheelDown, On
 return
 
 ~WheelDown:: ;触发按键 滚轮下
-Hotkey, ~WheelDown, Off
+if (A_TickCount-WheelDownRecord<=300)
+{
+  WheelDownRecord:=A_TickCount
+  Return
+}
+else
+{
+  WheelDownRecord:=A_TickCount
+}
 Critical, On
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MX, MY ;获取鼠标在屏幕中的位置
@@ -506,7 +517,6 @@ else
   }
 }
 Critical, Off
-SetTimer, WheelDown, -100
 return
 
 ~+LButton:: ;Shift+左键
@@ -2229,19 +2239,32 @@ else if (Alt自动暂停=1)
   Return
 }
 
-;任务栏
+;搜索栏
 WinGetPos, EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
+搜索栏X:=SW+KDXZ+3
+搜索栏Y:=SH-Round(SH/3*2)-50
+搜索栏W:=Round(SW/3*2)
+搜索栏H:=Round(SH/3*2)
+; ToolTip %EverythingToolbarX% %搜索栏X%`n%EverythingToolbarY% %搜索栏Y%`n%EverythingToolbarW% %搜索栏W%`n%EverythingToolbarH% %搜索栏H%
 if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
 {
   搜索栏:=1
-  if (EverythingToolbarX!=RSW+BKXZ) or (EverythingToolbarY!=A_ScreenHeight-Round(A_ScreenHeight/3*2)-40-GDXZ/2) or (EverythingToolbarW!=Round(RSW/3*2)) or (EverythingToolbarH!=Round(A_ScreenHeight/3*2))
-    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , RSW+BKXZ, A_ScreenHeight-Round(A_ScreenHeight/3*2)-40-GDXZ/2, Round(RSW/3*2), Round(A_ScreenHeight/3*2)
+  if (EverythingToolbarX!=搜索栏X) or (EverythingToolbarY!=搜索栏Y) or (EverythingToolbarW!=搜索栏W) or (EverythingToolbarH!=搜索栏H)
+  {
+    if (任务栏移动完成!=1)
+      WinMove, ahk_exe EverythingToolbar.Launcher.exe, , 搜索栏X, 搜索栏Y, 搜索栏W, 搜索栏H
+  }
+  if (EverythingToolbarX=搜索栏X) and (EverythingToolbarY=搜索栏Y) and (EverythingToolbarW=搜索栏W) and (EverythingToolbarH=搜索栏H)
+  {
+    任务栏移动完成:=1
+  }
 }
 else
 {
   if (搜索栏=1)
     DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   搜索栏:=0
+  任务栏移动完成:=0
 }
 
 ; ToolTip 防误触时间%防误触时间%ms
@@ -2519,19 +2542,32 @@ MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
 WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
 WinGet, WinExeName, ProcessName , ahk_id %AWinID%
 
-;任务栏
+;搜索栏
 WinGetPos, EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
+搜索栏X:=SW+KDXZ+3
+搜索栏Y:=SH-Round(SH/3*2)-50
+搜索栏W:=Round(SW/3*2)
+搜索栏H:=Round(SH/3*2)
+; ToolTip %EverythingToolbarX% %搜索栏X%`n%EverythingToolbarY% %搜索栏Y%`n%EverythingToolbarW% %搜索栏W%`n%EverythingToolbarH% %搜索栏H%
 if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
 {
   搜索栏:=1
-  if (EverythingToolbarX!=SW+KDXZ) or (EverythingToolbarY!=SH-Round(SH/3*2)-50) or (EverythingToolbarW!=Round(SW/3*2)) or (EverythingToolbarH!=Round(SH/3*2))
-    WinMove, ahk_exe EverythingToolbar.Launcher.exe, , SW+KDXZ+5, SH-Round(SH/3*2)-50, Round(SW/3*2), Round(SH/3*2)
+  if (EverythingToolbarX!=搜索栏X) or (EverythingToolbarY!=搜索栏Y) or (EverythingToolbarW!=搜索栏W) or (EverythingToolbarH!=搜索栏H)
+  {
+    if (任务栏移动完成!=1)
+      WinMove, ahk_exe EverythingToolbar.Launcher.exe, , 搜索栏X, 搜索栏Y, 搜索栏W, 搜索栏H
+  }
+  if (EverythingToolbarX=搜索栏X) and (EverythingToolbarY=搜索栏Y) and (EverythingToolbarW=搜索栏W) and (EverythingToolbarH=搜索栏H)
+  {
+    任务栏移动完成:=1
+  }
 }
 else
 {
   if (搜索栏=1)
     DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
   搜索栏:=0
+  任务栏移动完成:=0
 }
 
 if (开始菜单=1) ;如果呼出了开始菜单
