@@ -46,20 +46,21 @@ Global hPic
 MButton_presses:=0
 running:=1 ;1为运行 0为暂停
 Menu, Tray, NoStandard ;不显示默认的AHK右键菜单
-Menu, Tray, Add, 屏幕设置, 屏幕设置 ;添加新的右键菜单
 Menu, Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
 Menu, Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
 Menu, Tray, Add
 Menu, Tray, Add, 管理权限, 管理权限 ;添加新的右键菜单
+Menu, Tray, Add, 屏幕设置, 屏幕设置 ;添加新的右键菜单
 Menu, Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
 Menu, Tray, Add, 兼容模式, 兼容模式 ;添加新的右键菜单
 Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
 Menu, Tray, Add, 开机自启, 开机自启 ;添加新的右键菜单
-Menu, Tray, Add, Groupy, Groupy ;添加新的右键菜单
+Menu, Tray, Add, 初始化记录, 初始化记录 ;添加新的右键菜单
+Menu, Tray, Add, Groupy适配, Groupy适配 ;添加新的右键菜单
 Menu, Tray, Add
 Menu, Tray, Add, 高效模式, 高效模式 ;添加新的右键菜单
 Menu, Tray, Add, 暂停运行, 暂停运行 ;添加新的右键菜单
-Menu, Tray, Add, 重启软件, 重启脚本 ;添加新的右键菜单
+Menu, Tray, Add, 重启软件, 重启软件 ;添加新的右键菜单
 Menu, Tray, Add, 退出软件, 退出软件 ;添加新的右键菜单
 
 autostartLnk:=A_StartupCommon . "\SurroundHelper.lnk" ;开机启动文件的路径
@@ -107,12 +108,12 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   if (Groupy=0)
   {
     GroupyH:=0
-    Menu, Tray, UnCheck, Groupy ;右键菜单不打勾
+    Menu, Tray, UnCheck, Groupy适配 ;右键菜单不打勾
   }
   else
   {
     GroupyH:=Round(A_ScreenHeight*(35/1080))
-    Menu, Tray, Check, Groupy ;右键菜单打勾
+    Menu, Tray, Check, Groupy适配 ;右键菜单打勾
   }
   
   IniRead, 高效模式, Settings.ini, 设置, 高效模式
@@ -329,6 +330,21 @@ KDXZ:=OldKDXZ
 Gui, 屏幕设置:Destroy
 return
 
+初始化记录:
+MiniWinIDL:=0
+MiniWinIDM:=0
+MiniWinIDR:=0
+IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+
+MasterWinIDL:=0
+MasterWinIDM:=0
+MasterWinIDR:=0
+IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+Return
 
 黑名单:
 黑名单:=0
@@ -750,7 +766,7 @@ if (WinExist("ahk_id" LastWinTop)=0) ;如果被总是顶置的窗口不存在 �
 else
 {
   if (窗口样式=1) and (WinClassName!="QQ") and (WinClassName!="任务管理器") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置
-  { 
+  {
     if (OldLastWinTop!="") and (WinID!=OldLastWinTop) ;上次被总是顶置的窗口 点击的窗口不是设置了鼠标穿透的
     {
       ToolTip 已恢复上一个总是顶置的窗口为初始状态
@@ -775,48 +791,17 @@ else
 }
 
 WinGetPos, WinXHistory, WinYHistory, WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
-if (WinWY<WinTop+GroupyH) and (WinH>=SH-GroupyH) ;鼠标点击在最大化的窗口顶部
-{
-  WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
-  DllCall("QueryPerformanceFrequency", "Int64*", freq)
-  DllCall("QueryPerformanceCounter", "Int64*", LBDown)
-  OldWinSY:=WinSY
-  KeyWait LButton
-  CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
-  DllCall("QueryPerformanceCounter", "Int64*", LBUp)
-  按下时间:=(LBUp-LBDown)/freq*1000
-  MoveSpeed:=Abs(Round((WinSY-OldWinSY)/按下时间*1000)) ;移动速度=移动距离/时间
-  ; MsgBox 鼠标移动速度是%MoveSpeed%像素/秒
-  if (MoveSpeed>Round(A_ScreenHeight*(1500/1080))) ;如果鼠标移动速度超过1500像素/秒
-  {
-    WinClose, ahk_id %WinID% ;关闭窗口
-    WinGetTitle, WinTitleName, ahk_id %WinID%
-    Loop 20
-    {
-      ToolTip 窗口%WinTitleName%已关闭
-      Sleep 30
-    }
-    Critical Off  
-  }
-  else if (WinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) and (WinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) ;如果鼠标移动了窗口低于屏幕顶部范围
-  {
-    CoordMode Mouse, Screen ;以屏幕为基准 
-    MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
-    WinRestore, ahk_id %WinID%
-    WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
-  }
-}
-else if (WinWY<WinTop) ;鼠标点击在窗口顶部
+if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
 {
   WinHide, ahk_id %MagnifierWindowID% ;关闭放大镜
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop) ;第一次记录时间
   LoopTimes:=20 ;检测2秒
+  OldWinSY:=WinSY
   gosub AeroShake ;跳转检测程序
   DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
   MouseGetPos, , NewWinSY
-  下移距离:=NewWinSY-WinSY
+  下移距离:=NewWinSY-OldWinSY
   MoveDownSpeed:=Round(Abs(下移距离)/((LBUpOnTop-LBDownOnTop)/freq*1000)*1000) ;移动速度=移动距离/时间
   ; ToolTip, 下移距离%下移距离% MoveDownSpeed%MoveDownSpeed%, , ,2
   if (摇晃次数>3) and (总移动距离>=Round(A_ScreenHeight*(800/1080)))
@@ -912,6 +897,13 @@ else if (WinWY<WinTop) ;鼠标点击在窗口顶部
     else if (SX<=FJR+Round(RSW/5*2)) and (SX>=FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶
     {
       WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+    }
+    else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;如果鼠标移动了窗口低于屏幕顶部范围
+    {
+      CoordMode Mouse, Screen ;以屏幕为基准 
+      MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
+      WinRestore, ahk_id %WinID%
+      WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
     }
   }
 }
@@ -1724,21 +1716,21 @@ else
 Critical, Off
 return
 
-Groupy: ;模式切换
+Groupy适配: ;模式切换
 Critical, On
 if (Groupy=1)
 {
   Groupy:=0
   GroupyH:=0
   IniWrite, %Groupy%, Settings.ini, 设置, Groupy ;写入设置到ini文件
-  Menu, Tray, UnCheck, Groupy ;右键菜单不打勾
+  Menu, Tray, UnCheck, Groupy适配 ;右键菜单不打勾
 }
 else
 {
   Groupy:=1
   GroupyH:=Round(A_ScreenHeight*(35/1080))
   IniWrite, %Groupy%, Settings.ini, 设置, Groupy ;写入设置到ini文件
-  Menu, Tray, Check, Groupy ;右键菜单打勾
+  Menu, Tray, Check, Groupy适配 ;右键菜单打勾
 }
 Critical, Off
 return
@@ -1793,7 +1785,7 @@ else ;开启开机自启动
 Critical, Off
 return
 
-重启脚本:
+重启软件:
 Reload
 
 ~!LButton:: ;Alt+左键
