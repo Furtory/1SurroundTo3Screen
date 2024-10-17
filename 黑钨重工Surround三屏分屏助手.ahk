@@ -29,8 +29,8 @@ Process, Priority, , Realtime
 #MaxHotkeysPerInterval 2000
 #KeyHistory 2000
 SetBatchLines -1
-CoordMode Pixel Screen
-CoordMode ToolTip Screen
+CoordMode, Pixel, Screen
+CoordMode, ToolTip, Screen
 SetKeyDelay -1, 30
 SetWorkingDir %A_ScriptDir%
 OnExit, 退出软件 
@@ -733,9 +733,6 @@ else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
   }
 }
 
-CoordMode Mouse, Window ;以窗口为基准
-MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
-
 if (激活!=1)
 {
   if (WinID!=左边快捷呼出窗口)
@@ -753,6 +750,8 @@ else
   激活:=0
 }
 
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
 WinGetTitle, WinClassName, ahk_id %WinID% ;获取窗口类名
 WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
@@ -890,20 +889,51 @@ if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
       WinMove ahk_id %右边快捷呼出窗口%, , 右边快捷呼出窗口X, 右边快捷呼出窗口Y
       WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
     }
-    else if (SX>=FJL-Round(RSW/5*2+KDXZ/2)) and (SX<=FJL) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶
+    else if (SX<=FJL-Round(RSW/5*2+KDXZ/2)) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶 最大化
+    {
+      if (Groupy=1)
+      {
+        WinMove, ahk_id %WinID%, ,YDL ,YDY+GroupyH ,SW ,SH-GroupyH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      }
+      else
+      {
+        WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      }
+    }
+    else if (SX>=FJL) and (SX<=FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;右边屏幕贴左半边顶 最大化
+    {
+      if (Groupy=1)
+      {
+        WinMove, ahk_id %WinID%, ,YDM ,YDY+GroupyH ,SW ,SH-GroupyH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      }
+      else
+      {
+        WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      }
+    }
+    else if (SX>=FJR+Round(RSW/5*2)) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;右边屏幕贴左半边顶 最大化
+    {
+      if (Groupy=1)
+      {
+        WinMove, ahk_id %WinID%, ,YDR ,YDY+GroupyH ,SW ,SH-GroupyH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      }
+      else
+      {
+        WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      }
+    }
+    else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴右半边顶 竖条显示
     {
       WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
     }
-    else if (SX<=FJR+Round(RSW/5*2)) and (SX>=FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶
+    else if (SX<FJR+Round(RSW/5*2)) and (SX>FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;右边屏幕贴左半边顶 竖条显示
     {
       WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
     }
-    else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*3)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;如果鼠标移动了窗口低于屏幕顶部范围
+    else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinH>=A_ScreenHeight) ;如果鼠标移动了窗口低于屏幕顶部范围
     {
-      CoordMode Mouse, Screen ;以屏幕为基准 
-      MouseGetPos, WinSX, WinSY ;;获取鼠标在屏幕中的位置
       WinRestore, ahk_id %WinID%
-      WinMove, ahk_id %WinID%, ,WinSX-Round(SW/5*3/2) ,WinSY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*3) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+      WinMove, ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
     }
   }
 }
@@ -2533,6 +2563,8 @@ CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
 WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
 WinGet, WinExeName, ProcessName , ahk_id %AWinID%
+任务栏激活:=WinActive("ahk_class Shell_TrayWnd")!=0
+任务栏存在:=WinExist("ahk_class Shell_TrayWnd")!=0
 
 ;搜索栏
 WinGetPos, EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
