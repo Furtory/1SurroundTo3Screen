@@ -55,6 +55,7 @@ Menu, Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
 Menu, Tray, Add, 兼容模式, 兼容模式 ;添加新的右键菜单
 Menu, Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
 Menu, Tray, Add, 开机自启, 开机自启 ;添加新的右键菜单
+Menu, Tray, Add, 黑名单设置, 黑名单设置 ;添加新的右键菜单
 Menu, Tray, Add, 初始化记录, 初始化记录 ;添加新的右键菜单
 Menu, Tray, Add, Groupy适配, Groupy适配 ;添加新的右键菜单
 Menu, Tray, Add
@@ -149,7 +150,8 @@ IfExist, %A_ScriptDir%\Settings.ini ;如果配置文件存在则读取
   IniRead, LastWinTop, Settings.ini, 设置, 被总是顶置的窗口 ;从ini文件读取设置
   IniRead, OldLastWinTop, Settings.ini, 设置, 上次被总是顶置的窗口 ;从ini文件读取设置
   
-  IniRead, BlackListWindow, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
+  IniRead, BlackList, Settings.ini, 设置, 黑名单列表 ;从ini文件读取设置
+  IniRead, BlackListWindow_AutoStop, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
   
   IniRead, MediaWindow, Settings.ini, 设置, 呼出播放器 ;从ini文件读取设置
   
@@ -205,8 +207,11 @@ else ;如果配置文件不存在则新建
   OldLastWinTop:=""
   IniWrite, %OldLastWinTop%, Settings.ini, 设置, 上次被总是顶置的窗口 ;写入设置到ini文件
   
-  BlackListWindow:=""
-  IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+  BlackList:="Class===WorkerW|Class===_cls_desk_|Class===Progman|Class===ActualTools_MultiMonitorTaskbar|Class===Shell_TrayWnd"
+  IniWrite, %BlackList%, Settings.ini, 设置, 黑名单列表 ;写入设置到ini文件
+  
+  BlackListWindow_AutoStop:=""
+  IniWrite, %BlackListWindow_AutoStop%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
   
   MediaWindow:=""
   IniWrite, %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
@@ -346,9 +351,60 @@ IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设
 IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
 Return
 
+黑名单设置:
+InputBox, BlackList, 黑名单设置, 请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n`n举例: Title===窗口标题, , A_ScreenHeight, 180, , , Locale, ,%BlackList%
+if !ErrorLevel
+{
+  IniWrite, %BlackList%, Settings.ini, 设置, 黑名单列表 ;写入设置到ini文件
+}
+else
+{
+  IniRead, BlackList, Settings.ini, 设置, 黑名单列表 ;写入设置到ini文件
+}
+Return
+
 黑名单:
 黑名单:=0
-if (WinClassName="WorkerW") or (WinClassName="_cls_desk_") or (WinClassName="Progman") or (WinClassName="ActualTools_MultiMonitorTaskbar") ;or (WinClassName="SciTEWindow") ;黑名单列表 双引号内填类名 ahk_class
+MouseGetPos, , , 黑名单识别排除ID
+黑名单列表:=StrSplit(BlackList,"|")
+匹配次数:=黑名单列表.Length()
+Loop %匹配次数% ;Title Class Exe
+{
+  ; ToolTip % 黑名单列表[A_Index]
+  if (InStr(黑名单列表[A_Index], "Title")!=0)
+  {
+    排除项位置:=InStr(黑名单列表[A_Index], "===")+3
+    排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
+    WinGetTitle, 当前特征, ahk_id %黑名单识别排除ID%
+    ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
+    if (当前特征=排除项)
+      黑名单:=1
+  }
+  else if (InStr(黑名单列表[A_Index], "Class")!=0)
+  {
+    排除项位置:=InStr(黑名单列表[A_Index], "===")+3
+    排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
+    WinGetClass, 当前特征, ahk_id %黑名单识别排除ID%
+    ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
+    if (当前特征=排除项)
+      黑名单:=1
+  }
+  else if (InStr(黑名单列表[A_Index], "Exe")!=0)
+  {
+    排除项位置:=InStr(黑名单列表[A_Index], "===")+3
+    排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
+    WinGet, 当前特征, ProcessName, ahk_id %黑名单识别排除ID%
+    ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
+    if (当前特征=排除项)
+      黑名单:=1
+  }
+}
+
+if (黑名单=1)
+  Critical, Off
+Return
+
+if (WinClass="WorkerW") or (WinClass="_cls_desk_") or (WinClass="Progman") or (WinClass="ActualTools_MultiMonitorTaskbar") ;or (WinClass="SciTEWindow") ;黑名单列表 双引号内填类名 ahk_class
 {
   Critical, Off
   黑名单:=1 ;如果在黑名单列表的窗口内操作则不执行
@@ -392,14 +448,14 @@ if (MY>ScreenBottom) ;如果鼠标在屏幕底部
 }
 else
 {
-  CoordMode Mouse, Window ;以窗口为基准
-  MouseGetPos, WX, WY, WinID ;获取鼠标在窗口中的位置
-  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
   gosub 黑名单
   if (黑名单=1)
   {
     return
   }
+  CoordMode Mouse, Window ;以窗口为基准
+  MouseGetPos, WX, WY, WinID ;获取鼠标在窗口中的位置
+  WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
   WinGetPos, SX, SY, W, H, ahk_id %WinID% ;获取窗口以屏幕为基准的位置 窗口的宽和高
   WinInScreenX:=SX+W/2 ;窗口中间以屏幕为基准的位置
   WinRestore, ahk_id %WinID% ;如果窗口已经最大化则还原窗口
@@ -487,15 +543,15 @@ if (MY>ScreenBottom) ;如果鼠标在屏幕底部
 }
 else
 {
-  CoordMode Mouse, Window ;以窗口为基准
-  MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
   gosub 黑名单
   if (黑名单=1)
   {
     return
   }
-  else if (WY<WinTop) ;点击位置在窗口顶部
+  CoordMode Mouse, Window ;以窗口为基准
+  MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
+  WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
+  if (WY<WinTop) ;点击位置在窗口顶部
   {
     ToolTip 最小化%WinID%窗口
     WinMinimize, ahk_id %WinID% ;最小化窗口
@@ -535,61 +591,11 @@ else
 Critical, Off
 return
 
-~+LButton:: ;Shift+左键
-Critical, On
-CoordMode Mouse, Window ;以窗口为基准
-MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
-WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
-gosub 黑名单
-if (黑名单=1)
-{
-  return
-}
-else if (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
-{
-  if (屏幕实时位置=1)
-  {
-    MasterWinIDL:=WinID ;记录主窗口
-    IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
-    if (MasterWinIDL=MiniWinIDL)
-    {
-      MiniWinIDL:=0
-      IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
-    }
-    ToolTip 设定%MasterWinIDL%左边屏幕主窗口
-  }
-  else if (屏幕实时位置=2)
-  {
-    MasterWinIDM:=WinID ;记录主窗口
-    IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
-    if (MasterWinIDM=MiniWinIDM)
-    {
-      MiniWinIDM:=0
-      IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
-    }
-    ToolTip 设定%MasterWinIDM%中间屏幕主窗口
-  }
-  else if (屏幕实时位置=3)
-  {
-    MasterWinIDR:=WinID ;记录主窗口
-    IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
-    if (MasterWinIDR=MiniWinIDR)
-    {
-      MiniWinIDR:=0
-      IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
-    }
-    ToolTip 设定%MasterWinIDR%右边屏幕主窗口
-  }
-  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
-}
-Critical, Off
-return
-
 ~^LButton:: ;Ctrl+左键
 Critical, On
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
-WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
+WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
 ; ToolTip %窗口样式%
@@ -627,7 +633,7 @@ else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状
       Send {LButton Up} ;抬起左键后再调整透明度
     }
     
-    WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
+    WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
     LastWinTop:=WinID
     IniWrite, %LastWinTop%, Settings.ini, 设置, 被总是顶置的窗口 ;写入设置到ini文件
     Loop
@@ -671,6 +677,110 @@ else if (窗口样式=1) and (WindowY>WinTop) ;如果已经处于总是顶置状
   KeyWait LButton
 }
 Critical, Off
+return
+
+~+LButton:: ;Shift+左键
+Critical, On
+gosub 黑名单
+if (黑名单=1)
+{
+  return
+}
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WindowY, WinID ;;获取鼠标在窗口中的位置
+WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
+if (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
+{
+  if (屏幕实时位置=1)
+  {
+    MasterWinIDL:=WinID ;记录主窗口
+    IniWrite, %MasterWinIDL%, Settings.ini, 设置, 左边屏幕主窗口 ;写入设置到ini文件
+    if (MasterWinIDL=MiniWinIDL)
+    {
+      MiniWinIDL:=0
+      IniWrite, %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
+    ToolTip 设定%MasterWinIDL%左边屏幕主窗口
+  }
+  else if (屏幕实时位置=2)
+  {
+    MasterWinIDM:=WinID ;记录主窗口
+    IniWrite, %MasterWinIDM%, Settings.ini, 设置, 中间屏幕主窗口 ;写入设置到ini文件
+    if (MasterWinIDM=MiniWinIDM)
+    {
+      MiniWinIDM:=0
+      IniWrite, %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
+    ToolTip 设定%MasterWinIDM%中间屏幕主窗口
+  }
+  else if (屏幕实时位置=3)
+  {
+    MasterWinIDR:=WinID ;记录主窗口
+    IniWrite, %MasterWinIDR%, Settings.ini, 设置, 右边屏幕主窗口 ;写入设置到ini文件
+    if (MasterWinIDR=MiniWinIDR)
+    {
+      MiniWinIDR:=0
+      IniWrite, %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
+    }
+    ToolTip 设定%MasterWinIDR%右边屏幕主窗口
+  }
+  SetTimer, 关闭提示, -500 ;500毫秒后关闭提示
+}
+Critical, Off
+return
+
+~!LButton:: ;Alt+左键
+Critical, On
+gosub 黑名单
+if (黑名单=1)
+{
+  return
+}
+CoordMode Mouse, Window ;以窗口为基准
+MouseGetPos, , WindowY, WinID_Monitor ;;获取鼠标在窗口中的位置
+WinGet, 窗口样式, ExStyle, ahk_id %WinID_Monitor% ;获取窗口样式
+窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
+; ToolTip %窗口样式%
+if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
+{
+  WinGetClass, WinClass, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
+  ToolTip 窗口%WinClass%已加入黑名单
+  KeyWait LButton
+  ToolTip
+  BlackListWindow_AutoStop:=WinClass
+  IniWrite, %BlackListWindow_AutoStop%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+}
+Critical, Off
+Return
+
+~Alt::
+KeyWait Alt
+if (Alt_presses > 0)
+{
+  Alt_presses += 1
+  return
+}
+else
+{
+  Alt_presses := 1
+  KeyWait, Alt
+  SetTimer, KeyAlt, -300
+}
+return
+
+KeyAlt:
+if (Alt_presses >= 2) and (BlackListWindow_AutoStop!="") ;清除黑名单并恢复运行
+{
+  ToolTip 已清除黑名单设置
+  Sleep 500
+  BlackListWindow_AutoStop:=""
+  IniWrite, %BlackListWindow_AutoStop%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+  running:=0
+  gosub 暂停运行
+  Alt自动暂停:=0
+  SetTimer, 关闭提示, -500
+}
+Alt_presses := 0
 return
 
 ~LButton:: ;左键
@@ -752,7 +862,7 @@ else
 
 CoordMode Mouse, Window ;以窗口为基准
 MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
-WinGetTitle, WinClassName, ahk_id %WinID% ;获取窗口类名
+WinGetTitle, WinTitleName, ahk_id %WinID% ;获取窗口类名
 WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 WinGet, 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
@@ -764,7 +874,7 @@ if (WinExist("ahk_id" LastWinTop)=0) ;如果被总是顶置的窗口不存在 �
 }
 else
 {
-  if (窗口样式=1) and (WinClassName!="QQ") and (WinClassName!="任务管理器") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置
+  if (窗口样式=1) and (WinTitleName!="QQ") and (WinTitleName!="任务管理器") and (WinClass!="Shell_TrayWnd") ;窗口处于顶置
   {
     if (OldLastWinTop!="") and (WinID!=OldLastWinTop) ;上次被总是顶置的窗口 点击的窗口不是设置了鼠标穿透的
     {
@@ -889,7 +999,7 @@ if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
       WinMove ahk_id %右边快捷呼出窗口%, , 右边快捷呼出窗口X, 右边快捷呼出窗口Y
       WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
     }
-    else if (SX<=FJL-Round(RSW/5*2+KDXZ/2)) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴顶 最大化
+    else if (SX<=FJL-Round(RSW/5*2+KDXZ/2)) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinTitleName!="QQ") ;左边屏幕贴顶 最大化
     {
       if (Groupy=1)
       {
@@ -900,7 +1010,7 @@ if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
         WinMove, ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       }
     }
-    else if (SX>=FJL) and (SX<=FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;右边屏幕贴左半边顶 最大化
+    else if (SX>=FJL) and (SX<=FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 最大化
     {
       if (Groupy=1)
       {
@@ -911,7 +1021,7 @@ if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
         WinMove, ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       }
     }
-    else if (SX>=FJR+Round(RSW/5*2)) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;右边屏幕贴左半边顶 最大化
+    else if (SX>=FJR+Round(RSW/5*2)) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 最大化
     {
       if (Groupy=1)
       {
@@ -922,15 +1032,15 @@ if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
         WinMove, ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       }
     }
-    else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;左边屏幕贴右半边顶 竖条显示
+    else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinTitleName!="QQ") ;左边屏幕贴右半边顶 竖条显示
     {
       WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
     }
-    else if (SX<FJR+Round(RSW/5*2)) and (SX>FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") ;右边屏幕贴左半边顶 竖条显示
+    else if (SX<FJR+Round(RSW/5*2)) and (SX>FJR) and (SY<=WinTop) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 竖条显示
     {
       WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
     }
-    else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinH>=A_ScreenHeight) ;如果鼠标移动了窗口低于屏幕顶部范围
+    else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinH>=A_ScreenHeight) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinTitleName!="QQ") ;如果鼠标移动了窗口低于屏幕顶部范围
     {
       WinRestore, ahk_id %WinID%
       WinMove, ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
@@ -1065,7 +1175,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
 
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos, MXOld, MYOld, WinID ;获取鼠标在屏幕中的位置
-  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
+  WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
   
   if (MXOld<FJL)
   {
@@ -1380,7 +1490,7 @@ else ;因为键击记录是0 证明这是首次按下 把键击记录次数设�
   
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-  WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
+  WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
   DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
   按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
   if (按下时间>500) ;长按时间大于500ms将当前窗口填满所有屏幕
@@ -1580,15 +1690,15 @@ else if (MButton_presses>=2) and (MYOld>WinTop) ;此键按下了两次及以上
 MButton_presses:=0 ;键击记录重置为0 下次键击重新开始记录是否双击
 return
 
-~^c:: ;Ctrl+C
+; ~^c:: ;Ctrl+C
 Critical, On
 MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
-WinGetClass, WinClassName, ahk_id %WinID% ;获取窗口类名
+WinGetClass, WinClass, ahk_id %WinID% ;获取窗口类名
 if (WY<WinTop) ;点击位置在窗口顶部
 {
-  BlackList:=" or (WinClassName=双引号窗口类名双引号)" ;黑名单格式
+  BlackList:=" or (WinClass=双引号窗口类名双引号)" ;黑名单格式
   StringReplace, BlackList, BlackList, 双引号,`" ,A ;“ 双引号 ”替换为“ " ”
-  StringReplace, BlackList, BlackList, 窗口类名,%WinClassName% ,A ;填入刚刚获取的窗口类名
+  StringReplace, BlackList, BlackList, 窗口类名,%WinClass% ,A ;填入刚刚获取的窗口类名
   Clipboard:=BlackList ;黑名单复制到剪贴板
   loop 20
   {
@@ -1621,11 +1731,11 @@ ToolTip
 return
 
 基础功能:
-MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至屏幕36`%大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
-MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n常用窗口`n      Ctrl`+鼠标左键单击窗口顶部设置常用窗口`n      当鼠标贴着屏幕顶部一段时间后激活`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n黑名单添加`:`n      在窗口顶部按下ctrl+C即可复制窗口类名`n      需要手动添加类名到黑名单`n      改代码后需要重启脚本才能应用设置`n`n如果和某些软件冲突`n      导致无法最大化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n贴顶激活窗口`n      Ctrl`+鼠标左键单击窗口顶部设置`n      当鼠标贴着屏幕顶部一段时间后激活`n`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n如果和某些软件冲突`n      导致无法最小化和还原所有窗口`n      请打开兼容模式运行本软件`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 暂停运行: ;模式切换
@@ -1644,7 +1754,7 @@ if (running=0)
   Hotkey Left, On ;打开箭头左键的热键
   Hotkey Right, On ;打开箭头右键的热键
   Hotkey ^LButton, On ;打开Ctrl+左键的热键
-  Hotkey ^c, On ;打开Ctrl+C的热键
+  ; Hotkey ^c, On ;打开Ctrl+C的热键
   SetTimer, 自动隐藏任务栏, Delete
   SetTimer, 屏幕监测, 100
   Menu, Tray, UnCheck, 暂停运行 ;右键菜单不打勾
@@ -1673,7 +1783,7 @@ else
   Hotkey Left, Off ;关闭箭头左键的热键
   Hotkey Right, Off ;关闭箭头右键的热键
   Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
-  Hotkey ^c, Off ;关闭Ctrl+C的热键
+  ; Hotkey ^c, Off ;关闭Ctrl+C的热键
   if (Alt自动暂停=1)
   {
     WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
@@ -1817,55 +1927,6 @@ return
 
 重启软件:
 Reload
-
-~!LButton:: ;Alt+左键
-Critical, On
-CoordMode Mouse, Window ;以窗口为基准
-MouseGetPos, , WindowY, WinID_Monitor ;;获取鼠标在窗口中的位置
-WinGet, 窗口样式, ExStyle, ahk_id %WinID_Monitor% ;获取窗口样式
-窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
-; ToolTip %窗口样式%
-if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
-{
-  WinGetClass, BlackListWindow, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
-  IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
-  ToolTip 窗口%BlackListWindow%已加入黑名单
-  KeyWait LButton
-  ToolTip
-  Critical, Off
-  Return
-}
-Return
-
-~Alt::
-KeyWait Alt
-if (Alt_presses > 0)
-{
-  Alt_presses += 1
-  return
-}
-else
-{
-  Alt_presses := 1
-  KeyWait, Alt
-  SetTimer, KeyAlt, -300
-}
-return
-
-KeyAlt:
-if (Alt_presses >= 2) and (BlackListWindow!="") ;清除黑名单并恢复运行
-{
-  ToolTip 已清除黑名单设置
-  Sleep 500
-  BlackListWindow:=""
-  IniWrite, %BlackListWindow%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
-  running:=0
-  gosub 暂停运行
-  Alt自动暂停:=0
-  SetTimer, 关闭提示, -500
-}
-Alt_presses := 0
-return
 
 媒体快捷:
 If (WinExist("媒体快捷键设置")!=0)
@@ -2235,14 +2296,15 @@ return
 屏幕监测:
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
-WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
+WinGetClass, WinClass, ahk_id %AWinID% ;ahk_id 获取窗口类名
 WinGet, WinExeName, ProcessName , ahk_id %AWinID%
 任务栏激活:=WinActive("ahk_class Shell_TrayWnd")!=0
 任务栏存在:=WinExist("ahk_class Shell_TrayWnd")!=0
-; ToolTip Exe %WinExeName%   Class %WinClassName%`n任务栏激活 %任务栏激活%   任务栏存在 %任务栏存在%
+; ToolTip Exe %WinExeName%   Class %WinClass%`n任务栏激活 %任务栏激活%   任务栏存在 %任务栏存在%
 ; ToolTip % WinExist("ahk_class TaskListThumbnailWnd") WinExist("ahk_class DV2ControlHost") WinExist("ahk_class Windows.UI.Core.CoreWindow") WinExist("ahk_class Xaml_WindowedPopupClass") 开始菜单
 ; ToolTip % WinExist("ahk_exe EverythingToolbar.Launcher.exe") 搜索栏
-if (WinClassName!="") and (WinClassName=BlackListWindow) and (running=1) ;自动暂停黑名单
+; ToolTip % WinActive("ahk_class" BlackListWindow_AutoStop)
+if (WinClass!="") and (WinClass=BlackListWindow_AutoStop) and (WinActive("ahk_class" BlackListWindow_AutoStop)!=0) and (running=1) ;自动暂停黑名单
 {
   Alt自动暂停:=1
   gosub 暂停运行
@@ -2250,8 +2312,14 @@ if (WinClassName!="") and (WinClassName=BlackListWindow) and (running=1) ;自动
   ToolTip
   Return
 }
-else if (WinClassName!="") and (WinClassName!=BlackListWindow) and (Alt自动暂停=1) and (running=0) ;恢复运行
+else if (WinClass!="") and (WinClass!=BlackListWindow_AutoStop) and (WinActive("ahk_class" BlackListWindow_AutoStop)=0) and (Alt自动暂停=1) and (running=0) ;恢复运行
 {
+  Loop
+  {
+    Sleep 30
+    if !GetKeyState("Alt", "P") and !GetKeyState("Tab", "P")
+      break
+  }
   gosub 暂停运行
   Alt自动暂停:=0
   Return
@@ -2364,7 +2432,7 @@ else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) a
 }
 else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
-  if (WinExeName="explorer.exe") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
+  if (WinExeName="explorer.exe") or (WinClass="TaskListThumbnailWnd") or (WinClass="DV2ControlHost") or (WinClass="Windows.UI.Core.CoreWindow") or (WinClass="Xaml_WindowedPopupClass") ;
   {
     任务栏计时器:=0
   }
@@ -2372,7 +2440,7 @@ else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) 
   {
     DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
     记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
-    ; ToolTip 记录时间%记录时间%ms %WinClassName% %MISY% %MISX%
+    ; ToolTip 记录时间%记录时间%ms %WinClass% %MISY% %MISX%
     if (记录时间>800)
     {
       WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
@@ -2561,7 +2629,7 @@ Return
 自动隐藏任务栏:
 CoordMode Mouse, Screen ;以屏幕为基准
 MouseGetPos, MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
-WinGetClass, WinClassName, ahk_id %AWinID% ;ahk_id 获取窗口类名
+WinGetClass, WinClass, ahk_id %AWinID% ;ahk_id 获取窗口类名
 WinGet, WinExeName, ProcessName , ahk_id %AWinID%
 任务栏激活:=WinActive("ahk_class Shell_TrayWnd")!=0
 任务栏存在:=WinExist("ahk_class Shell_TrayWnd")!=0
@@ -2647,7 +2715,7 @@ else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器=0) a
 }
 else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
 {
-  if (WinExeName="explorer.exe") or (WinClassName="TaskListThumbnailWnd") or (WinClassName="DV2ControlHost") or (WinClassName="Windows.UI.Core.CoreWindow") or (WinClassName="Xaml_WindowedPopupClass") ;
+  if (WinExeName="explorer.exe") or (WinClass="TaskListThumbnailWnd") or (WinClass="DV2ControlHost") or (WinClass="Windows.UI.Core.CoreWindow") or (WinClass="Xaml_WindowedPopupClass") ;
   {
     任务栏计时器:=0
   }
@@ -2655,7 +2723,7 @@ else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) 
   {
     DllCall("QueryPerformanceCounter", "Int64*", KeyUp_离开任务栏)
     记录时间:=Round((KeyUp_离开任务栏-KeyDown_离开任务栏)/freq*1000, 2)
-    ; ToolTip 记录时间%记录时间%ms %WinClassName% %MISY% %MISX%
+    ; ToolTip 记录时间%记录时间%ms %WinClass% %MISY% %MISX%
     if (记录时间>800)
     {
       WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
