@@ -36,6 +36,7 @@
   OnExit 退出软件
   Gui +HWNDhGui
   Global hPic
+  SetWinDelay 10
 
   /*
   黑钨重工出品 免费开源 请勿商用 侵权必究
@@ -260,6 +261,11 @@
   Zx := Rx/zoom
   Zy := Ry/zoom
 
+  HSJ:=0 ;后视镜打开状态
+  HSJM:=0 ;后视镜移动状态 每次关闭后视镜时重置为0 只移动一次节省性能开销
+  HSJH:=0 ;后视镜隐藏状态 隐藏直到移动到中间屏幕
+  OpenHSJ:=0 ;打开后视镜中
+
   TopOpacity:=255 ;顶置窗口透明度
   TopWindowTransparent:=0 ;顶置窗口穿透
 
@@ -272,7 +278,7 @@
   WheelDownRecord:=0
 
   gosub 更新数据
-  SetTimer 屏幕监测, 100 ;监测鼠标位置打开后视镜
+  SetTimer 屏幕监测, 50 ;监测鼠标位置打开后视镜
 return
 
 更新数据:
@@ -311,8 +317,6 @@ return
   WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
   ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(40/1080)) ;屏幕底部识别分界线
 
-  HSJ:=0 ;后视镜打开状态
-  HSJM:=0 ;后视镜移动状态
   rWidth:=Round(RSW*(640/1920)) ;后视镜宽度
   rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
   HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
@@ -658,7 +662,7 @@ if (WinClass="WorkerW") or (WinClass="_cls_desk_") or (WinClass="Progman") or (W
 return
 
 ~WheelUp:: ;触发按键 滚轮上
-gosub 更新数据
+  gosub 更新数据
   if (A_TickCount-WheelUpRecord<=300)
   {
     WheelUpRecord:=A_TickCount
@@ -754,7 +758,7 @@ gosub 更新数据
 return
 
 ~WheelDown:: ;触发按键 滚轮下
-gosub 更新数据
+  gosub 更新数据
   if (A_TickCount-WheelDownRecord<=300)
   {
     WheelDownRecord:=A_TickCount
@@ -1037,8 +1041,8 @@ KeyAlt:
 return
 
 ~LButton:: ;左键
-gosub 更新数据
-  Critical, On
+  gosub 更新数据
+  ; Critical, On
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos WinSX, WinSY ;获取鼠标在屏幕中的位置
 
@@ -1117,7 +1121,7 @@ gosub 更新数据
 
   CoordMode Mouse, Window ;以窗口为基准
   MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
-  WinGetPos, WinX, WinY, WinW, WinH
+  WinGetPos WinX, WinY, WinW, WinH
   WinGetTitle WinTitleName, ahk_id %WinID% ;获取窗口类名
   WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
   WinGet 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
@@ -1160,12 +1164,16 @@ gosub 更新数据
   WinGetPos WinXHistory, WinYHistory, WinW, WinH, ahk_id %WinID% ;获取窗口的宽度和高度
   if (WinWY<WinTop+GroupyH) ;鼠标点击在窗口顶部
   {
-    WinHide ahk_id %MagnifierWindowID% ;关闭放大镜
+    WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+    WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
+    HSJM:=0
+    HSJH:=1
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop) ;第一次记录时间
     LoopTimes:=20 ;检测2秒
     OldWinSY:=WinSY
     gosub AeroShake ;跳转检测程序
+    HSJH:=0
     DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
     MouseGetPos, , NewWinSY
     下移距离:=NewWinSY-OldWinSY
@@ -1221,11 +1229,12 @@ gosub 更新数据
           ToolTip 窗口%WinTitleName%取消总是顶置 -
           Sleep 30
         }
-        Critical Off  
+        Critical Off
       }
     }
     else if (下移距离>Round(A_ScreenHeight*(600/1080))) and (MoveDownSpeed>1500)
     {
+      Critical On
       WinMove ahk_id %WinID%, , WinXHistory, WinYHistory, WinW, WinH
       WinClose ahk_id %WinID% ;关闭窗口
       WinGetTitle WinTitleName, ahk_id %WinID%
@@ -1238,7 +1247,13 @@ gosub 更新数据
     }
     else
     {
-      KeyWait LButton
+      loop
+      {
+        if !GetKeyState("LButton","P") ;如果鼠标左键松开
+          Break
+        Sleep 50
+      }
+
       CoordMode Mouse, Screen
       MouseGetPos SX, SY
       下移距离:=SY-OldWinSY
@@ -1322,8 +1337,13 @@ gosub 更新数据
       }
     }
   }
+  ; else ; 没有点击在窗口顶部
+  ; {
+
+  ; }
   ToolTip
   Critical Off
+  ; KeyWait Lbutton
 return
 
 ~Tab::
@@ -1397,7 +1417,7 @@ AeroShake:
 Return
 
 $MButton:: ;中键
-gosub 更新数据
+  gosub 更新数据
   Critical, On
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
   DllCall("QueryPerformanceCounter", "Int64*", TapBefore)
@@ -1425,8 +1445,10 @@ gosub 更新数据
   else ;因为键击记录是0 证明这是首次按下 把键击记录次数设为 1 并启动计时器
   {
     ; ToolTip 关闭后视镜
-    WinHide ahk_id %MagnifierWindowID%
+    WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+    WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
     HSJM:=0
+    HSJH:=1
 
     MButton_presses:=1
     if (MButtonHotkey=0)
@@ -2039,7 +2061,7 @@ return
     Hotkey ^LButton, On ;打开Ctrl+左键的热键
     ; Hotkey ^c, On ;打开Ctrl+C的热键
     SetTimer 自动隐藏任务栏, Delete
-    SetTimer 屏幕监测, 100
+    SetTimer 屏幕监测, 50
     Menu Tray, UnCheck, 暂停运行 ;右键菜单不打勾
 
     if (Alt自动暂停=1)
@@ -2077,7 +2099,9 @@ return
       SetTimer 屏幕监测, Delete
       SetTimer 自动隐藏任务栏, 100
     }
-    WinHide ahk_id %MagnifierWindowID%
+    WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+    WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
+    HSJM:=0
     Menu Tray, Check, 暂停运行 ;右键菜单打勾
 
     if (Alt自动暂停=1)
@@ -2644,7 +2668,6 @@ return
   ; ToolTip 防误触时间%防误触时间%ms
   if (MISY<3) ;如果鼠标贴着屏幕顶部
   {
-    Critical, On
     Loop
     {
       ; ToolTip %A_Index%
@@ -2661,7 +2684,6 @@ return
         break
       }
     }
-    Critical, Off
   }
   else if (开始菜单=1) ;如果呼出了开始菜单
   {
@@ -2740,20 +2762,23 @@ return
     ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
     if (HSJ=0)
     {
-      IfWinNotActive ahk_id %MagnifierWindowID%
+      if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenHSJ=0)
       {
-        SetTimer 后视镜, -1
+        SetTimer 后视镜, -1 ;打开后视镜
       }
-      HSJ:=1
     }
-    else if (HSJM=0)
+    else if (HSJ=1)
     {
-      IfWinNotActive ahk_id %MagnifierWindowID%
+      if (WinExist("ahk_id "MagnifierWindowID)=0) and (HSJH=0)
       {
         ; ToolTip 打开后视镜
         WinShow ahk_id %MagnifierWindowID%
-        WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-        HSJM:=1
+        if (HSJM=0)
+        {
+          WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+          HSJM:=1
+        }
+        WinSet Transparent, 255, ahk_id %MagnifierWindowID%
       }
     }
 
@@ -2775,20 +2800,23 @@ return
     ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
     if (HSJ=0)
     {
-      IfWinNotActive ahk_id %MagnifierWindowID%
+      if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenHSJ=0)
       {
-        SetTimer 后视镜, -1
+        SetTimer 后视镜, -1 ;打开后视镜
       }
-      HSJ:=1
     }
-    else if (HSJM=0)
+    else if (HSJ=1)
     {
-      IfWinNotActive ahk_id %MagnifierWindowID%
+      if (WinExist("ahk_id "MagnifierWindowID)=0) and (HSJH=0)
       {
         ; ToolTip 打开后视镜
         WinShow ahk_id %MagnifierWindowID%
-        WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-        HSJM:=1
+        if (HSJM=0)
+        {
+          WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+          HSJM:=1
+        }
+        WinSet Transparent, 255, ahk_id %MagnifierWindowID%
       }
     }
 
@@ -2807,10 +2835,12 @@ return
   else if (MISX>FJL+BKXZ) and (MISX<FJR-BKXZ)
   {
     屏幕实时位置:=2
+    HSJH:=0
     ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
     if (HSJ=1)
     {
       ; ToolTip 关闭后视镜
+      WinSet Transparent, 0, ahk_id %MagnifierWindowID%
       WinHide ahk_id %MagnifierWindowID%
       HSJM:=0
     }
@@ -3019,76 +3049,100 @@ Return
 return
 
 后视镜:
-  Ptr := A_PtrSize ? "UPtr" : "UInt"
-  if !DllCall("GetModuleHandle", "str", "gdiplus", Ptr)
-    DllCall("LoadLibrary", "str", "gdiplus")
-  VarSetCapacity(GdiplusStartupInput, A_PtrSize = 8 ? 24 : 16, 0), GdiplusStartupInput := Chr(1)
-  DllCall("gdiplus\GdiplusStartup", A_PtrSize = 8 ? "UPtr*" : "UInt*", pToken, Ptr, &GdiplusStartupInput, Ptr, 0)
-
-  Gui 后视镜:New
-  Gui 后视镜:-Caption +AlwaysOnTop +E0x02000000 +E0x00080000  ;  WS_EX_COMPOSITED := E0x02000000  WS_EX_LAYERED := E0x00080000
-  Gui 后视镜:Margin, 0,0
-  Gui 后视镜:Add, text, w%rWidth% h%rHeight% 0xE hwndhPic ; SS_BITMAP = 0xE
-  if (屏幕实时位置=1)
+  ReloadHSJ:=0
+  if (HSJ=0) and (OpenHSJ=0) ;如果后视镜没有打开
   {
-    Gui 后视镜:Show, x%HSJLX% y%HSJY% NA, MagnifierCloneWindowAHK
+    ReloadHSJ:=1
   }
-  else if (屏幕实时位置=3)
+  else if (高效模式=0)
   {
-    Gui 后视镜:Show, x%HSJRX% y%HSJY% NA, MagnifierCloneWindowAHK
+    ReloadHSJ:=1
   }
-  WinGet MagnifierWindowID, ID, MagnifierCloneWindowAHK
 
-  Gui MagnifierWindow:New
-  Gui MagnifierWindow: +AlwaysOnTop -Caption +ToolWindow +HWNDhMagnifier
-  Gui MagnifierWindow: Show, w%rWidth% h%rHeight% NA Hide, MagnifierWindowAHK
+  if (ReloadHSJ=1)
+  {
+    OpenHSJ:=1
+    Ptr := A_PtrSize ? "UPtr" : "UInt"
+    if !DllCall("GetModuleHandle", "str", "gdiplus", Ptr)
+      DllCall("LoadLibrary", "str", "gdiplus")
+    VarSetCapacity(GdiplusStartupInput, A_PtrSize = 8 ? 24 : 16, 0), GdiplusStartupInput := Chr(1)
+    DllCall("gdiplus\GdiplusStartup", A_PtrSize = 8 ? "UPtr*" : "UInt*", pToken, Ptr, &GdiplusStartupInput, Ptr, 0)
 
-  DllCall("LoadLibrary", "str", "magnification.dll")
-  DllCall("magnification.dll\MagInitialize")
+    Gui 后视镜:New
+    Gui 后视镜:-Caption +AlwaysOnTop +E0x02000000 +E0x00080000  ;  WS_EX_COMPOSITED := E0x02000000  WS_EX_LAYERED := E0x00080000
+    Gui 后视镜:Margin, 0,0
+    Gui 后视镜:Add, text, w%rWidth% h%rHeight% 0xE hwndhPic ; SS_BITMAP = 0xE
+    if (屏幕实时位置=1)
+    {
+      Gui 后视镜:Show, x%HSJLX% y%HSJY% NA, MagnifierCloneWindowAHK
+    }
+    else if (屏幕实时位置=3)
+    {
+      Gui 后视镜:Show, x%HSJRX% y%HSJY% NA, MagnifierCloneWindowAHK
+    }
+    WinGet MagnifierWindowID, ID, MagnifierCloneWindowAHK
 
-  WS_CHILD := 0x40000000, WS_VISIBLE := 0x10000000, MS_SHOWMAGNIFIEDCURSOR := 0x1 
+    Gui MagnifierWindow:New
+    Gui MagnifierWindow: +AlwaysOnTop -Caption +ToolWindow +HWNDhMagnifier
+    Gui MagnifierWindow: Show, w%rWidth% h%rHeight% NA Hide, MagnifierWindowAHK
 
-  hChildMagnifier := DllCall("CreateWindowEx"
-    , "UInt", 0
-    , "Str", "Magnifier"
-    , "Str", "MagnifierWindow"
-    , "UInt", MS_SHOWMAGNIFIEDCURSOR | WS_CHILD | WS_VISIBLE
-    , "Int", 0
-    , "Int", 0
-    , "Int", rWidth
-    , "Int", rHeight
-    , Ptr, hMagnifier
-    , "UInt", 0
-    , Ptr, DllCall("GetWindowLong", Ptr, hMagnifier, "UInt", GWL_HINSTANCE := -6)
-    , "UInt", 0)
+    DllCall("LoadLibrary", "str", "magnification.dll")
+    DllCall("magnification.dll\MagInitialize")
 
-  VarSetCapacity(HWNDstruct, HWNDarr.Count() * A_PtrSize, 0)
-  Loop % HWNDarr.Count()
-    NumPut(HWNDarr[A_Index], HWNDstruct, (A_Index - 1) * A_PtrSize, "UPtr")
-  DllCall("magnification.dll\MagSetWindowFilterList", Ptr, hChildMagnifier, "Int", MW_FILTERMODE_EXCLUDE := 0, "Int", HWNDarr.Count(), Ptr, &HWNDstruct)
+    WS_CHILD := 0x40000000, WS_VISIBLE := 0x10000000, MS_SHOWMAGNIFIEDCURSOR := 0x1 
 
-  Matrix := "1|0|0|"
-    . "0|1|0|"
-    . "0|0|1"  
-  VarSetCapacity(MAGTRANSFORM, 36, 0)
-  Loop, Parse, Matrix, |  
-    NumPut(A_LoopField, MAGTRANSFORM, (A_Index - 1) * 4, "Float")
-  DllCall("magnification.dll\MagSetWindowTransform", Ptr, hChildMagnifier, Ptr, &MAGTRANSFORM)
+    hChildMagnifier := DllCall("CreateWindowEx"
+      , "UInt", 0
+      , "Str", "Magnifier"
+      , "Str", "MagnifierWindow"
+      , "UInt", MS_SHOWMAGNIFIEDCURSOR | WS_CHILD | WS_VISIBLE
+      , "Int", 0
+      , "Int", 0
+      , "Int", rWidth
+      , "Int", rHeight
+      , Ptr, hMagnifier
+      , "UInt", 0
+      , Ptr, DllCall("GetWindowLong", Ptr, hMagnifier, "UInt", GWL_HINSTANCE := -6)
+      , "UInt", 0)
 
-  DllCall("magnification.dll\MagSetImageScalingCallback", Ptr, hChildMagnifier, "Int", RegisterCallback("MagImageScalingCallback", "Fast"))
+    VarSetCapacity(HWNDstruct, HWNDarr.Count() * A_PtrSize, 0)
+    Loop % HWNDarr.Count()
+      NumPut(HWNDarr[A_Index], HWNDstruct, (A_Index - 1) * A_PtrSize, "UPtr")
+    DllCall("magnification.dll\MagSetWindowFilterList", Ptr, hChildMagnifier, "Int", MW_FILTERMODE_EXCLUDE := 0, "Int", HWNDarr.Count(), Ptr, &HWNDstruct)
 
-  VarSetCapacity(RECT, 16, 0)
+    Matrix := "1|0|0|"
+      . "0|1|0|"
+      . "0|0|1"  
+    VarSetCapacity(MAGTRANSFORM, 36, 0)
+    Loop, Parse, Matrix, |  
+      NumPut(A_LoopField, MAGTRANSFORM, (A_Index - 1) * 4, "Float")
+    DllCall("magnification.dll\MagSetWindowTransform", Ptr, hChildMagnifier, Ptr, &MAGTRANSFORM)
+
+    DllCall("magnification.dll\MagSetImageScalingCallback", Ptr, hChildMagnifier, "Int", RegisterCallback("MagImageScalingCallback", "Fast"))
+
+    VarSetCapacity(RECT, 16, 0)
+    HSJ:=1
+  }
 
   Loop
   {
-    if (高效模式=0)
+    ; WinExistMagnifierWindow:=WinExist("ahk_id "MagnifierWindowID)
+    ; ToolTip %高效模式% 后视镜%HSJ%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
+    if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0)
     {
-      if (HSJM=0) or (running=0) ;自动暂停
+      Sleep 100
+      Continue
+    }
+    else if (running=0) ;自动暂停
+    {
+      if (WinExist("ahk_id "MagnifierWindowID)!=0)
       {
+        WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID%
-        HSJ:=0
-        break
+        HSJM:=0
       }
+      Sleep 100
+      Continue
     }
     CoordMode Mouse, Screen ;以屏幕为基准
     MouseGetPos MXS, MYS
@@ -3098,6 +3152,9 @@ return
     NumPut(rHeight, RECT, 12, "Int")
     DllCall("magnification.dll\MagSetWindowSource", Ptr, hChildMagnifier, Ptr, &RECT)
   }
+
+  ; Gui 后视镜:Destroy
+  ; Gui MagnifierWindow:Destroy
 Return 
 
 MagImageScalingCallback(hwnd, srcdata, srcheader, destdata, destheader, unclipped, clipped, dirty) 
@@ -3255,22 +3312,44 @@ Return
 return
 
 关闭放大镜:
-  Critical, On
   SetTimer Repaint, Off
   DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
   DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
   Gui 放大镜:Destroy
+  ; ToolTip X%X% Y%Y%`nL%FJL% R%FJR%, , , 2
   if (x<FJL) or (x>FJR) ;如果在两侧屏幕
   {
+    HSJM:=0
+    HSJH:=0
+    Sleep 100
     WinShow ahk_id %MagnifierWindowID% ;打开后视镜
+
+    if (HSJM=0) and (x<FJL) ;如果在左侧屏幕
+    {
+      WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+      HSJM:=1
+    }
+    else if (HSJM=0) and (x>FJR) ;如果在右侧屏幕
+    {
+      WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+      HSJM:=1
+    }
+
+    WinSet Transparent, 255, ahk_id %MagnifierWindowID%
+    ; ToolTip 打开后视镜, , , 2
   }
-  SetTimer 屏幕监测, 100
-  Critical, Off
+  SetTimer 屏幕监测, 50
 Return
 
 打开放大镜:
   SetTimer 屏幕监测, Off
-  WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
+  IfWinActive ahk_id %MagnifierWindowID%
+  {
+    WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+    WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
+    HSJM:=0
+    HSJH:=1
+  }
   gosub 放大镜
   SetTimer Repaint, 30
 Return
