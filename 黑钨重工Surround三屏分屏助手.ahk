@@ -3130,7 +3130,7 @@ return
     ; ToolTip %高效模式% 后视镜%HSJ%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
     if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0)
     {
-      Sleep 100
+      Sleep 50
       Continue
     }
     else if (running=0) ;自动暂停
