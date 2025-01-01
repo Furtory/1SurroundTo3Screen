@@ -46,7 +46,7 @@
 
   MButton_presses:=0
   running:=1 ;1为运行 0为暂停
-  Menu Tray, NoStandard ;不显示默认的AHK右键菜单
+  ; Menu Tray, NoStandard ;不显示默认的AHK右键菜单
   Menu Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
   Menu Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
   Menu Tray, Add
@@ -58,7 +58,7 @@
   Menu Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
   Menu Tray, Add, 神隐窗口, 神隐窗口 ;添加新的右键菜单
   Menu Tray, Add, 飘逸窗口, 飘逸窗口 ;添加新的右键菜单
-  Menu Tray, Add, 标签页适配, ExtraHeightFit适配 ;添加新的右键菜单
+  Menu Tray, Add, 标签页适配, 标签页适配 ;添加新的右键菜单
   Menu Tray, Add
   Menu Tray, Add, 新增白名单, 新增白名单 ;添加新的右键菜单
   Menu Tray, Add, 白名单设置, 白名单设置 ;添加新的右键菜单
@@ -113,7 +113,7 @@
       Menu Tray, Check, 兼容模式 ;右键菜单打勾
     }
 
-    IniRead ExtraHeightFit, Settings.ini, 设置, ExtraHeightFit
+    IniRead ExtraHeightFit, Settings.ini, 设置, 标签页适配
     if (ExtraHeightFit=0)
     {
       ExtraHeight:=0
@@ -121,7 +121,7 @@
     }
     else
     {
-      ExtraHeight:=Round(A_ScreenHeight*(35/1080))
+      IniRead ExtraHeight, Settings.ini, 设置, 标签页适配高度
       Menu Tray, Check, 标签页适配 ;右键菜单打勾
     }
 
@@ -198,7 +198,9 @@
     IniWrite %CompatibleMode%, Settings.ini, 设置, 兼容模式 ;写入设置到ini文件
 
     ExtraHeightFit:=0
+    ExtraHeight:=Round(A_ScreenHeight*(25/1080))
     IniWrite %ExtraHeightFit%, Settings.ini, 设置, ExtraHeightFit ;写入设置到ini文件
+    IniWrite %ExtraHeight%, Settings.ini, 设置, ExtraHeight ;写入设置到ini文件
 
     高效模式:=1
     IniWrite %高效模式%, Settings.ini, 设置, 高效模式 ;写入设置到ini文件
@@ -296,7 +298,26 @@
   WheelUpRecord:=0
   WheelDownRecord:=0
 
+  AutoMove:=0
+  AutoHide:=1
+
+  快捷呼出计时:=-1
+  停留呼出左边快捷窗口:=0
+  停留呼出右边快捷窗口:=0
+  ; 主动隐藏快捷呼出窗口:=0
+  if (WinActive("ahk_id "左边快捷呼出窗口)!=0)
+    已激活左边快捷呼出窗口:=1
+  else
+    已激活左边快捷呼出窗口:=0
+
+  if (WinActive("ahk_id "右边快捷呼出窗口)!=0)
+    已激活右边快捷呼出窗口:=1
+  else
+    已激活右边快捷呼出窗口:=0
+
   gosub 更新数据
+  Sleep 100
+
   SetTimer 屏幕监测, 50 ;监测鼠标位置打开后视镜
 return
 
@@ -306,12 +327,9 @@ return
   {
     GDXZ:=0
     KDXZ:=0
-    SH:=A_ScreenHeight ;修正后屏幕高度
     SW:=Round((A_ScreenWidth-2*BKXZ)/3) ;修正后屏幕宽度
-    RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
+    SH:=A_ScreenHeight ;修正后屏幕高度
 
-    FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
-    FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
     YDY:=0 ;屏幕原点Y
     YDL:=0 ;左边屏幕左上角原点X
     YDM:=RSW+BKXZ ;中间屏幕左上角原点X
@@ -321,26 +339,35 @@ return
   {
     IniRead KDXZ, Settings.ini, 设置, 宽度修正
     IniRead GDXZ, Settings.ini, 设置, 高度修正
-    SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
     SW:=Round((A_ScreenWidth-2*BKXZ)/3)+KDXZ ;修正后屏幕宽度
-    RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
+    SH:=A_ScreenHeight+GDXZ ;修正后屏幕高度
 
-    FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
-    FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
     YDY:=0 ;屏幕原点Y
     YDL:=Floor(0-KDXZ/2) ;左边屏幕左上角原点X
     YDM:=Floor(RSW+BKXZ-KDXZ/2) ;中间屏幕左上角原点X
     YDR:=Floor(RSW*2+BKXZ*2-KDXZ/2) ;右边屏幕左上角原点X
   }
 
-  WinTop:=Round(A_ScreenHeight*(45/1080)) ;窗口顶部识别分界线
-  ScreenBottom:=A_ScreenHeight-Floor(A_ScreenHeight*(40/1080)) ;屏幕底部识别分界线
+  FJL:=Floor((A_ScreenWidth-BKXZ*2)/3) ;左分界线
+  FJR:=Ceil(A_ScreenWidth-FJL) ;右分界线
+  RSW:=Floor((A_ScreenWidth-2*BKXZ)/3) ;物理屏幕宽度
+  RSH:=A_ScreenHeight ;物理屏幕高度
 
-  rWidth:=Round(RSW*(640/1920)) ;后视镜宽度
-  rHeight:=Round(A_ScreenHeight*(420/1080)) ;后视镜高度
-  HSJLX:=YDM+Round(A_ScreenHeight*(50/1080)) ;左后视镜显示位置X
-  HSJRX:=YDR-rWidth-Round(A_ScreenHeight*(50/1080)+(A_ScreenWidth-SW*3)/2+KDXZ/2) ;右后视镜显示位置X
-  HSJY:=A_ScreenHeight/2-rHeight/2 ;后视镜显示位置Y
+  搜索栏W:=Round(RSW/3*2)
+  搜索栏H:=Round(RSH/3*2)
+  搜索栏X:=RSW+BKXZ
+  WinGetPos, , , , ShellTrayWndHeight, ahk_class Shell_TrayWnd
+  搜索栏Y:=RSH-搜索栏H-ShellTrayWndHeight-10
+
+  WinTop:=Round(RSH*(45/1080)) ;窗口顶部识别分界线
+  ScreenBottom:=RSH-Floor(RSH*(40/1080)) ;屏幕底部识别分界线
+
+  HSJWidth:=Round(640*(1080/RSH)) ;后视镜宽度
+  HSJHeight:=Round(420*(1080/RSH)) ;后视镜高度
+  HSJLX:=FJL+RSH/10 ;左后视镜显示位置X
+  HSJRX:=FJR-HSJWidth-RSH/10 ;右后视镜显示位置X
+  HSJY:=Round(RSH/2-HSJHeight/2) ;后视镜显示位置Y
+  ; MsgBox, %HSJLX% %HSJRX% %HSJY%
 
   ; MsgBox 屏幕高度%A_ScreenHeight%`n修正后屏幕高度%SH% 高度修正%GDXZ%`n`n屏幕宽度%A_ScreenWidth%`n修正后屏幕宽度%SW% 宽度修正%KDXZ%`n`n分界线 %FJL% %FJM% %FJR%`n原点 %YDL% %YDM% %YDR%
 Return
@@ -726,13 +753,14 @@ return
     CoordMode Mouse, Window ;以窗口为基准
     MouseGetPos WX, WY, WinID ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
+    WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     WinGetPos SX, SY, W, H, ahk_id %WinID% ;获取窗口以屏幕为基准的位置 窗口的宽和高
     WinInScreenX:=SX+W/2 ;窗口中间以屏幕为基准的位置
     WinRestore ahk_id %WinID% ;如果窗口已经最大化则还原窗口
     ; MsgBox ID:%WinID%`nX:%X% Y:%Y%`nW:%W% H:%H%`n`n左分界线:%FJL%`n右分界线:=%FJR%`n鼠标位置 X:%SX% Y:%SY%
     if (WinInScreenX<FJL) and (WY<WinTop) ;点击的窗口在左边屏幕 并且 点击位置在窗口顶部
     {
-      ToolTip 最大化%WinID%窗口
+      ToolTip 最大化%WinTitle%窗口
       WinRestore ahk_id %WinID%
       if (ExtraHeightFit=1)
       {
@@ -742,11 +770,12 @@ return
       {
         WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       }
+      WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
       SetTimer 关闭提示, -500 ;500毫秒后关闭提示
     }
     else if (WinInScreenX>FJL) and (WinInScreenX<FJR) and (WY<WinTop) ;点击的窗口在中间屏幕 并且 点击位置在窗口顶部
     {
-      ToolTip 最大化%WinID%窗口
+      ToolTip 最大化%WinTitle%窗口
       WinRestore ahk_id %WinID%
       if (ExtraHeightFit=1)
       {
@@ -756,11 +785,12 @@ return
       {
         WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       }
+      WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
       SetTimer 关闭提示, -500 ;500毫秒后关闭提示
     }
     else if (WinInScreenX>FJR) and (WY<WinTop) ;点击的窗口在右边屏幕 并且 点击位置在窗口顶部
     {
-      ToolTip 最大化%WinID%窗口
+      ToolTip 最大化%WinTitle%窗口
       WinRestore ahk_id %WinID%
       if (ExtraHeightFit=1)
       {
@@ -770,6 +800,7 @@ return
       {
         WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
       }
+      WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
       SetTimer 关闭提示, -500 ;500毫秒后关闭提示
     }
   }
@@ -822,9 +853,10 @@ return
     CoordMode Mouse, Window ;以窗口为基准
     MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
+    WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     if (WY<WinTop) ;点击位置在窗口顶部
     {
-      ToolTip 最小化%WinID%窗口
+      ToolTip 最小化%WinTitle%窗口
       WinMinimize ahk_id %WinID% ;最小化窗口
       if (屏幕实时位置=1)
       {
@@ -1081,85 +1113,9 @@ return
 
 ~LButton:: ;左键
   gosub 更新数据
-  ; Critical, On
-  CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos WinSX, WinSY ;获取鼠标在屏幕中的位置
-
-  ;呼出快捷窗口
-  if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
-  {
-    if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
-    {
-      左边快捷呼出窗口:=""
-      IniWrite %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
-    }
-    else
-    {
-      if (已激活左边快捷呼出窗口=1)
-      {
-        ToolTip 隐藏左边快捷呼出窗口
-        WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
-        已激活左边快捷呼出窗口:=0
-      }
-      else
-      {
-        IfWinNotActive ahk_id %左边快捷呼出窗口%
-        {
-          ToolTip 激活左边快捷呼出窗口
-          WinActivate ahk_id %左边快捷呼出窗口% ;激活窗口
-          已激活左边快捷呼出窗口:=1
-          激活:=1
-        }
-      }
-    }
-  }
-  else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
-  {
-    if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
-    {
-      右边快捷呼出窗口:=""
-      IniWrite %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
-    }
-    else
-    {
-      if (已激活右边快捷呼出窗口=1)
-      {
-        ToolTip 隐藏右边快捷呼出窗口
-        WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
-        已激活右边快捷呼出窗口:=0
-      }
-      else
-      {
-        IfWinNotActive ahk_id %右边快捷呼出窗口%
-        {
-          ToolTip 激活右边快捷呼出窗口
-          WinActivate ahk_id %右边快捷呼出窗口% ;激活窗口
-          已激活右边快捷呼出窗口:=1
-          激活:=1
-        }
-      }
-    }
-  }
-
-  if (激活!=1)
-  {
-    if (WinID!=左边快捷呼出窗口)
-    {
-      已激活左边快捷呼出窗口:=0
-    }
-
-    if (WinID!=右边快捷呼出窗口)
-    {
-      已激活右边快捷呼出窗口:=0
-    }
-  }
-  else
-  {
-    激活:=0
-  }
 
   CoordMode Mouse, Window ;以窗口为基准
-  MouseGetPos, , WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
+  MouseGetPos WinWX, WinWY, WinID  ;获取鼠标在窗口中的位置 获取鼠标所在窗口的句柄
   WinGetPos WinX, WinY, WinW, WinH
   WinGetTitle WinTitleName, ahk_id %WinID% ;获取窗口类名
   WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
@@ -1210,7 +1166,9 @@ return
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop) ;第一次记录时间
     LoopTimes:=20 ;检测2秒
-    OldWinSY:=WinSY
+
+    CoordMode Mouse, Screen ;以屏幕为基准
+    MouseGetPos, , OldWinSY
     gosub AeroShake ;跳转检测程序
     HSJH:=0
     DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
@@ -1218,6 +1176,8 @@ return
     下移距离:=NewWinSY-OldWinSY
     MoveDownSpeed:=Round(Abs(下移距离)/((LBUpOnTop-LBDownOnTop)/freq*1000)*1000) ;移动速度=移动距离/时间
     ; ToolTip, 下移距离%下移距离% MoveDownSpeed%MoveDownSpeed%, , ,2
+
+    ; 顶置窗口
     if (摇晃次数>3) and (总移动距离>=Round(A_ScreenHeight*(800/1080)))
     {
       ; ToolTip %窗口样式%
@@ -1250,6 +1210,7 @@ return
           ToolTip 窗口%WinTitleName%设为总是顶置 O
           Sleep 30
         }
+        ToolTip
         Critical Off
       }
       else ;如果已经处于总是顶置状态
@@ -1268,6 +1229,7 @@ return
           ToolTip 窗口%WinTitleName%取消总是顶置 -
           Sleep 30
         }
+        ToolTip
         Critical Off
       }
     }
@@ -1282,6 +1244,7 @@ return
         ToolTip 窗口%WinTitleName%已关闭
         Sleep 30
       }
+      ToolTip
       Critical Off  
     }
     else
@@ -1312,7 +1275,10 @@ return
         左边快捷呼出窗口X:=WinXHistory
         左边快捷呼出窗口Y:=WinYHistory
         WinMove ahk_id %左边快捷呼出窗口%, , 左边快捷呼出窗口X, 左边快捷呼出窗口Y
+        WinSet Style, +0x40000, ahk_id %左边快捷呼出窗口% ;允许调整窗口大小
         WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+        主动隐藏快捷呼出窗口:=1
+        快捷呼出计时:=-1
       }
       else if (SX<=FJR) and (SX>=FJR-BKXZ) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
       {
@@ -1321,7 +1287,10 @@ return
         右边快捷呼出窗口X:=WinXHistory
         右边快捷呼出窗口Y:=WinYHistory
         WinMove ahk_id %右边快捷呼出窗口%, , 右边快捷呼出窗口X, 右边快捷呼出窗口Y
+        WinSet Style, +0x40000, ahk_id %右边快捷呼出窗口% ;允许调整窗口大小
         WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+        主动隐藏快捷呼出窗口:=1
+        快捷呼出计时:=-1
       }
       else if (SX<=FJL-Round(RSW/5*2+KDXZ/2)) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;左边屏幕贴顶 最大化
       {
@@ -1333,8 +1302,9 @@ return
         {
           WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         }
+        WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
       }
-      else if (SX>=FJL) and (SX<=FJR) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 最大化
+      else if (SX>=FJL) and (SX<=FJR) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;左边屏幕贴左半边顶 最大化
       {
         if (ExtraHeightFit=1)
         {
@@ -1344,8 +1314,9 @@ return
         {
           WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         }
+        WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
       }
-      else if (SX>=FJR+Round(RSW/5*2)) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 最大化
+      else if (SX>=FJR+Round(RSW/5*2)) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;右边屏幕贴右半边顶 最大化
       {
         if (ExtraHeightFit=1)
         {
@@ -1355,34 +1326,149 @@ return
         {
           WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         }
+        WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
       }
       else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;左边屏幕贴右半边顶 竖条显示
       {
         WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+        WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
       }
       else if (SX<FJR+Round(RSW/5*2)) and (SX>FJR) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 竖条显示
       {
         WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+        WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
       }
-      else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinH>=A_ScreenHeight) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;如果鼠标移动了窗口低于屏幕顶部范围
+      else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinH>=A_ScreenHeight-ExtraHeight) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;如果鼠标移动了窗口低于屏幕顶部范围
       {
         WinRestore ahk_id %WinID%
         WinMove ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
       }
-      else if (WinW>SW) and (WinH<SH) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ; 如果窗口宽度大于物理屏幕宽度 修正窗口大小
+      else if (WinW>SW) and (WinH<SH-ExtraHeight) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ; 如果窗口宽度大于物理屏幕宽度 修正窗口大小
       {
         WinRestore ahk_id %WinID%
         WinMove ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
       }
     }
   }
-  ; else ; 没有点击在窗口顶部
-  ; {
 
-  ; }
-  ToolTip
-  Critical Off
-  ; KeyWait Lbutton
+  CoordMode Mouse, Screen ;以屏幕为基准
+  MouseGetPos WinSX, WinSY, WinID ;获取鼠标在屏幕中的位置
+
+  ;呼出快捷窗口
+  if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="")
+  {
+    if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+    {
+      左边快捷呼出窗口:=""
+      IniWrite %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+    }
+    else
+    {
+      if (已激活左边快捷呼出窗口=1) ;and (WinActive("ahk_id "左边快捷呼出窗口)!=0) 因为点击边框会导致窗口没被激活
+      {
+        WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
+        已激活左边快捷呼出窗口:=0
+        主动隐藏快捷呼出窗口:=1
+        停留呼出左边快捷窗口:=0
+        快捷呼出计时:=-1
+
+        loop 20
+        {
+          ToolTip 隐藏左边快捷呼出窗口
+          Sleep 30
+        }
+        ToolTip
+      }
+      else ;If (已激活左边快捷呼出窗口=0)
+      {
+        WinActivate ahk_id %左边快捷呼出窗口% ;激活窗口
+        已激活左边快捷呼出窗口:=1
+        主动隐藏快捷呼出窗口:=0
+
+        if (停留呼出左边快捷窗口=0)
+        {
+          loop 20
+          {
+            ToolTip 激活左边快捷呼出窗口
+            Sleep 30
+          }
+          ToolTip
+        }
+      }
+    }
+  }
+  else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="")
+  {
+    if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+    {
+      右边快捷呼出窗口:=""
+      IniWrite %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
+    }
+    else
+    {
+      if (已激活右边快捷呼出窗口=1) ;and (WinActive("ahk_id "右边快捷呼出窗口)!=0) 因为点击边框会导致窗口没被激活
+      {
+        WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
+        已激活右边快捷呼出窗口:=0
+        主动隐藏快捷呼出窗口:=1
+        停留呼出右边快捷窗口:=0
+        快捷呼出计时:=-1
+
+        loop 20
+        {
+          ToolTip 隐藏右边快捷呼出窗口
+          Sleep 30
+        }
+        ToolTip
+      }
+      else ;If (已激活右边快捷呼出窗口=0)
+      {
+        WinActivate ahk_id %右边快捷呼出窗口% ;激活窗口
+        已激活右边快捷呼出窗口:=1
+        主动隐藏快捷呼出窗口:=0
+
+        if (停留呼出右边快捷窗口=0)
+        {
+          loop 20
+          {
+            ToolTip 激活右边快捷呼出窗口
+            Sleep 30
+          }
+          ToolTip
+        }
+      }
+    }
+  }
+  else ; 点击在非边框时候立即刷新状态
+  {
+    if (WinID!=左边快捷呼出窗口)
+    {
+      已激活左边快捷呼出窗口:=0
+      停留呼出左边快捷窗口:=0
+      快捷呼出计时:=-1
+    }
+    else
+    {
+      已激活左边快捷呼出窗口:=1
+      停留呼出左边快捷窗口:=1
+      快捷呼出计时:=-1
+    }
+
+    if (WinID!=右边快捷呼出窗口)
+    {
+      已激活右边快捷呼出窗口:=0
+      停留呼出右边快捷窗口:=0
+      快捷呼出计时:=-1
+    }
+    else
+    {
+      已激活右边快捷呼出窗口:=1
+      停留呼出右边快捷窗口:=1
+      快捷呼出计时:=-1
+    }
+  }
 return
 
 ~Tab::
@@ -1879,6 +1965,7 @@ $MButton:: ;中键
     CoordMode Mouse, Window ;以窗口为基准
     MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
+    WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
     按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
     if (按下时间>500) ;长按时间大于500ms将当前窗口填满所有屏幕
@@ -1894,8 +1981,9 @@ $MButton:: ;中键
         {
           WinRestore ahk_id %WinID%
           WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+          WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
           WinActivate ahk_id %WinID% ; 激活窗口
-          ToolTip 将%WinID%窗口填满所有屏幕
+          ToolTip 将%WinTitle%窗口填满所有屏幕
           SetTimer 关闭提示, -500 ;500毫秒后关闭提示
         }
       }
@@ -2272,13 +2360,13 @@ return
   Critical, Off
 return
 
-ExtraHeightFit适配: ;模式切换
+标签页适配: ;模式切换
   Critical, On
   if (ExtraHeightFit=1)
   {
     ExtraHeightFit:=0
     ExtraHeight:=0
-    IniWrite %ExtraHeightFit%, Settings.ini, 设置, ExtraHeightFit ;写入设置到ini文件
+    IniWrite %ExtraHeightFit%, Settings.ini, 设置, 标签页适配 ;写入设置到ini文件
     Menu Tray, UnCheck, 标签页适配 ;右键菜单不打勾
   }
   else
@@ -2286,17 +2374,18 @@ ExtraHeightFit适配: ;模式切换
     ExtraHeightFit:=1
     ExtraHeight:=Round(A_ScreenHeight*(25/1080))
 
-    ExtraHeightRecord:=ExtraHeight
     InputBox ExtraHeight, 标签页高度适配, 请输入标签页的高度(单位:像素)`n最大化会留出空间用于显示标签页, , , 170, , , Locale, ,%ExtraHeight%
     if !ErrorLevel
     {
       if (ExtraHeight<=0)
         ExtraHeight:=1
+
+      IniWrite %ExtraHeight%, Settings.ini, 设置, 标签页适配高度 ;写入设置到ini文件
     }
     else
-      ExtraHeight:=ExtraHeightRecord
+      IniRead ExtraHeight, Settings.ini, 设置, 标签页适配高度 ;写入设置到ini文件
 
-    IniWrite %ExtraHeightFit%, Settings.ini, 设置, ExtraHeightFit ;写入设置到ini文件
+    IniWrite %ExtraHeightFit%, Settings.ini, 设置, 标签页适配 ;写入设置到ini文件
     Menu Tray, Check, 标签页适配 ;右键菜单打勾
   }
   Critical, Off
@@ -2850,9 +2939,7 @@ KeyMedia:
 return
 
 屏幕监测:
-  if (NeedReloadHSJ=1) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-    SetTimer 恢复运行后视镜, -1
-
+  ;自动暂停
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos MISX, MISY, AWinID ;获取鼠标在屏幕中的位置
   WinGetClass WinClass, ahk_id %AWinID% ;ahk_id 获取窗口类名
@@ -2888,34 +2975,7 @@ return
     Return
   }
 
-  ;搜索栏
-  WinGetPos EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
-  搜索栏X:=SW+KDXZ+3
-  搜索栏Y:=SH-Round(SH/3*2)-50
-  搜索栏W:=Round(SW/3*2)
-  搜索栏H:=Round(SH/3*2)
-  ; ToolTip %EverythingToolbarX% %搜索栏X%`n%EverythingToolbarY% %搜索栏Y%`n%EverythingToolbarW% %搜索栏W%`n%EverythingToolbarH% %搜索栏H%
-  if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
-  {
-    搜索栏:=1
-    if (EverythingToolbarX!=搜索栏X) or (EverythingToolbarY!=搜索栏Y) or (EverythingToolbarW!=搜索栏W) or (EverythingToolbarH!=搜索栏H)
-    {
-      if (任务栏移动完成!=1)
-        WinMove ahk_exe EverythingToolbar.Launcher.exe, , 搜索栏X, 搜索栏Y, 搜索栏W, 搜索栏H
-    }
-    if (EverythingToolbarX=搜索栏X) and (EverythingToolbarY=搜索栏Y) and (EverythingToolbarW=搜索栏W) and (EverythingToolbarH=搜索栏H)
-    {
-      任务栏移动完成:=1
-    }
-  }
-  else
-  {
-    if (搜索栏=1)
-      DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
-    搜索栏:=0
-    任务栏移动完成:=0
-  }
-
+  ;=====================================================================Y轴
   ; ToolTip 防误触时间%防误触时间%ms
   if (MISY<3) ;如果鼠标贴着屏幕顶部
   {
@@ -3007,10 +3067,15 @@ return
     }
   }
 
+  ;=====================================================================X轴
+  ; 调试模式:=1
   if (MISX<FJL) ;and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕左侧 且鼠标左键没有按下
   {
+    if (调试模式=1)
+      ToolTip 鼠标在屏幕左侧
     屏幕实时位置:=1
-    ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
+    主动隐藏快捷呼出窗口:=0
+    ; ToolTip 屏幕实时位置%屏幕实时位置% w%HSJWidth% h%HSJHeight%
     if (HSJ=0)
     {
       if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenHSJ=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕左侧 且鼠标左键没有按下
@@ -3033,13 +3098,13 @@ return
       }
     }
 
-    快捷呼出计时:=""
+    快捷呼出计时:=-1
     if (停留呼出左边快捷窗口=1) and (已激活左边快捷呼出窗口=0)
     {
       WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
       停留呼出左边快捷窗口:=0
     }
-    if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
+    else if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
     {
       WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
       停留呼出右边快捷窗口:=0
@@ -3047,8 +3112,11 @@ return
   }
   else if (MISX>FJR) ;and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕右侧 且鼠标左键没有按下
   {
+    if (调试模式=1)
+      ToolTip 鼠标在屏幕右侧
     屏幕实时位置:=3
-    ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
+    主动隐藏快捷呼出窗口:=0
+    ; ToolTip 屏幕实时位置%屏幕实时位置% w%HSJWidth% h%HSJHeight%
     if (HSJ=0)
     {
       if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenHSJ=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕右侧 且鼠标左键没有按下
@@ -3071,23 +3139,26 @@ return
       }
     }
 
-    快捷呼出计时:=""
+    快捷呼出计时:=-1
     if (停留呼出左边快捷窗口=1) and (已激活左边快捷呼出窗口=0)
     {
       WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
       停留呼出左边快捷窗口:=0
     }
-    if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
+    else if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
     {
       WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
       停留呼出右边快捷窗口:=0
     }
   }
-  else if (MISX>FJL+BKXZ) and (MISX<FJR-BKXZ)
+  else if (MISX>FJL+BKXZ) and (MISX<FJR-BKXZ) ; 如果鼠标在屏幕中间
   {
+    if (调试模式=1)
+      ToolTip 鼠标在屏幕中间
     屏幕实时位置:=2
+    主动隐藏快捷呼出窗口:=0
     HSJH:=0
-    ; ToolTip 屏幕实时位置%屏幕实时位置% w%rWidth% h%rHeight%
+    ; ToolTip 屏幕实时位置%屏幕实时位置% w%HSJWidth% h%HSJHeight%
     if (HSJ=1)
     {
       ; ToolTip 关闭后视镜
@@ -3096,65 +3167,108 @@ return
       HSJM:=0
     }
 
-    快捷呼出计时:=""
+    快捷呼出计时:=-1
     if (停留呼出左边快捷窗口=1) and (已激活左边快捷呼出窗口=0)
     {
       WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
       停留呼出左边快捷窗口:=0
     }
-    if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
+    else if (停留呼出右边快捷窗口=1) and (已激活右边快捷呼出窗口=0)
     {
       WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
       停留呼出右边快捷窗口:=0
     }
   }
-  else if (WinSX>=FJL) and (WinSX<=FJL+BKXZ) and (左边快捷呼出窗口!="") and (已激活左边快捷呼出窗口=0)
+  else if (MISX>=FJL) and (MISX<=FJL+BKXZ) and (左边快捷呼出窗口!="") ;鼠标停留在左侧屏幕边框内
   {
-    if (快捷呼出计时="")
+    if (快捷呼出计时=-1)
     {
       快捷呼出计时:=A_TickCount
     }
-
-    停留时间:=A_TickCount-快捷呼出计时
-    if (停留时间>800) and (已激活左边快捷呼出窗口=0) and (停留呼出左边快捷窗口!=1) and !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") and !GetKeyState("RButton", "P")
+    else
     {
-      if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+      停留时间:=A_TickCount-快捷呼出计时
+      if (调试模式=1)
+        ToolTip 停留时间%停留时间%ms 停留%停留呼出左边快捷窗口%`n左边窗口%左边快捷呼出窗口% 状态%已激活左边快捷呼出窗口%`n主动隐藏%主动隐藏快捷呼出窗口%
+
+      if (停留时间>800) and (已激活左边快捷呼出窗口=0) and !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") and !GetKeyState("RButton", "P") ;左边快捷呼出窗口没有激活
       {
-        左边快捷呼出窗口:=""
-        IniWrite %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
-      }
-      else
-      {
-        WinActivate ahk_id %左边快捷呼出窗口% ;激活窗口
-        停留呼出左边快捷窗口:=1
+        if (WinExist("ahk_id" 左边快捷呼出窗口)=0)
+        {
+          左边快捷呼出窗口:=""
+          IniWrite %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
+        }
+        else if (主动隐藏快捷呼出窗口=0) and (停留呼出左边快捷窗口=0)
+        {
+          WinActivate ahk_id %左边快捷呼出窗口% ;激活窗口
+          停留呼出左边快捷窗口:=1
+        }
       }
     }
   }
-  else if (WinSX<=FJR) and (WinSX>=FJR-BKXZ) and (右边快捷呼出窗口!="") and (已激活右边快捷呼出窗口=0)
+  else if (MISX<=FJR) and (MISX>=FJR-BKXZ) and (右边快捷呼出窗口!="") ;鼠标停留在右侧屏幕边框内
   {
-    if (快捷呼出计时="")
+    if (快捷呼出计时=-1)
     {
       快捷呼出计时:=A_TickCount
     }
-
-    停留时间:=A_TickCount-快捷呼出计时
-    if (停留时间>800) and (已激活右边快捷呼出窗口=0) and (停留呼出右边快捷窗口!=1) and !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") and !GetKeyState("RButton", "P")
+    else
     {
-      if (WinExist("ahk_id" 右边快捷呼出窗口)=0)
+      停留时间:=A_TickCount-快捷呼出计时
+      if (调试模式=1)
+        ToolTip 停留时间%停留时间%ms 停留%停留呼出右边快捷窗口%`n右边窗口%右边快捷呼出窗口% 状态%已激活右边快捷呼出窗口%`n主动隐藏%主动隐藏快捷呼出窗口%
+
+      if (停留时间>800) and (已激活右边快捷呼出窗口=0) and !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") and !GetKeyState("RButton", "P") ;右边快捷呼出窗口没有激活
       {
-        右边快捷呼出窗口:=""
-        IniWrite %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
-      }
-      else
-      {
-        WinActivate ahk_id %右边快捷呼出窗口% ;激活窗口
-        停留呼出右边快捷窗口:=1
+        if (WinExist("ahk_id" 右边快捷呼出窗口)=0)
+        {
+          右边快捷呼出窗口:=""
+          IniWrite %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
+        }
+        else if (主动隐藏快捷呼出窗口=0) and (停留呼出右边快捷窗口=0)
+        {
+          WinActivate ahk_id %右边快捷呼出窗口% ;激活窗口
+          停留呼出右边快捷窗口:=1
+        }
       }
     }
   }
+  ; 停留时间:=A_TickCount-快捷呼出计时
+  ; 实际左边状态:=WinActive("ahk_id "左边快捷呼出窗口)
+  ; 实际右边状态:=WinActive("ahk_id "右边快捷呼出窗口)
+  ; ToolTip 快捷呼出计时%快捷呼出计时%`n停留时间%停留时间%ms 停留%停留呼出左边快捷窗口%`n左边窗口%左边快捷呼出窗口% 状态%已激活左边快捷呼出窗口% 实际%实际左边状态%`n主动隐藏%主动隐藏快捷呼出窗口%`n`n停留时间%停留时间%ms 停留%停留呼出右边快捷窗口%`n右边窗口%右边快捷呼出窗口% 状态%已激活右边快捷呼出窗口% 实际%实际右边状态%`n主动隐藏%主动隐藏快捷呼出窗口%
 
-  ; 窗口自动调整透明度
-  if (AutoHideClass!="") and (AutoHideClass!="ERROR")
+  ;=====================================================================其他功能
+  ;后视镜线程卡顿重启
+  if (NeedReloadHSJ=1) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+    SetTimer 恢复运行后视镜, -1
+
+  ;搜索栏 Everything 修正
+  WinGetPos EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
+  ; ToolTip %EverythingToolbarX% %搜索栏X%`n%EverythingToolbarY% %搜索栏Y%`n%EverythingToolbarW% %搜索栏W%`n%EverythingToolbarH% %搜索栏H%
+  if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
+  {
+    搜索栏:=1
+    if (EverythingToolbarX!=搜索栏X) or (EverythingToolbarY!=搜索栏Y) or (EverythingToolbarW!=搜索栏W) or (EverythingToolbarH!=搜索栏H)
+    {
+      if (任务栏移动完成!=1)
+        WinMove ahk_exe EverythingToolbar.Launcher.exe, , 搜索栏X, 搜索栏Y, 搜索栏W, 搜索栏H
+    }
+    if (EverythingToolbarX=搜索栏X) and (EverythingToolbarY=搜索栏Y) and (EverythingToolbarW=搜索栏W) and (EverythingToolbarH=搜索栏H)
+    {
+      任务栏移动完成:=1
+    }
+  }
+  else
+  {
+    if (搜索栏=1)
+      DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+    搜索栏:=0
+    任务栏移动完成:=0
+  }
+
+  ; 神隐窗口 窗口自动调整透明度
+  if (AutoHideClass!="") and (AutoHideClass!="ERROR") and (WinExist("ahk_class "AutoHideClass))
   {
     Critical, On
     ; MouseGetPos AutoHideMX, AutoHideMY
@@ -3164,6 +3278,7 @@ return
     ; ToolTip %AutoHideClass% %AutoHideWinClass%
     if (AutoHideWinClass=AutoHideClass) ;是自动隐藏窗口 打开神隐
     {
+      AutoHide:=0
       WinSet Transparent, 100, ahk_class %AutoHideClass%
       WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
 
@@ -3173,8 +3288,12 @@ return
     {
       if (AutoHideMX<AutoHideWinX) or (AutoHideMX>AutoHideWinX+AutoHideWinWidth) or (AutoHideMY<AutoHideWinY) or (AutoHideMY>AutoHideWinY+AutoHideWinHeight) ; 鼠标在窗口外
       {
-        WinSet Transparent, 255, ahk_class %AutoHideClass%
-        WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+        if (AutoHide=0)
+        {
+          AutoHide:=1
+          WinSet Transparent, 255, ahk_class %AutoHideClass%
+          WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+        }
       }
       else
       {
@@ -3231,8 +3350,8 @@ return
     Critical, Off
   }
 
-  ; 窗口自动移动位置
-  if (AutoMoveClass!="") and (AutoMoveClass!="ERROR")
+  ; 飘逸窗口 自动移动位置
+  if (AutoMoveClass!="") and (AutoMoveClass!="ERROR") and (WinExist("ahk_class "AutoMoveClass))
   {
     Critical, On
     ; MouseGetPos AutoMoveMX, AutoMoveMY
@@ -3248,21 +3367,34 @@ return
     {
       if (AutoMoveWinY+AutoMoveWinHeight/2<=A_ScreenHeight/2) ;窗口在屏幕上半部分
       {
-        if (AutoMoveWinY<AutoMoveWinHeight) ;窗口上方位置不足以显示 向下移动
+        if (AutoMoveWinY<AutoMoveWinHeight) and (AutoMove=0) ;窗口上方位置不足以显示 向下移动
+        {
+          AutoMove:=1
           WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY+AutoMoveWinHeight
-        else ;窗口上方位置足够 向上移动
+        }
+        else if (AutoMove=0) ;窗口上方位置足够 向上移动
+        {
+          AutoMove:=1
           WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY-AutoMoveWinHeight
+        }
       }
       else if (AutoMoveWinY+AutoMoveWinHeight/2>A_ScreenHeight/2) ;窗口在屏幕下半部分
       {
-        if (A_ScreenHeight-(AutoMoveWinY+AutoMoveWinHeight)<AutoMoveWinHeight) ;窗口下方位置不足以显示 向上移动
+        if (A_ScreenHeight-(AutoMoveWinY+AutoMoveWinHeight)<AutoMoveWinHeight) and (AutoMove=1) ;窗口下方位置不足以显示 向上移动
+        {
+          AutoMove:=0
           WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY-AutoMoveWinHeight
-        else ;窗口下方位置足够 向下移动
+        }
+        else if (AutoMove=1) ;窗口下方位置足够 向下移动
+        {
+          AutoMove:=0
           WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY+AutoMoveWinHeight
+        }
       }
     }
-    else if (AutoMoveMY<AutoMoveWinY-50) or (AutoMoveMY>AutoMoveWinY+AutoMoveWinHeight+50) or (AutoMoveMX<AutoMoveWinX-50) or (AutoMoveMX>AutoMoveWinX+AutoMoveWinWidth+50) ;鼠标在窗口外
+    else if (AutoMoveMY<AutoMoveWinY-20) or (AutoMoveMY>AutoMoveWinY+AutoMoveWinHeight+20) or (AutoMoveMX<AutoMoveWinX-20) or (AutoMoveMX>AutoMoveWinX+AutoMoveWinWidth+20) ;鼠标在窗口外
     {
+      AutoMove:=1
       WinMove ahk_class %AutoMoveClass%, , AutoMoveWinX, AutoMoveWinY ;还原窗口位置
     }
     Critical, Off
@@ -3427,7 +3559,7 @@ return
     Gui 后视镜:New
     Gui 后视镜:-Caption +AlwaysOnTop +E0x02000000 +E0x00080000  ;  WS_EX_COMPOSITED := E0x02000000  WS_EX_LAYERED := E0x00080000
     Gui 后视镜:Margin, 0,0
-    Gui 后视镜:Add, text, w%rWidth% h%rHeight% 0xE hwndhPic ; SS_BITMAP = 0xE
+    Gui 后视镜:Add, text, w%HSJWidth% h%HSJHeight% 0xE hwndhPic ; SS_BITMAP = 0xE
     if (屏幕实时位置=1)
     {
       Gui 后视镜:Show, x%HSJLX% y%HSJY% NA, MagnifierCloneWindowAHK
@@ -3440,7 +3572,7 @@ return
 
     Gui MagnifierWindow:New
     Gui MagnifierWindow: +AlwaysOnTop -Caption +ToolWindow +HWNDhMagnifier
-    Gui MagnifierWindow: Show, w%rWidth% h%rHeight% NA Hide, MagnifierWindowAHK
+    Gui MagnifierWindow: Show, w%HSJWidth% h%HSJHeight% NA Hide, MagnifierWindowAHK
 
     DllCall("LoadLibrary", "str", "magnification.dll")
     DllCall("magnification.dll\MagInitialize")
@@ -3454,8 +3586,8 @@ return
       , "UInt", MS_SHOWMAGNIFIEDCURSOR | WS_CHILD | WS_VISIBLE
       , "Int", 0
       , "Int", 0
-      , "Int", rWidth
-      , "Int", rHeight
+      , "Int", HSJWidth
+      , "Int", HSJHeight
       , Ptr, hMagnifier
       , "UInt", 0
       , Ptr, DllCall("GetWindowLong", Ptr, hMagnifier, "UInt", GWL_HINSTANCE := -6)
@@ -3528,10 +3660,10 @@ return
 
     CoordMode Mouse, Screen ;以屏幕为基准
     MouseGetPos MXS, MYS
-    NumPut(MXS - rWidth/2, RECT, 0, "Int")
-    NumPut(MYS - rHeight/2, RECT, 4, "Int")
-    NumPut(rWidth, RECT, 8, "Int")
-    NumPut(rHeight, RECT, 12, "Int")
+    NumPut(MXS - HSJWidth/2, RECT, 0, "Int")
+    NumPut(MYS - HSJHeight/2, RECT, 4, "Int")
+    NumPut(HSJWidth, RECT, 8, "Int")
+    NumPut(HSJHeight, RECT, 12, "Int")
     DllCall("magnification.dll\MagSetWindowSource", Ptr, hChildMagnifier, Ptr, &RECT)
   }
 
