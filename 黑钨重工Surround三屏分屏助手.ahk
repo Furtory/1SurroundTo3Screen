@@ -28,15 +28,15 @@
   #SingleInstance Force
   #MaxHotkeysPerInterval 2000
   #KeyHistory 2000
-  SetBatchLines -1
+  Gui +HWNDhGui
+  Global hPic
   CoordMode Pixel, Screen
   CoordMode ToolTip, Screen
+  SetBatchLines -1
+  SetWinDelay 10
   SetKeyDelay -1, 30
   SetWorkingDir %A_ScriptDir%
   OnExit 退出软件
-  Gui +HWNDhGui
-  Global hPic
-  SetWinDelay 10
 
   /*
   黑钨重工出品 免费开源 请勿商用 侵权必究
@@ -46,7 +46,7 @@
 
   MButton_presses:=0
   running:=1 ;1为运行 0为暂停
-  ; Menu Tray, NoStandard ;不显示默认的AHK右键菜单
+  Menu Tray, NoStandard ;不显示默认的AHK右键菜单
   Menu Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
   Menu Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
   Menu Tray, Add
@@ -55,6 +55,8 @@
   Menu Tray, Add, 管理权限, 管理权限 ;添加新的右键菜单
   Menu Tray, Add, 兼容模式, 兼容模式 ;添加新的右键菜单
   Menu Tray, Add, 锐化算法, 锐化算法 ;添加新的右键菜单
+  Menu Tray, Add
+  Menu Tray, Add, 窗口找回, 窗口找回 ;添加新的右键菜单
   Menu Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
   Menu Tray, Add, 神隐窗口, 神隐窗口 ;添加新的右键菜单
   Menu Tray, Add, 飘逸窗口, 飘逸窗口 ;添加新的右键菜单
@@ -318,7 +320,8 @@
   gosub 更新数据
   Sleep 100
 
-  SetTimer 屏幕监测, 50 ;监测鼠标位置打开后视镜
+  if (running=1)
+    SetTimer 屏幕监测, 50 ;监测鼠标位置打开后视镜
 return
 
 更新数据:
@@ -432,7 +435,11 @@ return
 Return
 
 新增白名单:
+  if (running=1)
+    SetTimer 屏幕监测, Off
+
   KeyWait LButton
+  Critical, On
   WhiteListType:=1
   loop
   {
@@ -512,6 +519,10 @@ Return
       }
     }
   }
+
+  if (running=1)
+    SetTimer 屏幕监测, 50
+  Critical, Off
 Return
 
 白名单设置:
@@ -565,7 +576,11 @@ Return
 Return
 
 新增黑名单:
+  if (running=1)
+    SetTimer 屏幕监测, Off
+
   KeyWait LButton
+  Critical, On
   BlackListType:=1
   loop
   {
@@ -645,6 +660,10 @@ Return
       }
     }
   }
+
+  if (running=1)
+    SetTimer 屏幕监测, 50
+  Critical, Off
 Return
 
 黑名单设置:
@@ -700,11 +719,63 @@ Return
     Critical, Off
 Return
 
-if (WinClass="WorkerW") or (WinClass="_cls_desk_") or (WinClass="Progman") or (WinClass="ActualTools_MultiMonitorTaskbar") ;or (WinClass="SciTEWindow") ;黑名单列表 双引号内填类名 ahk_class
-{
+窗口找回:
+  Critical, On
+  ; 遍历所有窗口
+  WinGet idList, List
+  Loop, %idList%
+  {
+    ; 获取窗口句柄
+    thisID := idList%A_Index%
+
+    ; 获取窗口的位置和大小
+    WinGetPos winX, winY, winWidth, winHeight, ahk_id %thisID%
+
+    ; 检查窗口是否超出屏幕范围，并调整位置
+    if (winWidth>RSW) or (winHeight>RSH)
+    {
+      WinGetClass WinClass, ahk_id %thisID%
+      if (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
+      {
+        白名单:=0
+        gosub 更新数据
+
+        if (winWidth<A_ScreenWidth)
+        {
+          if (winX < 0-Round(KDXZ/2))
+            YDX:=YDL
+          else if (winX + winWidth > A_ScreenWidth+Round(KDXZ/2))
+            YDX:=YDR
+          else
+            YDX:=YDM
+          WinMove ahk_id %thisID%, ,YDX ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        }
+        else
+        {
+          白名单:=1
+          gosub 更新数据
+
+          WinMove ahk_id %thisID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        }
+      }
+    }
+    else
+    {
+      if (winX < 0)
+        winX := 0
+      else if (winX + winWidth > A_ScreenWidth)
+        winX := A_ScreenWidth - winWidth
+
+      if (winY < 0)
+        winY := 0
+      else if (winY + winHeight > A_ScreenHeight)
+        winY := A_ScreenHeight - winHeight
+    }
+
+    ; 移动窗口到新的位置
+    WinMove ahk_id %thisID%, , %winX%, %winY%
+  }
   Critical, Off
-  黑名单:=1 ;如果在黑名单列表的窗口内操作则不执行
-}
 return
 
 ~WheelUp:: ;触发按键 滚轮上
@@ -913,13 +984,18 @@ return
     WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
     ToolTip 窗口%ActiveWindowID%已准备好等待激活
     IniWrite %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
-    KeyWait LButton
-    ToolTip
+    SetTimer 关闭提示, -500 ;500毫秒后关闭提示
     Critical, Off
     Return
   }
   else if (窗口样式=1) and (WindowY>WinTop) and (WinClass!="AutoHotkeyGUI") ;如果已经处于总是顶置状态 并且 没有点击在窗口顶部
   {
+    ; ToolTip 关闭后视镜
+    WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+    WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
+    HSJM:=0
+    HSJH:=1
+
     CoordMode Mouse, Screen ;以屏幕为基准
     MouseGetPos, , ScreenOldY, WinID ;;获取鼠标在屏幕中的位置
     Loop 30 ;如果300ms内不移动不调整透明度左键也不会抬起
@@ -936,7 +1012,7 @@ return
       {
         continue
       }
-      else ;鼠标移动了
+      else if GetKeyState("Lbutton") ;如果鼠标移动了
       {
         Send {LButton Up} ;抬起左键后再调整透明度
       }
@@ -983,6 +1059,31 @@ return
       }
     }
     KeyWait LButton
+    if (HSJ=1)
+    {
+      CoordMode Mouse, Screen ;以屏幕为基准
+      MouseGetPos ReloadX, ReloadY
+      ; msgbox, ReloadX%ReloadX% ReloadY%ReloadY%
+      if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
+      {
+        HSJM:=0
+        HSJH:=0
+        WinShow ahk_id %MagnifierWindowID% ;打开后视镜
+
+        if (HSJM=0) and (ReloadX<FJL) ;如果在左侧屏幕
+        {
+          WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+          HSJM:=1
+        }
+        else if (HSJM=0) and (ReloadY>FJR) ;如果在右侧屏幕
+        {
+          WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+          HSJM:=1
+        }
+
+        WinSet Transparent, 255, ahk_id %MagnifierWindowID%
+      }
+    }
   }
   Critical, Off
 return
@@ -1096,7 +1197,7 @@ Return
             }
           }
         }
-        else ;放大镜窗口存在
+        else ;后视镜窗口存在
         {
           ToolTipText:="已清除黑名单设置"
         }
@@ -1163,10 +1264,10 @@ return
     WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
     HSJM:=0
     HSJH:=1
+
+    Critical, on
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop) ;第一次记录时间
-    LoopTimes:=20 ;检测2秒
-
     CoordMode Mouse, Screen ;以屏幕为基准
     MouseGetPos, , OldWinSY
     gosub AeroShake ;跳转检测程序
@@ -1175,6 +1276,7 @@ return
     MouseGetPos, , NewWinSY
     下移距离:=NewWinSY-OldWinSY
     MoveDownSpeed:=Round(Abs(下移距离)/((LBUpOnTop-LBDownOnTop)/freq*1000)*1000) ;移动速度=移动距离/时间
+    Critical, off
     ; ToolTip, 下移距离%下移距离% MoveDownSpeed%MoveDownSpeed%, , ,2
 
     ; 顶置窗口
@@ -1261,9 +1363,15 @@ return
       下移距离:=SY-OldWinSY
 
       if (OldWinSY>WinTop) and (下移距离<-30*(A_ScreenHeight/1080)) and (SY<=WinTop)
+      {
+        Critical, on
         窗口贴顶:=1
+      }
       Else if (OldWinSY<=WinTop) and (SY<=0)
-        窗口贴顶:=1 
+      {
+        Critical, on
+        窗口贴顶:=1
+      }
       Else
         窗口贴顶:=0
 
@@ -1279,6 +1387,7 @@ return
         WinMinimize ahk_id %左边快捷呼出窗口% ;隐藏窗口
         主动隐藏快捷呼出窗口:=1
         快捷呼出计时:=-1
+        Critical Off  
       }
       else if (SX<=FJR) and (SX>=FJR-BKXZ) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
       {
@@ -1291,6 +1400,7 @@ return
         WinMinimize ahk_id %右边快捷呼出窗口% ;隐藏窗口
         主动隐藏快捷呼出窗口:=1
         快捷呼出计时:=-1
+        Critical Off  
       }
       else if (SX<=FJL-Round(RSW/5*2+KDXZ/2)) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;左边屏幕贴顶 最大化
       {
@@ -1303,6 +1413,7 @@ return
           WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         }
         WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+        Critical Off  
       }
       else if (SX>=FJL) and (SX<=FJR) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;左边屏幕贴左半边顶 最大化
       {
@@ -1315,6 +1426,7 @@ return
           WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         }
         WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+        Critical Off  
       }
       else if (SX>=FJR+Round(RSW/5*2)) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;右边屏幕贴右半边顶 最大化
       {
@@ -1327,28 +1439,33 @@ return
           WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         }
         WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+        Critical Off  
       }
       else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;左边屏幕贴右半边顶 竖条显示
       {
         WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
         WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
+        Critical Off  
       }
       else if (SX<FJR+Round(RSW/5*2)) and (SX>FJR) and (窗口贴顶=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;右边屏幕贴左半边顶 竖条显示
       {
         WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
         WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
+        Critical Off  
       }
       else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinH>=A_ScreenHeight-ExtraHeight) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") and (WinTitleName!="QQ") ;如果鼠标移动了窗口低于屏幕顶部范围
       {
         WinRestore ahk_id %WinID%
         WinMove ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
+        Critical Off  
       }
       else if (WinW>SW) and (WinH<SH-ExtraHeight) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ; 如果窗口宽度大于物理屏幕宽度 修正窗口大小
       {
         WinRestore ahk_id %WinID%
         WinMove ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
         WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
+        Critical Off  
       }
     }
   }
@@ -1502,7 +1619,7 @@ AeroShake:
   总移动距离:=0
   CoordMode Mouse, Screen ;以屏幕为基准
   MouseGetPos WinSX, WinSY ;;获取鼠标在屏幕中的位置
-  Loop %LoopTimes% ;监测时间1次循环等于0.15秒
+  Loop ;监测时间1次循环等于0.15秒
   {
     ; ToolTip 摇晃次数:%摇晃次数%`n移动速度:%MoveSpeed%
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -1516,6 +1633,7 @@ AeroShake:
     总移动距离:=总移动距离+移动距离
     按下时间:=(LBUp-LBDown)/freq*1000 ;按下时间=第二次记录时间-第一次记录时间
     MoveSpeed:=Round(移动距离/按下时间)*1000 ;移动速度=移动距离/时间
+
     if !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") ;左键抬起则暂停
     {
       break
@@ -1538,6 +1656,11 @@ AeroShake:
     {
       摇晃次数:=摇晃次数+1
     }
+
+    DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
+    检测时长:=Round((LBUpOnTop-LBDownOnTop)/freq*1000)
+    if (检测时长>2000) ;如果检测时长大于2000毫秒
+      Break ;则退出循环
   }
 Return
 
@@ -1974,7 +2097,7 @@ $MButton:: ;中键
       {
         Return
       }
-      else if (WY<WinTop) and (FirstClickTop=1) ;点击位置在窗口顶部
+      else if (WY<WinTop) and (FirstClickTop=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ;点击位置在窗口顶部
       {
         WinGetPos, , , WinW, WinH, ahk_id %WinID%
         if (WinW<A_ScreenWidth) or (WinH<A_ScreenHeight)
@@ -1991,7 +2114,14 @@ $MButton:: ;中键
     }
     else
     {
-      if (WY<WinTop) ;点击位置在窗口顶部
+      WinGetPos, , , WinWidth, WinHeight, ahk_id %WinID%
+      if (WinHeight>=A_ScreenHeight) and (WinWidth>=A_ScreenWidth) and (WY<WinTop) and (FirstClickTop=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ;如果窗口已经填满所有屏幕
+      {
+        WinSet Style, ^0xC00000, ahk_id %WinID%  ; 切换窗口的标题栏显示或隐藏
+        WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        ; WinSet, Redraw ,, ahk_id %WinID%  ; 刷新窗口
+      }
+      else if (WY<WinTop) and (FirstClickTop=1) ;点击位置在窗口顶部
       {
         Send {MButton}
       }
@@ -2183,20 +2313,20 @@ if (WY<WinTop) ;点击位置在窗口顶部
 Critical, Off
 return
 
-~#Space::
-  KeyWait Space
-  WinGet win_id, , A
-  thread_id := DllCall("GetWindowThreadProcessId", "UInt", win_id, "UInt", 0)
-  输入法 := DllCall("GetKeyboardLayout", "UInt", thread_id)
-  if (输入法=67699721)
-  {
-    ToolTip 中文输入法 ;%输入法%
-  }
-  else if (输入法=134481924)
-  {
-    ToolTip 英文输入法 ;%输入法%
-  }
-  SetTimer 关闭提示, -800 ;800毫秒后关闭提示
+; ~#Space::
+KeyWait Space
+WinGet win_id, , A
+thread_id := DllCall("GetWindowThreadProcessId", "UInt", win_id, "UInt", 0)
+输入法 := DllCall("GetKeyboardLayout", "UInt", thread_id)
+if (输入法=67699721)
+{
+  ToolTip 中文输入法 ;%输入法%
+}
+else if (输入法=134481924)
+{
+  ToolTip 英文输入法 ;%输入法%
+}
+SetTimer 关闭提示, -800 ;800毫秒后关闭提示
 Return
 
 关闭提示:
@@ -2204,7 +2334,7 @@ Return
 return
 
 基础功能:
-  MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      如果最大化过大请加入白名单`n      长按中键窗口填满所有屏幕`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      拨动滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+  MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      如果最大化过大请加入白名单`n      长按中键窗口填满所有屏幕`n      填满后短按中键可以切换标题栏显示或隐藏`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      拨动滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n输出中键`n      因为上述功能实现导致中键被劫持`n      双击中键后保持按住输出中键`n      在窗口顶部点击中键不会被劫持`n`n窗口找回`n      将超出屏幕范围的窗口移动到屏幕内`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
@@ -2496,6 +2626,9 @@ Button取消:
 return
 
 神隐窗口:
+  if (running=1)
+    SetTimer 屏幕监测, Off
+
   Critical, on
   if (AutoHideClass="") or (AutoHideClass="ERROR")
   {
@@ -2507,7 +2640,7 @@ return
       WinGetClass WinClass, ahk_id %WinID%
       ToolTip 当前窗口%WinClass%`n请按下左键捕获歌词窗口
 
-      if GetKeyState("LButton", "P")
+      if GetKeyState("LButton", "P") and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
       {
         AutoHideClass:=WinClass
         WinSet AlwaysOnTop, On, ahk_class %AutoHideClass%  ;切换窗口的顶置状态
@@ -2533,10 +2666,16 @@ return
     WinSet Transparent, 255, ahk_class %AutoHideClass%
     WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
   }
-  Critical, off
+
+  if (running=1)
+    SetTimer 屏幕监测, 50
+  Critical, Off
 Return
 
 飘逸窗口:
+  if (running=1)
+    SetTimer 屏幕监测, Off
+
   Critical, on
   if (AutoMoveClass="") or (AutoMoveClass="ERROR")
   {
@@ -2548,7 +2687,7 @@ Return
       WinGetClass WinClass, ahk_id %WinID%
       ToolTip 当前窗口%WinClass%`n请按下左键捕获歌词窗口
 
-      if GetKeyState("LButton", "P")
+      if GetKeyState("LButton", "P") and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
       {
         AutoMoveClass:=WinClass
         WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_class %AutoMoveClass%
@@ -2569,7 +2708,10 @@ Return
     AutoMoveClass:=""
     IniWrite %AutoMoveClass%, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
   }
-  Critical, off
+
+  if (running=1)
+    SetTimer 屏幕监测, 50
+  Critical, Off
 Return
 
 Left::
@@ -2657,7 +2799,7 @@ KeyMedia:
         }
         break
       }
-      else ;放大镜窗口存在
+      else ;后视镜窗口存在
       {
         ToolTipText:="上一曲"
       }
@@ -2684,7 +2826,7 @@ KeyMedia:
           }
         }
       }
-      else ;放大镜窗口存在
+      else ;后视镜窗口存在
       {
         ToolTipText:="下一曲"
       }
@@ -2711,7 +2853,7 @@ KeyMedia:
           }
         }
       }
-      else ;放大镜窗口存在
+      else ;后视镜窗口存在
       {
         ToolTipText:="喜欢歌曲"
       }
@@ -2738,7 +2880,7 @@ KeyMedia:
           }
         }
       }
-      else ;放大镜窗口存在
+      else ;后视镜窗口存在
       {
         ToolTipText:="歌曲歌词"
       }
@@ -2767,7 +2909,7 @@ KeyMedia:
               Sleep 30
             }
           }
-          else ;放大镜窗口存在
+          else ;后视镜窗口存在
           {
             ToolTipText:="媒体快捷键已关闭"
           }
@@ -2794,7 +2936,7 @@ KeyMedia:
         {
           DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Up_Down)
           清除播放器快捷呼出设置记录时间:=Round((KeyUp_Up_Down-KeyDown_Up_Down)/freq*1000, 2)
-          if (清除播放器快捷呼出设置记录时间>2000)
+          if (清除播放器快捷呼出设置记录时间>2000) and (MediaWindow!="") ;如果按下时长超过2秒，则清除快捷呼出设置
           {
             MediaWindow:=""
             IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
@@ -2802,11 +2944,11 @@ KeyMedia:
             {
               Loop 20
               {
-                ToolTip %清除播放器快捷呼出设置记录时间%已清除播放器快捷呼出设置
+                ToolTip 已清除播放器快捷呼出设置
                 Sleep 30
               }
             }
-            else ;放大镜窗口存在
+            else ;后视镜窗口存在
             {
               ToolTipText:=清除播放器快捷呼出设置记录时间 . "已清除播放器快捷呼出设置"
             }
@@ -2821,21 +2963,25 @@ KeyMedia:
             {
               MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
               WinGetClass MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
-              IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
 
-              if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
+              if (MediaWindow!="_cls_desk_") and (MediaWindow!="Shell_TrayWnd") and (MediaWindow!="WorkerW")
               {
-                Loop 20
+                IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+
+                if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
                 {
-                  ToolTip 已设置%MediaWindow%为播放器快捷呼出
-                  Sleep 30
+                  Loop 20
+                  {
+                    ToolTip 已设置%MediaWindow%为播放器快捷呼出
+                    Sleep 30
+                  }
                 }
+                else ;后视镜窗口存在
+                {
+                  ToolTipText:="已设置" . MediaWindow . "为播放器快捷呼出"
+                }
+                ToolTip
               }
-              else ;放大镜窗口存在
-              {
-                ToolTipText:="已设置" . MediaWindow . "为播放器快捷呼出"
-              }
-              ToolTip
             }
             else if (WindowID!=MediaWindow)
             {
@@ -2850,7 +2996,7 @@ KeyMedia:
                   Sleep 30
                 }
               }
-              else ;放大镜窗口存在
+              else ;后视镜窗口存在
               {
                 ToolTipText:="快捷呼出" . MediaWindow . "播放器"
               }
@@ -2868,7 +3014,7 @@ KeyMedia:
                   Sleep 30
                 }
               }
-              else ;放大镜窗口存在
+              else ;后视镜窗口存在
               {
                 ToolTipText:="快捷关闭" . MediaWindow . "播放器"
               }
@@ -3319,27 +3465,30 @@ return
               WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
               WinSet Transparent, 100, ahk_class %AutoHideClass%
 
-              CoordMode Mouse, Screen ;以屏幕为基准
-              MouseGetPos ReloadX, ReloadY
-              ; msgbox, ReloadX%ReloadX% ReloadY%ReloadY%
-              if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
+              if (HSJ=1)
               {
-                HSJM:=0
-                HSJH:=0
-                WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-
-                if (HSJM=0) and (ReloadX<FJL) ;如果在左侧屏幕
+                CoordMode Mouse, Screen ;以屏幕为基准
+                MouseGetPos ReloadX, ReloadY
+                ; msgbox, ReloadX%ReloadX% ReloadY%ReloadY%
+                if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
                 {
-                  WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-                  HSJM:=1
-                }
-                else if (HSJM=0) and (ReloadY>FJR) ;如果在右侧屏幕
-                {
-                  WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-                  HSJM:=1
-                }
+                  HSJM:=0
+                  HSJH:=0
+                  WinShow ahk_id %MagnifierWindowID% ;打开后视镜
 
-                WinSet Transparent, 255, ahk_id %MagnifierWindowID%
+                  if (HSJM=0) and (ReloadX<FJL) ;如果在左侧屏幕
+                  {
+                    WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+                    HSJM:=1
+                  }
+                  else if (HSJM=0) and (ReloadY>FJR) ;如果在右侧屏幕
+                  {
+                    WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+                    HSJM:=1
+                  }
+
+                  WinSet Transparent, 255, ahk_id %MagnifierWindowID%
+                }
               }
               break
             }
@@ -3851,11 +4000,14 @@ return
     WinSet Transparent, 255, ahk_id %MagnifierWindowID%
     ; ToolTip 打开后视镜, , , 2
   }
-  SetTimer 屏幕监测, 50
+
+  if (running=1)
+    SetTimer 屏幕监测, 50
 Return
 
 打开放大镜:
-  SetTimer 屏幕监测, Off
+  if (running=1)
+    SetTimer 屏幕监测, Off
   IfWinActive ahk_id %MagnifierWindowID%
   {
     WinSet Transparent, 0, ahk_id %MagnifierWindowID%
