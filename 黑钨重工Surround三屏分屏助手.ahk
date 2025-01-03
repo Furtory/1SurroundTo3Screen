@@ -58,6 +58,7 @@
   Menu Tray, Add
   Menu Tray, Add, 窗口找回, 窗口找回 ;添加新的右键菜单
   Menu Tray, Add, 媒体快捷, 媒体快捷 ;添加新的右键菜单
+  Menu Tray, Add, 自动暂停, 自动暂停 ;添加新的右键菜单
   Menu Tray, Add, 神隐窗口, 神隐窗口 ;添加新的右键菜单
   Menu Tray, Add, 飘逸窗口, 飘逸窗口 ;添加新的右键菜单
   Menu Tray, Add, 标签页适配, 标签页适配 ;添加新的右键菜单
@@ -163,7 +164,10 @@
     IniRead WhiteList, Settings.ini, Settings, 白名单列表 ;从ini文件读取
 
     IniRead BlackList, Settings.ini, 设置, 黑名单列表 ;从ini文件读取设置
+
     IniRead BlackListWindow_AutoStop, Settings.ini, 设置, 自动暂停黑名单 ;从ini文件读取设置
+    if (BlackListWindow_AutoStop!="") and (BlackListWindow_AutoStop!="ERROR")
+      Menu Tray, Check, 自动暂停
 
     IniRead MediaWindow, Settings.ini, 设置, 呼出播放器 ;从ini文件读取设置
     IniRead AutoHideClass, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
@@ -1064,7 +1068,7 @@ return
       CoordMode Mouse, Screen ;以屏幕为基准
       MouseGetPos ReloadX, ReloadY
       ; msgbox, ReloadX%ReloadX% ReloadY%ReloadY%
-      if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
+      if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
       {
         HSJM:=0
         HSJH:=0
@@ -1075,7 +1079,7 @@ return
           WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
           HSJM:=1
         }
-        else if (HSJM=0) and (ReloadY>FJR) ;如果在右侧屏幕
+        else if (HSJM=0) and (ReloadX>FJR) ;如果在右侧屏幕
         {
           WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
           HSJM:=1
@@ -1151,7 +1155,7 @@ return
   WinGet 窗口样式, ExStyle, ahk_id %WinID_Monitor% ;获取窗口样式
   窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
   ; ToolTip %窗口样式%
-  if (窗口样式=0) and (WindowY<WinTop) and (WinClass!=AutoHideClass) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
+  if (窗口样式=0) and (WindowY<WinTop) and (WinClass!=AutoHideClass) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ;如果没有处于总是顶置状态 并且 点击在窗口顶部
   {
     WinGetClass WinClass, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
     ToolTip 窗口%WinClass%自动暂停
@@ -1163,54 +1167,43 @@ return
   Critical, Off
 Return
 
-~Alt::
-  if (AltCount=0) or (AltCount="")
-  {
-    AltCount:=A_TickCount
-  }
-  else
-  {
-    AltInterval:=A_TickCount-AltCount
-    ; ToolTip %AltInterval%
-    AltCount:=A_TickCount
+自动暂停:
+  if (running=1)
+    SetTimer 屏幕监测, Off
 
-    if (AltInterval>100) and (AltInterval<=300) ; Alt键连击时间在100毫秒到300毫秒之间
+  Critical, on
+  if (BlackListWindow_AutoStop="") or (BlackListWindow_AutoStop="ERROR")
+  {
+    Menu Tray, Check, 自动暂停
+    KeyWait Lbutton
+    loop
     {
-      if (BlackListWindow_AutoStop!="") ;清除黑名单并恢复运行
-      {
-        if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-        {
-          Loop
-          {
-            ToolTip 已清除黑名单设置
-            Sleep 30
+      MouseGetPos, , , WinID
+      WinGetClass WinClass, ahk_id %WinID%
+      ToolTip 当前窗口%WinClass%`n请按下左键捕获自动暂停窗口
 
-            if !GetKeyState("Left", "P")
-            {
-              Loop, 20
-              {
-                ToolTip 已清除黑名单设置
-                Sleep 30
-              }
-              ToolTip
-              break
-            }
-          }
-        }
-        else ;后视镜窗口存在
-        {
-          ToolTipText:="已清除黑名单设置"
-        }
-        Sleep 500
-        BlackListWindow_AutoStop:=""
+      if GetKeyState("LButton", "P") and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
+      {
+        BlackListWindow_AutoStop:=WinClass
         IniWrite %BlackListWindow_AutoStop%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
-        running:=0
-        gosub 暂停运行
-        Alt自动暂停:=0
+        Break
       }
     }
   }
-return
+  else
+  {
+    Menu Tray, UnCheck, 自动暂停
+    BlackListWindow_AutoStop:=""
+    IniWrite %BlackListWindow_AutoStop%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
+    running:=0
+    gosub 暂停运行
+    Alt自动暂停:=0
+  }
+
+  if (running=1)
+    SetTimer 屏幕监测, 50
+  critical, Off
+Return
 
 ~LButton:: ;左键
   gosub 更新数据
@@ -2091,7 +2084,7 @@ $MButton:: ;中键
     WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
     按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
-    if (按下时间>500) ;长按时间大于500ms将当前窗口填满所有屏幕
+    if (按下时间>500) ;长按时间大于500ms将当前窗口else ;后视镜窗口存在
     {
       if (MButtonHotkey=0)
       {
@@ -2106,7 +2099,7 @@ $MButton:: ;中键
           WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
           WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
           WinActivate ahk_id %WinID% ; 激活窗口
-          ToolTip 将%WinTitle%窗口填满所有屏幕
+          ToolTip 将%WinTitle%窗口else ;后视镜窗口存在
           SetTimer 关闭提示, -500 ;500毫秒后关闭提示
         }
       }
@@ -2115,7 +2108,7 @@ $MButton:: ;中键
     else
     {
       WinGetPos, , , WinWidth, WinHeight, ahk_id %WinID%
-      if (WinHeight>=A_ScreenHeight) and (WinWidth>=A_ScreenWidth) and (WY<WinTop) and (FirstClickTop=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ;如果窗口已经填满所有屏幕
+      if (WinHeight>=A_ScreenHeight) and (WinWidth>=A_ScreenWidth) and (WY<WinTop) and (FirstClickTop=1) and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW") ;如果窗口已经else ;后视镜窗口存在
       {
         WinSet Style, ^0xC00000, ahk_id %WinID%  ; 切换窗口的标题栏显示或隐藏
         WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
@@ -2334,11 +2327,11 @@ Return
 return
 
 基础功能:
-  MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      如果最大化过大请加入白名单`n      长按中键窗口填满所有屏幕`n      填满后短按中键可以切换标题栏显示或隐藏`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      拨动滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n输出中键`n      因为上述功能实现导致中键被劫持`n      双击中键后保持按住输出中键`n      在窗口顶部点击中键不会被劫持`n`n窗口找回`n      将超出屏幕范围的窗口移动到屏幕内`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+  MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      如果最大化过大请加入白名单`n      长按中键窗口填满整个屏幕`n      填满后短按中键可以切换标题栏显示或隐藏`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      拨动滚轮最大或最小化全部窗口`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n输出中键`n      因为上述功能实现导致中键被劫持`n      双击中键后保持按住输出中键`n      在窗口顶部点击中键不会被劫持`n`n窗口找回`n      将超出屏幕范围的窗口移动到屏幕内`n`n高效模式`n      加快后视镜加载速度`n      但是会增加后台占用`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
-  MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n贴顶激活窗口`n      Ctrl`+鼠标左键单击窗口顶部设置`n      当鼠标贴着屏幕顶部一段时间后激活`n`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停黑名单`n      双击Alt清除黑名单设置`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n如果和某些软件冲突`n      导致无法最小化和还原所有窗口`n      请打开兼容模式运行本软件`n`n神隐窗口`n      鼠标移动到神隐窗口内会自动降低透明度`n      并且鼠标允许穿透窗口`n      按住Alt可以操作穿透窗口`n`n飘逸窗口`n      鼠标移动到飘逸窗口内会自动移动窗口防止遮挡
+  MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口`n      Ctrl`+左键在窗口内上下滑动调整透明度`n      Tab开关鼠标穿透顶置窗口的功能`n      仅可调整被总是顶置的窗口的透明度`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n贴顶激活窗口`n      Ctrl`+鼠标左键单击窗口顶部设置`n      当鼠标贴着屏幕顶部一段时间后激活`n`n自动暂停黑名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停窗口`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n如果和某些软件冲突`n      导致无法最小化和还原所有窗口`n      请打开兼容模式运行本软件`n`n神隐窗口`n      鼠标移动到神隐窗口内会自动降低透明度`n      并且鼠标允许穿透窗口`n      按住Alt可以操作穿透窗口`n`n飘逸窗口`n      鼠标移动到飘逸窗口内会自动移动窗口防止遮挡
 return
 
 暂停运行: ;模式切换
@@ -2357,7 +2350,6 @@ return
     Hotkey Left, On ;打开箭头左键的热键
     Hotkey Right, On ;打开箭头右键的热键
     Hotkey ^LButton, On ;打开Ctrl+左键的热键
-    Hotkey ~Alt, On ;打开Alt的热键
     ; Hotkey ^c, On ;打开Ctrl+C的热键
     SetTimer 自动隐藏任务栏, Delete
 
@@ -2366,7 +2358,7 @@ return
       CoordMode Mouse, Screen ;以屏幕为基准
       MouseGetPos ReloadX, ReloadY
       ; msgbox, ReloadX%ReloadX% ReloadY%ReloadY%
-      if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
+      if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
       {
         HSJM:=0
         HSJH:=0
@@ -2377,7 +2369,7 @@ return
           WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
           HSJM:=1
         }
-        else if (HSJM=0) and (ReloadY>FJR) ;如果在右侧屏幕
+        else if (HSJM=0) and (ReloadX>FJR) ;如果在右侧屏幕
         {
           WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
           HSJM:=1
@@ -2397,7 +2389,6 @@ return
     else
     {
       ToolTip 分屏助手恢复运行
-      Hotkey Alt, On ;打开Alt键的热键
     }
   }
   else
@@ -2414,7 +2405,6 @@ return
     Hotkey Left, Off ;关闭箭头左键的热键
     Hotkey Right, Off ;关闭箭头右键的热键
     Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
-    Hotkey ~Alt, Off ;关闭Alt的热键
     ; Hotkey ^c, Off ;关闭Ctrl+C的热键
     if (Alt自动暂停=1)
     {
@@ -2638,7 +2628,7 @@ return
     {
       MouseGetPos, , , WinID
       WinGetClass WinClass, ahk_id %WinID%
-      ToolTip 当前窗口%WinClass%`n请按下左键捕获歌词窗口
+      ToolTip 当前窗口%WinClass%`n请按下左键捕获神隐窗口
 
       if GetKeyState("LButton", "P") and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
       {
@@ -2685,7 +2675,7 @@ Return
     {
       MouseGetPos, , , WinID
       WinGetClass WinClass, ahk_id %WinID%
-      ToolTip 当前窗口%WinClass%`n请按下左键捕获歌词窗口
+      ToolTip 当前窗口%WinClass%`n请按下左键捕获飘逸窗口
 
       if GetKeyState("LButton", "P") and (WinClass!="_cls_desk_") and (WinClass!="Shell_TrayWnd") and (WinClass!="WorkerW")
       {
@@ -3424,6 +3414,9 @@ return
     ; ToolTip %AutoHideClass% %AutoHideWinClass%
     if (AutoHideWinClass=AutoHideClass) ;是自动隐藏窗口 打开神隐
     {
+      if !GetKeyState("Alt", "P")
+        OutOfAutoHide:=0
+
       AutoHide:=0
       WinSet Transparent, 100, ahk_class %AutoHideClass%
       WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
@@ -3434,6 +3427,12 @@ return
     {
       if (AutoHideMX<AutoHideWinX) or (AutoHideMX>AutoHideWinX+AutoHideWinWidth) or (AutoHideMY<AutoHideWinY) or (AutoHideMY>AutoHideWinY+AutoHideWinHeight) ; 鼠标在窗口外
       {
+        ; ToolTip 鼠标在窗口外
+        if GetKeyState("Alt", "P")
+          OutOfAutoHide:=1
+        else
+          OutOfAutoHide:=0
+
         if (AutoHide=0)
         {
           AutoHide:=1
@@ -3441,15 +3440,15 @@ return
           WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
         }
       }
-      else
+      else ;鼠标在窗口内
       {
         ; 按住Alt允许控制窗口
-        if GetKeyState("Alt", "P")
+        if GetKeyState("Alt", "P") and (OutOfAutoHide=0)
         {
           CoordMode Mouse, Screen ;以屏幕为基准
           MouseGetPos ReloadX, ReloadY
 
-          if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
+          if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
           {
             WinSet Transparent, 0, ahk_id %MagnifierWindowID%
             WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
@@ -3462,15 +3461,28 @@ return
           {
             if !GetKeyState("Alt", "P")
             {
-              WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
-              WinSet Transparent, 100, ahk_class %AutoHideClass%
+              CoordMode Mouse, Screen ;以屏幕为基准
+              MouseGetPos AutoHideMX, AutoHideMY
+              if (AutoHideMX<AutoHideWinX) or (AutoHideMX>AutoHideWinX+AutoHideWinWidth) or (AutoHideMY<AutoHideWinY) or (AutoHideMY>AutoHideWinY+AutoHideWinHeight) ; 鼠标在窗口外
+              {
+                OutOfAutoHide:=1
+                AutoHide:=1
+                WinSet Transparent, 255, ahk_class %AutoHideClass%
+                WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+              }
+              else ; 鼠标在窗口内
+              {
+                OutOfAutoHide:=0
+                WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
+                WinSet Transparent, 100, ahk_class %AutoHideClass%
+              }
 
               if (HSJ=1)
               {
                 CoordMode Mouse, Screen ;以屏幕为基准
                 MouseGetPos ReloadX, ReloadY
                 ; msgbox, ReloadX%ReloadX% ReloadY%ReloadY%
-                if (ReloadX<FJL) or (ReloadY>FJR) ;如果在左侧屏幕或者在右侧屏幕
+                if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
                 {
                   HSJM:=0
                   HSJH:=0
@@ -3481,7 +3493,7 @@ return
                     WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
                     HSJM:=1
                   }
-                  else if (HSJM=0) and (ReloadY>FJR) ;如果在右侧屏幕
+                  else if (HSJM=0) and (ReloadX>FJR) ;如果在右侧屏幕
                   {
                     WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
                     HSJM:=1
