@@ -1,0 +1,11 @@
+https://github.com/MrOtherGuy/firefox-csshacks/blob/master/chrome/autohide_toolbox.css
+
+1.打开应用程序菜单(右上角三个横杠)
+2.点击帮助
+3.点击更多排障信息
+4.在"应用程序概要"中找到"配置文件夹",选择"打开文件夹"
+5.在打开的文件夹内直接新建名为"chrome"的文件夹
+6.把"userChrome.css"文件放进"chrome"文件夹内
+7.在网址栏输入"about:config"然后回车
+8.搜索"toolkit.legacyUserProfileCustomizations.stylesheets"并将其设置为"true"
+9.重启火狐浏览器
