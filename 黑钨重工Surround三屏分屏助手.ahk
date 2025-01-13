@@ -321,6 +321,7 @@
   else
     已激活右边快捷呼出窗口:=0
 
+  GoSub, 白名单
   gosub 更新数据
   Sleep 100
 
@@ -329,7 +330,6 @@
 return
 
 更新数据:
-  GoSub, 白名单
   if (白名单=1)
   {
     GDXZ:=0
@@ -385,6 +385,9 @@ Return
     WinActivate 屏幕设置
     Return
   }
+  Critical, On
+  白名单:=0
+  gosub 更新数据
   OldBKXZ:=BKXZ
   OldGDXZ:=GDXZ
   OldKDXZ:=KDXZ
@@ -404,6 +407,7 @@ Return
   Gui 屏幕设置:Add, Edit, x438 y361 w120 h21 Number vKDXZ, %KDXZ%
 
   Gui 屏幕设置:Show, w995 h433, 屏幕设置
+  Critical, Off
 Return
 
 Button确认2:
@@ -412,6 +416,7 @@ Button确认2:
   IniWrite %BKXZ%, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
   IniWrite %KDXZ%, Settings.ini, 设置, 宽度修正 ;写入设置到ini文件
   IniWrite %GDXZ%, Settings.ini, 设置, 高度修正 ;写入设置到ini文件
+  GoSub, 白名单
   gosub 更新数据
 return
 
@@ -783,6 +788,7 @@ Return
 return
 
 ~WheelUp:: ;触发按键 滚轮上
+  GoSub, 白名单
   gosub 更新数据
   if (A_TickCount-WheelUpRecord<=300)
   {
@@ -883,6 +889,7 @@ return
 return
 
 ~WheelDown:: ;触发按键 滚轮下
+  GoSub, 白名单
   gosub 更新数据
   if (A_TickCount-WheelDownRecord<=300)
   {
@@ -1206,6 +1213,7 @@ Return
 Return
 
 ~LButton:: ;左键
+  GoSub, 白名单
   gosub 更新数据
 
   CoordMode Mouse, Window ;以窗口为基准
@@ -1658,6 +1666,7 @@ AeroShake:
 Return
 
 $MButton:: ;中键
+  GoSub, 白名单
   gosub 更新数据
   Critical, On
   DllCall("QueryPerformanceFrequency", "Int64*", freq)
