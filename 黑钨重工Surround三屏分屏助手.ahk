@@ -801,7 +801,7 @@ return
   }
   Critical, On
   CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos MX, MY ;获取鼠标在屏幕中的位置
+  MouseGetPos MX, MY, WinID ;获取鼠标在屏幕中的位置
   if (MY>ScreenBottom) ;如果鼠标在屏幕底部
   {
     if (CompatibleMode=0) ;不是兼容模式
@@ -831,12 +831,15 @@ return
     {
       return
     }
-    CoordMode Mouse, Window ;以窗口为基准
-    MouseGetPos WX, WY, WinID ;获取鼠标在窗口中的位置
+    ; CoordMode Mouse, Window ;以窗口为基准
+    ; MouseGetPos WX, WY, WinID ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
     WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     WinGetPos SX, SY, W, H, ahk_id %WinID% ;获取窗口以屏幕为基准的位置 窗口的宽和高
-    WinInScreenX:=SX+W/2 ;窗口中间以屏幕为基准的位置
+    WX:=MX-SX ; 鼠标在窗口中的X位置
+    WY:=MY-SY ; 鼠标在窗口中的Y位置
+    ; WinInScreenX:=SX+W/2 ;窗口中间以屏幕为基准的位置
+    WinInScreenX:=MX ;窗口中间以屏幕为基准的位置
     WinRestore ahk_id %WinID% ;如果窗口已经最大化则还原窗口
     ; MsgBox ID:%WinID%`nX:%X% Y:%Y%`nW:%W% H:%H%`n`n左分界线:%FJL%`n右分界线:=%FJR%`n鼠标位置 X:%SX% Y:%SY%
     if (WinInScreenX<FJL) and (WY<WinTop) ;点击的窗口在左边屏幕 并且 点击位置在窗口顶部
@@ -902,7 +905,7 @@ return
   }
   Critical, On
   CoordMode Mouse, Screen ;以屏幕为基准
-  MouseGetPos MX, MY ;获取鼠标在屏幕中的位置
+  MouseGetPos MX, MY, WinID ;获取鼠标在屏幕中的位置
   if (MY>ScreenBottom) ;如果鼠标在屏幕底部
   {
     if (CompatibleMode=0) ;不是兼容模式
@@ -932,10 +935,15 @@ return
     {
       return
     }
-    CoordMode Mouse, Window ;以窗口为基准
-    MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
+    ; CoordMode Mouse, Window ;以窗口为基准
+    ; MouseGetPos, , WY, WinID ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
     WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
+    WinGetPos SX, SY, W, H, ahk_id %WinID% ;获取窗口以屏幕为基准的位置 窗口的宽和高
+    WX:=MX-SX ; 鼠标在窗口中的X位置
+    WY:=MY-SY ; 鼠标在窗口中的Y位置
+    ; WinInScreenX:=SX+W/2 ;窗口中间以屏幕为基准的位置
+    WinInScreenX:=MX ;窗口中间以屏幕为基准的位置
     if (WY<WinTop) ;点击位置在窗口顶部
     {
       ToolTip 最小化%WinTitle%窗口
@@ -2437,7 +2445,6 @@ return
     else
     {
       ToolTip 分屏助手暂停运行
-      Hotkey Alt, Off ;关闭Alt键的热键
     }
   }
   SetTimer 关闭提示, -500 ;500毫秒后关闭提示
@@ -3537,14 +3544,14 @@ return
     {
       if (AutoMoveWinY+AutoMoveWinHeight/2<=A_ScreenHeight/2) ;窗口在屏幕上半部分
       {
-        if (AutoMoveWinY<AutoMoveWinHeight) and (AutoMove=0) ;窗口上方位置不足以显示 向下移动
+        if (AutoMoveWinY<AutoMoveWinHeight) and (AutoMove=1) ;窗口上方位置不足以显示 向下移动
         {
-          AutoMove:=1
+          AutoMove:=0
           WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY+AutoMoveWinHeight
         }
-        else if (AutoMove=0) ;窗口上方位置足够 向上移动
+        else if (AutoMove=1) ;窗口上方位置足够 向上移动
         {
-          AutoMove:=1
+          AutoMove:=0
           WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY-AutoMoveWinHeight
         }
       }
