@@ -265,7 +265,7 @@
         IniWrite %WinActiveTop%, Settings.ini, 设置, 主动顶置窗口 ;写入设置到ini文件
         WinActiveTop:=[]
 
-        BlackList:="Class===ActualTools_MultiMonitorTaskbar|Class===DesktopLyrics"
+        BlackList:="Class===ActualTools_MultiMonitorTaskbar|Class===DesktopLyrics|Class===WorkerW"
         IniWrite %BlackList%, Settings.ini, 设置, 黑名单列表 ;写入设置到ini文件
 
         WhiteList:="Exe===Code.exe|Exe===Notepad--.exe"
