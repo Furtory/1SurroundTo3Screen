@@ -966,11 +966,13 @@ return
     if (窗口样式=0) and (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
     {
         WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
-        ToolTip 窗口%ActiveWindowID%已准备好等待激活
         IniWrite %ActiveWindowID%, Settings.ini, 设置, 后台等待激活的窗口 ;写入设置到ini文件
-        SetTimer 关闭提示, -500 ;500毫秒后关闭提示
-        Critical, Off
-        Return
+        loop 20
+        {
+            ToolTip 窗口%ActiveWindowID%已准备好等待激活
+            sleep 30
+        }
+        ToolTip
     }
     else if (窗口样式=1) and (WindowY>WinTop) and (WinClass!="AutoHotkeyGUI") and (ClickActiveTop=1) ;如果点击主动顶置窗口内部 并且 没有点击在窗口顶部
     {
@@ -1080,6 +1082,7 @@ return
     CoordMode Mouse, Window ;以窗口为基准
     MouseGetPos, , WindowY, WinID ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
+    WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     if (WindowY<WinTop) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
     {
         if (屏幕实时位置=1)
@@ -1091,7 +1094,12 @@ return
                 MiniWinIDL:=0
                 IniWrite %MiniWinIDL%, Settings.ini, 设置, 左边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
             }
-            ToolTip 设定%MasterWinIDL%左边屏幕主窗口
+            loop 20
+            {
+                ToolTip 设定%WinTitle%左边屏幕主窗口
+                Sleep 30
+            }
+            ToolTip
         }
         else if (屏幕实时位置=2)
         {
@@ -1102,7 +1110,12 @@ return
                 MiniWinIDM:=0
                 IniWrite %MiniWinIDM%, Settings.ini, 设置, 中间屏幕最近一次被最小化的窗口 ;写入设置到ini文件
             }
-            ToolTip 设定%MasterWinIDM%中间屏幕主窗口
+            loop 20
+            {
+                ToolTip 设定%WinTitle%中间屏幕主窗口
+                Sleep 30
+            }
+            ToolTip
         }
         else if (屏幕实时位置=3)
         {
@@ -1113,7 +1126,12 @@ return
                 MiniWinIDR:=0
                 IniWrite %MiniWinIDR%, Settings.ini, 设置, 右边屏幕最近一次被最小化的窗口 ;写入设置到ini文件
             }
-            ToolTip 设定%MasterWinIDR%右边屏幕主窗口
+            loop 20
+            {
+                ToolTip 设定%WinTitle%右边屏幕主窗口
+                Sleep 30
+            }
+            ToolTip
         }
         SetTimer 关闭提示, -500 ;500毫秒后关闭提示
     }
@@ -1137,9 +1155,22 @@ return
     ; ToolTip %窗口样式%
     if (窗口样式=0) and (WindowY<WinTop) and (WinClass!=AutoHideClass) and (危险操作=0) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
     {
+        Menu Tray, Check, 自动暂停
         WinGetClass WinClass, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
-        ToolTip 窗口%WinClass%自动暂停
-        KeyWait LButton
+        loop
+        {
+            ToolTip 窗口%WinTitle%自动暂停
+            Sleep 30
+            if !GetKeyState("LButton", "P") ;如果左键松开
+            {
+                loop 20
+                {
+                    ToolTip 窗口%WinTitle%自动暂停
+                    Sleep 30
+                }
+                Break ;跳出循环
+            }
+        }
         ToolTip
         BlackListWindow_AutoStop:=WinClass
         IniWrite %BlackListWindow_AutoStop%, Settings.ini, 设置, 自动暂停黑名单 ;写入设置到ini文件
@@ -1147,14 +1178,17 @@ return
     Critical, Off
 Return
 
-HexToDec(hex) {
+HexToDec(hex)
+{
     ; 如果字符串以 "0x" 开头，则去掉它
-    if (SubStr(hex, 1, 2) = "0x") {
+    if (SubStr(hex, 1, 2) = "0x")
+    {
         hex := SubStr(hex, 3)
     }
 
     ; 如果字符串为空，则返回0
-    if (StrLen(hex) = 0) {
+    if (StrLen(hex) = 0)
+    {
         return 0
     }
 
@@ -1187,11 +1221,6 @@ HexToDec(hex) {
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
     WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
     WinGet WinExe, ProcessName, Ahk_id %WinID%
-    GoSub 危险操作识别
-    if (危险操作=1)
-    {
-        Return
-    }
     WinGet 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
     窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
 
@@ -1264,8 +1293,6 @@ HexToDec(hex) {
         }
 
         Critical, on
-        DllCall("QueryPerformanceFrequency", "Int64*", freq)
-        DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop) ;第一次记录时间
         CoordMode Mouse, Screen ;以屏幕为基准
         MouseGetPos, , OldWinSY
         gosub AeroShake ;跳转检测程序
@@ -1308,7 +1335,7 @@ HexToDec(hex) {
         }
 
         ; 顶置窗口
-        if (摇晃次数>3) and (总移动距离>=Round(A_ScreenHeight*(800/1080)))
+        if (摇晃次数>=3) and (总移动距离>=Round(A_ScreenHeight*(300/1080)))
         {
             ; ToolTip %窗口样式%
             if (窗口样式=0) ;如果没有处于总是顶置状态
@@ -1449,6 +1476,13 @@ HexToDec(hex) {
         else if (下移距离>Round(A_ScreenHeight*(600/1080))) and (MoveDownSpeed>1500) ; 关闭窗口
         {
             Critical On
+
+            GoSub 危险操作识别
+            if (危险操作=1)
+            {
+                Return
+            }
+
             WinMove ahk_id %WinID%, , WinXHistory, WinYHistory, WinW, WinH
             WinClose ahk_id %WinID% ;关闭窗口
             WinGetTitle WinTitle, ahk_id %WinID%
@@ -1467,6 +1501,12 @@ HexToDec(hex) {
                 if !GetKeyState("LButton","P") ;如果鼠标左键松开
                     Break
                 Sleep 50
+            }
+
+            GoSub 危险操作识别
+            if (危险操作=1)
+            {
+                Return
             }
 
             CoordMode Mouse, Screen
@@ -1721,7 +1761,8 @@ return
                 ToolTip 已关闭鼠标穿透
                 WinSet ExStyle, -0x20, ahk_id %ActiveTopNowID% ;关闭鼠标穿透
             }
-            else {
+            else
+            {
                 ToolTip 已打开鼠标穿透
                 WinSet ExStyle, +0x20, ahk_id %ActiveTopNowID% ;打开鼠标穿透
             }
@@ -1729,15 +1770,20 @@ return
     }
 
     WinGetClass TabClass, A
-    WinGet, TabProcessName, ProcessName, A
+    WinGet TabProcessName, ProcessName, A
     if (WinActiveTop.Length()>=1) and (TabSwitch=1) and (TabProcessName!="Code.exe") ;如果存在主动顶置窗口
     {
-        if (ClickActiveTop=1) ;如果鼠标点击过主动顶置窗口 则从第二个窗口    开始顶置显示
+        if (ClickActiveTop=1) ;如果鼠标点击过主动顶置窗口 则从第二个窗口开始顶置显示
         {
             ClickActiveTop:=0
-            ActiveTopNow:=2
-            ActiveTopNowID:=WinActiveTop[ActiveTopNow]
-            WinActivate ahk_id %ActiveTopNowID%
+            if (WinActiveTop.Length()>1)
+            {
+                ActiveTopNow:=2
+                ActiveTopNowID:=WinActiveTop[ActiveTopNow]
+                WinActivate ahk_id %ActiveTopNowID%
+            }
+            else
+                ActiveTopNow:=1
         }
         else ;如果鼠标没有点击过主动顶置窗口 则从下一个窗口开始顶置显示
         {
@@ -1757,31 +1803,27 @@ AeroShake:
     移动方向:=0 ;向左-1 向右1
     移动距离:=0
     总移动距离:=0
+    开始计时:=0
     CoordMode Mouse, Screen ;以屏幕为基准
-    MouseGetPos AeroShakeX, AeroShakeY ;获取鼠标在屏幕中的位置
+    MouseGetPos OldAeroShakeX ;获取鼠标在屏幕中的位置
+    DllCall("QueryPerformanceFrequency", "Int64*", freq)
+    DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop)
+    LBDown:=LBDownOnTop
     Loop ;监测时间1次循环等于0.15秒
     {
-        ; ToolTip 摇晃次数:%摇晃次数%`n移动速度:%MoveSpeed%
-        DllCall("QueryPerformanceFrequency", "Int64*", freq)
-        DllCall("QueryPerformanceCounter", "Int64*", LBDown) ;第一次记录时间
-        上次移动方向:=移动方向
-        OldAeroShakeX:=AeroShakeX
-        Sleep 100
-        MouseGetPos AeroShakeX ;获取鼠标在屏幕中的位置
-        DllCall("QueryPerformanceCounter", "Int64*", LBUp) ;第二次记录时间
-        移动距离:=Abs(AeroShakeX-OldAeroShakeX)
-        总移动距离:=总移动距离+移动距离
-        按下时间:=(LBUp-LBDown)/freq*1000 ;按下时间=第二次记录时间-第一次记录时间
-        MoveSpeed:=Round(移动距离/按下时间)*1000 ;移动速度=移动距离/时间
+        if (开始计时=1)
+            上次移动方向:=移动方向
 
-        if !GetKeyState("LButton", "P") and !GetKeyState("MButton", "P") ;左键抬起则暂停
+        Sleep 10
+        MouseGetPos AeroShakeX ;获取鼠标在屏幕中的位置
+        if (开始计时=0) and (AeroShakeX!=OldAeroShakeX)
         {
-            break
+            开始计时:=1
+            DllCall("QueryPerformanceCounter", "Int64*", LBDownOnTop)
+            LBDown:=LBDownOnTop
         }
-        else if (MoveSpeed<=Round(A_ScreenHeight*(1200/1080))) ;如果速度小于1200像素/秒
-        {
-            continue ;不记录
-        }
+        else if (开始计时=0) and (AeroShakeX=OldAeroShakeX)
+            Continue
 
         if (AeroShakeX-OldAeroShakeX>0) ;向左移动
         {
@@ -1792,15 +1834,37 @@ AeroShake:
             移动方向:=1 ;向左-1 向右1
         }
 
-        if (上次移动方向!=移动方向) ;移动方向改变过
+        if (上次移动方向!=移动方向) and (移动方向!=0) and (开始计时=1) ;移动方向改变过
         {
-            摇晃次数:=摇晃次数+1
+            移动距离:=Abs(AeroShakeX-OldAeroShakeX)
+            总移动距离:=总移动距离+移动距离
+            DllCall("QueryPerformanceCounter", "Int64*", LBUp) ;第二次记录时间
+            按下时间:=(LBUp-LBDown)/freq*1000 ;按下时间=第二次记录时间-第一次记录时间
+            AeroShakeMoveSpeed:=Round(移动距离/按下时间*1000) ;移动速度=移动距离/时间
+            if (AeroShakeMoveSpeed>=Round(A_ScreenHeight*(500/1080)))
+            {
+                ; ToolTip 摇晃次数:%摇晃次数%`n移动距离:%移动距离%`n移动速度:%AeroShakeMoveSpeed%`n`n总移动距离%总移动距离%
+                摇晃次数:=摇晃次数+1
+            }
+            OldAeroShakeX:=AeroShakeX
+            DllCall("QueryPerformanceCounter", "Int64*", LBDown) ;第一次记录时间
         }
 
-        DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
+        DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop)
         检测时长:=Round((LBUpOnTop-LBDownOnTop)/freq*1000)
-        if (检测时长>2000) ;如果检测时长大于2000毫秒
-            Break ;则退出循环
+        if !GetKeyState("LButton", "P") or (检测时长>2000) ;左键抬起则暂停 或 检测时长大于2000毫秒
+        {
+            if (摇晃次数=0)
+            {
+                MouseGetPos AeroShakeX ;获取鼠标在屏幕中的位置
+                移动距离:=Abs(AeroShakeX-OldAeroShakeX)
+                总移动距离:=总移动距离+移动距离
+                DllCall("QueryPerformanceCounter", "Int64*", LBUp) ;第二次记录时间
+                按下时间:=(LBUp-LBDown)/freq*1000 ;按下时间=第二次记录时间-第一次记录时间
+                AeroShakeMoveSpeed:=Round(移动距离/按下时间)*1000 ;移动速度=移动距离/时间
+            }
+            break
+        }
     }
 Return
 
@@ -2233,7 +2297,7 @@ $MButton:: ;中键
         WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
         DllCall("QueryPerformanceCounter", "Int64*", TapAfter)
         按下时间:=(TapAfter-TapBefore)/freq*1000, 2 ;长按时间检测
-        if (按下时间>500) ;长按时间大于500ms将当前窗口else ;后视镜窗口存在
+        if (按下时间>500) ;长按时间大于500ms将当前窗口超大化
         {
             if (MButtonHotkey=0)
             {
@@ -2248,7 +2312,7 @@ $MButton:: ;中键
                     WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                     WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
                     WinActivate ahk_id %WinID% ; 激活窗口
-                    ToolTip 将%WinTitle%窗口else ;后视镜窗口存在
+                    ToolTip 将%WinTitle%窗口超大化
                     SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 }
             }
@@ -2257,9 +2321,30 @@ $MButton:: ;中键
         else
         {
             WinGetPos, , , WinWidth, WinHeight, ahk_id %WinID%
-            if (WinHeight>=A_ScreenHeight) and (WinWidth>=A_ScreenWidth) and (WY<WinTop) and (FirstClickTop=1) and (危险操作=0) ;如果窗口已经else ;后视镜窗口存在
+            if (WinHeight>=A_ScreenHeight) and (WinWidth>=A_ScreenWidth) and (WY<WinTop) and (FirstClickTop=1) and (危险操作=0) ;如果窗口已经超大化
             {
-                WinSet Style, ^0xC00000, ahk_id %WinID%  ; 切换窗口的标题栏显示或隐藏
+                WinGet WinExStyle, Style, ahk_id %WinID%
+                if (WinExStyle & 0xC00000)
+                {
+                    WinSet Style, -0xC00000, ahk_id %WinID%  ; 切换窗口的标题栏显示或隐藏
+                    loop 20
+                    {
+                        ToolTip 已隐藏%WinTitle%超大化窗口的标题栏
+                        Sleep 30
+                    }
+                    ToolTip
+                }
+                else
+                {
+                    WinSet Style, +0xC00000, ahk_id %WinID%  ; 切换窗口的标题栏显示或隐藏
+                    loop 20
+                    {
+                        ToolTip 已显示%WinTitle%超大化窗口的标题栏
+                        Sleep 30
+                    }
+                    ToolTip
+                }
+                ; WinSet Style, ^0xC00000, ahk_id %WinID%  ; 切换窗口的标题栏显示或隐藏
                 WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 ; WinSet, Redraw ,, ahk_id %WinID%  ; 刷新窗口
             }
@@ -2480,7 +2565,7 @@ return
 return
 
 进阶功能:
-    MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口顶置`n在总是顶置的窗口内`n      Ctrl`+左键按住 上下滑动调整透明度`n      仅可调整主动顶置窗口的透明度`n      Tab键 允许鼠标穿透半透明窗口`n在总是顶置的窗口外`n      Tab键 轮流切换显示主动顶置的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n贴顶激活窗口`n      Ctrl`+鼠标左键单击窗口顶部设置`n      当鼠标贴着屏幕顶部一段时间后激活`n`n自动暂停名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停窗口`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n神隐窗口`n      鼠标移动到神隐窗口内会自动降低透明度`n      并且鼠标允许穿透窗口`n      按住Alt可以操作穿透窗口`n`n飘逸窗口`n      鼠标移动到飘逸窗口内会自动移动窗口防止遮挡
+    MsgBox, ,进阶功能 ,在非最大化窗口顶部`n      鼠标左键按住左右摇晃让窗口总是顶置`n      再次摇晃可以取消窗口总是顶置`n在总是顶置的窗口内`n      Ctrl`+左键按住 上下滑动调整透明度`n      仅可调整主动总是顶置窗口的透明度`n      你可以左右摇晃原本总是顶置的窗口加入主动窗口列表内`n      Tab键 允许鼠标穿透半透明窗口`n在总是顶置的窗口外`n      Tab键 轮流切换显示主动顶置的窗口`n`n按住中键的时候`n      左右晃动鼠标打开放大镜`n      放大镜激活期间按下Shift或者Ctrl改变缩放倍率`n      放大后如果太模糊打开锐化算法`n      抬起中键后关闭放大镜`n`n贴顶激活窗口`n      Ctrl`+鼠标左键单击窗口顶部设置`n      当鼠标贴着屏幕顶部一段时间后激活`n`n自动暂停名单`n      Alt`+鼠标左键单击窗口顶部设置自动暂停窗口`n`n快捷呼出窗口`n      按住窗口顶部拖动至分界线内以设置`n      再次点击分界线可以激活快捷窗口`n      悬停在分界线上可以暂时呼出快捷窗口`n`n神隐窗口`n      鼠标移动到神隐窗口内会自动降低透明度`n      并且鼠标允许穿透窗口`n      按住Alt可以操作穿透窗口`n`n飘逸窗口`n      鼠标移动到飘逸窗口内会自动移动窗口防止遮挡
 return
 
 兼容说明:
@@ -2694,23 +2779,22 @@ return
     旧下组合键:=下组合键
     Gui 快捷键:+DPIScale -MinimizeBox -MaximizeBox -Resize -SysMenu
     Gui 快捷键:Font, s9, Segoe UI
-    Gui 快捷键:Add, Hotkey, x58 y313 w120 h25 v上组合键, %上组合键%
-    Gui 快捷键:Add, Hotkey, x58 y375 w120 h25 v下组合键, %下组合键%
-    Gui 快捷键:Add, Text, x14 y13 w197 h281 +Left, 在屏幕底部`n      按住中键左右移动调整音量`n      单击中键可以播放/暂停媒体`n`n双击箭头`n      左箭头 上一曲   右箭头 下一曲`n同时按下两个箭头`n      左右箭头 暂停播放`n      上下箭头 呼出关`/闭播放器`n      上下箭头长按 清除呼出设置`n`n快捷键设置`n      下方功能输入组合键自定义`n      会在双击快捷键后输出组合键`n`n      长按左右箭头关闭媒体快捷键`n      在屏幕底部点击中键重新打开
+    Gui 快捷键:Add, Text, x14 y13 w210 h281 +Left, 在屏幕底部`n   按住中键左右移动 调整音量`n   单击中键 播放`/暂停媒体`n`n同时按下左右箭头 暂停/继续播放`n双击左箭头 上一曲`n双击右箭头 下一曲`n双击上箭头 喜欢歌曲`n双击下箭头桌面歌词`n`n上下箭头长按 设置`/清除播放器后`n同时按下上下箭头 呼出`/关闭播放器`n`n临时输出原义按键长按箭头`n长按左右箭头关闭媒体快捷键`n在屏幕底部点击中键重新打开`n`n请保证以下设置和播放器一致
     Gui 快捷键:Add, Button, x15 y424 w69 h25 G媒体快捷重置, &重置
     Gui 快捷键:Add, Button, x83 y424 w69 h25 G媒体快捷确认, &确认
     Gui 快捷键:Add, Button, x151 y424 w69 h25 G媒体快捷取消, &取消
-    Gui 快捷键:Add, Text, x58 y288 w120 h25 +0x200, 喜欢歌曲
-    Gui 快捷键:Add, Text, x58 y350 w120 h25 +0x200, 歌曲歌词
+    Gui 快捷键:Add, Text, x58 y295 w120 h25 +0x200, 喜欢歌曲
+    Gui 快捷键:Add, Hotkey, x58 y320 w120 h25 v上组合键, %上组合键%
+    Gui 快捷键:Add, Text, x58 y355 w120 h25 +0x200, 桌面歌词
+    Gui 快捷键:Add, Hotkey, x58 y380 w120 h25 v下组合键, %下组合键%
     Gui 快捷键:Show, w234 h466, 媒体快捷键设置
 Return
 
 媒体快捷重置:
-    Gui 快捷键:Destroy
     上组合键:=""
     下组合键:=""
-    IniWrite %上组合键%, Settings.ini, 设置, 双击箭头上输出组合键 ;写入设置到ini文件
-    IniWrite %下组合键%, Settings.ini, 设置, 双击箭头下输出组合键 ;写入设置到ini文件
+    GuiControl 快捷键:, 上组合键, ""
+    GuiControl 快捷键:, 下组合键, ""
 return
 
 媒体快捷确认:
@@ -2733,7 +2817,6 @@ return
     Critical, on
     if (AutoHideClass="") or (AutoHideClass="ERROR")
     {
-        Menu Tray, Check, 神隐窗口
         KeyWait Lbutton
         loop
         {
@@ -2750,6 +2833,7 @@ return
 
             if GetKeyState("LButton", "P") and (危险操作=0)
             {
+                Menu Tray, Check, 神隐窗口
                 AutoHideClass:=WinClass
                 WinSet AlwaysOnTop, On, ahk_class %AutoHideClass%  ;切换窗口的顶置状态
                 IniWrite %WinClass%, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
@@ -2764,7 +2848,6 @@ return
 
             if GetKeyState("Esc", "P")
             {
-                ToolTip
                 Break
             }
         }
@@ -2793,14 +2876,13 @@ Return
     Critical, on
     if (AutoMoveClass="") or (AutoMoveClass="ERROR")
     {
-        Menu Tray, Check, 飘逸窗口
         KeyWait Lbutton
         loop
         {
             MouseGetPos, , , WinID
             WinGetClass WinClass, ahk_id %WinID%
             GoSub 危险操作识别
-            if (危险操作=1)
+            if (危险操作=1) and (WinClass!="DesktopLyrics")
             {
                 ToolTip 当前窗口不可设置!`n请重新尝试其他窗口
                 Sleep 30
@@ -2808,8 +2890,9 @@ Return
             }
             ToolTip 当前窗口%WinClass%`n请按下左键捕获飘逸窗口
 
-            if GetKeyState("LButton", "P") and (危险操作=0)
+            if GetKeyState("LButton", "P") and (危险操作=0 or WinClass="DesktopLyrics")
             {
+                Menu Tray, Check, 飘逸窗口
                 AutoMoveClass:=WinClass
                 WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_class %AutoMoveClass%
                 IniWrite %WinClass%, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
@@ -2824,6 +2907,11 @@ Return
 
             if GetKeyState("Esc", "P")
             {
+                loop 20
+                {
+                    ToolTip 取消设置飘逸窗口
+                    Sleep 30
+                }
                 ToolTip
                 Break
             }
@@ -2920,7 +3008,9 @@ return
         Hotkey Down, On ;打开箭头下键的热键
         Hotkey Left, On ;打开箭头左键的热键
         Hotkey Right, On ;打开箭头右键的热键
-        Hotkey ^LButton, On ;打开Ctrl+左键的热键
+        Hotkey ~^LButton, On ;打开Ctrl+左键的热键
+        Hotkey ~+LButton, On ;打开Shift+左键的热键
+        Hotkey ~!LButton, On ;打开Alt+左键的热键
         ; Hotkey ^c, On ;打开Ctrl+C的热键
         SetTimer 自动隐藏任务栏, Delete
 
@@ -2975,7 +3065,9 @@ return
         Hotkey Down, Off ;关闭箭头下键的热键
         Hotkey Left, Off ;关闭箭头左键的热键
         Hotkey Right, Off ;关闭箭头右键的热键
-        Hotkey ^LButton, Off ;关闭Ctrl+左键的热键
+        Hotkey ~^LButton, Off ;关闭Ctrl+左键的热键
+        Hotkey ~+LButton, Off ;关闭Shift+左键的热键
+        Hotkey ~!LButton, Off ;关闭Alt+左键的热键
         ; Hotkey ^c, Off ;关闭Ctrl+C的热键
         if (Alt自动暂停=1)
         {
@@ -3205,14 +3297,14 @@ KeyMedia:
             {
                 Loop
                 {
-                    ToolTip 歌曲歌词
+                    ToolTip 桌面歌词
                     Sleep 30
 
                     if !GetKeyState("Down", "P")
                     {
                         Loop 20
                         {
-                            ToolTip 歌曲歌词
+                            ToolTip 桌面歌词
                             Sleep 30
                         }
                         ToolTip
@@ -3222,7 +3314,7 @@ KeyMedia:
             }
             else ;后视镜窗口存在
             {
-                ToolTipText:="歌曲歌词"
+                ToolTipText:="桌面歌词"
             }
         }
         else if GetKeyState("Left", "P") and GetKeyState("Right", "P") and (媒体快捷键按下时长<=双击限时)
