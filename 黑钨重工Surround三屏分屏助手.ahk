@@ -736,7 +736,7 @@ Return
 
 危险操作识别:
     危险操作:=0
-    if (WinClass="_cls_desk_") or (WinClass="Shell_TrayWnd") or (WinClass="WorkerW") or (InStr(WinClass, "spy")!=0) ;or (WinTitle="QQ")
+    if (WinClass="_cls_desk_") or (WinClass="Shell_TrayWnd") or (WinClass="WorkerW") or (WinClass="Qt51513QWindowToolSaveBits") or (InStr(WinClass, "spy")!=0) ;or (WinTitle="QQ")
         危险操作:=1
 
     GoSub 黑名单
@@ -1728,7 +1728,7 @@ HexToDec(hex)
         if (WinID!=右边快捷呼出窗口)
         {
             已激活右边快捷呼出窗口:=0
-            停留呼出右边快捷窗口:=0
+            停留呼出右边快捷窗口:=0 
             快捷呼出计时:=-1
         }
         else
@@ -1739,6 +1739,73 @@ HexToDec(hex)
         }
     }
 return
+
++CapsLock::
+    WinGetPos AMoveX, AMoveY, AMoveW, AMoveH, A
+    CoordMode Mouse, Screen
+    MouseGetPos MouseX, MouseY
+    ; ToolTip %A_ScreenWidth% %A_ScreenHeight% %FJL% %FJR%
+
+    if (MouseX<Round(AMoveW/2))
+        AMoveWinX:=0
+    else if (MouseX>Round(FJL-BKXZ/2-AMoveW/2)) and (MouseX<FJL)
+        AMoveWinX:=Round(FJL-AMoveW)
+    else if (MouseX<=Round(FJL+BKXZ/2+AMoveW/2)) and (MouseX>=FJL)
+        AMoveWinX:=Round(FJL+BKXZ)
+    else if (MouseX<Round(FJR+BKXZ/2+AMoveW/2)) and (MouseX>FJR)
+        AMoveWinX:=FJR
+    else if (MouseX>=Round(FJR-BKXZ/2-AMoveW/2)) and (MouseX<=FJR)
+        AMoveWinX:=Round(FJR-AMoveW-BKXZ)
+    else if (MouseX>Round(A_ScreenWidth-AMoveW/2))
+        AMoveWinX:=A_ScreenWidth-AMoveW
+    else
+        AMoveWinX:=Round(MouseX-AMoveW/2)
+
+    if (MouseY<Round(AMoveH/2))
+        AMoveWinY:=0
+    else if (MouseY>Round(A_ScreenHeight-AMoveH/2))
+        AMoveWinY:=A_ScreenHeight-AMoveH
+    else
+        AMoveWinY:=Round(MouseY-AMoveH/2)
+
+    WinMove A, , AMoveWinX, AMoveWinY
+Return
+
+MoveWinFllowMouse(WinID, InitialW, InitialH)
+{
+    global FJL
+    global FJR
+    global BKXZ
+
+    CoordMode Mouse, Screen
+    MouseGetPos MouseX, MouseY
+    ; ToolTip %A_ScreenWidth% %A_ScreenHeight% %FJL% %FJR%
+
+    if (MouseX<Round(InitialW/2))
+        FMoveWinX:=0
+    else if (MouseX>Round(FJL-BKXZ/2-InitialW/2)) and (MouseX<FJL)
+        FMoveWinX:=Round(FJL-InitialW)
+    else if (MouseX<=Round(FJL+BKXZ/2+InitialW/2)) and (MouseX>=FJL)
+        FMoveWinX:=Round(FJL+BKXZ)
+    else if (MouseX<Round(FJR+BKXZ/2+InitialW/2)) and (MouseX>FJR)
+        FMoveWinX:=FJR
+    else if (MouseX>=Round(FJR-BKXZ/2-InitialW/2)) and (MouseX<=FJR)
+        FMoveWinX:=Round(FJR-InitialW-BKXZ)
+    else if (MouseX>Round(A_ScreenWidth-InitialW/2))
+        FMoveWinX:=A_ScreenWidth-InitialW
+    else
+        FMoveWinX:=Round(MouseX-InitialW/2)
+
+    if (MouseY<Round(InitialH/2))
+        FMoveWinY:=0
+    else if (MouseY>Round(A_ScreenHeight-InitialH/2))
+        FMoveWinY:=A_ScreenHeight-InitialH
+    else
+        FMoveWinY:=Round(MouseY-InitialH/2)
+
+    WinMove Ahk_id %WinID%, , FMoveWinX, FMoveWinY
+    Return
+}
 
 ~Tab::  
     ; ToolTip %WinID%`n%WinTopSetting%`n主动%ClickActiveTop% 默认%ClickDefaultTop%
@@ -1873,6 +1940,7 @@ $MButton:: ;中键
     GoSub 白名单
     gosub 更新数据
     Critical, On
+    GoSub 危险操作识别
     DllCall("QueryPerformanceFrequency", "Int64*", freq)
     DllCall("QueryPerformanceCounter", "Int64*", TapBefore)
     if (MButton_presses>0) ;因为键击记录不是0 证明这不是首次按下
@@ -1901,6 +1969,8 @@ $MButton:: ;中键
         ; ToolTip 关闭后视镜
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
+        MouseGetPos InitiaMouseX, InitiaMouseY, InitiaWinID  ;获取鼠标在屏幕中的位置
+        WinGetPos InitialWinX, InitialWinY, InitialWinW, InitialWinH, Ahk_id %WinID% ;获取窗口位置
         HSJM:=0
         HSJH:=1
 
@@ -1960,6 +2030,7 @@ $MButton:: ;中键
             MXRecor:=MXNew
             Sleep 30
             MouseGetPos MXNew
+            ; ToolTip 屏幕位置%屏幕位置%`n%FJL% %MXNew% %FJR%
             移动距离:=Abs(MXNew-MXRecor)
             总移动距离:=总移动距离+移动距离
 
@@ -2077,11 +2148,12 @@ $MButton:: ;中键
             }
         }
 
-        GoSub 危险操作识别
+        ; ToolTip %危险操作%
         if (屏幕位置=1) and (危险操作!=1)
         {
             if (MXNew>FJR) ;左边屏幕 到 右边屏幕
             {
+                ; ToolTip 左边屏幕 到 右边屏幕
                 if (WinID=MiniWinIDL)
                 {
                     MiniWinIDR:=WinID
@@ -2100,7 +2172,10 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到右边屏幕
                 WinRestore ahk_id %WinID%
-                WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                    WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                else
+                    MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 WinActivate ahk_id %WinID% ; 激活窗口
                 SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 MButton_presses:=0 ;键击记录重置为0
@@ -2115,6 +2190,7 @@ $MButton:: ;中键
             }
             else if (MXNew>FJL) ;左边屏幕 到 中间屏幕
             {
+                ; ToolTip 左边屏幕 到 中间屏幕
                 if (WinID=MiniWinIDL)
                 {
                     MiniWinIDM:=WinID
@@ -2133,7 +2209,10 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到中间屏幕
                 WinRestore ahk_id %WinID%
-                WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                    WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                else
+                    MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 WinActivate ahk_id %WinID% ; 激活窗口
                 SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 MButton_presses:=0 ;键击记录重置为0
@@ -2142,6 +2221,7 @@ $MButton:: ;中键
             }
             else ;依然在左边屏幕不变
             {
+                MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 Critical, Off
                 HSJM:=1
                 HSJH:=0
@@ -2154,6 +2234,7 @@ $MButton:: ;中键
         {
             if (MXNew<FJL) ;中间屏幕 到 左边屏幕
             {
+                ; ToolTip 中间屏幕 到 左边屏幕
                 if (WinID=MiniWinIDM)
                 {
                     MiniWinIDL:=WinID
@@ -2172,7 +2253,10 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到左边屏幕
                 WinRestore ahk_id %WinID%
-                WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                    WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                else
+                    MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 WinActivate ahk_id %WinID% ; 激活窗口
                 SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 MButton_presses:=0 ;键击记录重置为0
@@ -2187,6 +2271,7 @@ $MButton:: ;中键
             }
             else if (MXNew>FJR) ;中间屏幕 到 右边屏幕
             {
+                ; ToolTip 中间屏幕 到 右边屏幕
                 if (WinID=MiniWinIDM)
                 {
                     MiniWinIDR:=WinID
@@ -2205,7 +2290,10 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到右边屏幕
                 WinRestore ahk_id %WinID%
-                WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                    WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                else
+                    MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 WinActivate ahk_id %WinID% ; 激活窗口
                 SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 MButton_presses:=0 ;键击记录重置为0
@@ -2218,11 +2306,17 @@ $MButton:: ;中键
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
+            else ;依然在 中间屏幕 不变
+            {
+                MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
+                Critical, Off
+            }
         }
         else if (屏幕位置=3) and (危险操作!=1)
         {
             if (MXNew<FJL) ;右边屏幕 到 左边屏幕
             {
+                ; ToolTip 右边屏幕 到 左边屏幕
                 if (WinID=MiniWinIDR)
                 {
                     MiniWinIDL:=WinID
@@ -2241,7 +2335,10 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到左边屏幕
                 WinRestore ahk_id %WinID%
-                WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                    WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                else
+                    MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 WinActivate ahk_id %WinID% ; 激活窗口
                 SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 MButton_presses:=0 ;键击记录重置为0
@@ -2256,6 +2353,7 @@ $MButton:: ;中键
             }
             else if (MXNew<FJR) ;右边屏幕 到 中间屏幕
             {
+                ; ToolTip 右边屏幕 到 中间屏幕
                 if (WinID=MiniWinIDR)
                 {
                     MiniWinIDM:=WinID
@@ -2274,7 +2372,10 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到中间屏幕
                 WinRestore ahk_id %WinID%
-                WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                    WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                else
+                    MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 WinActivate ahk_id %WinID% ; 激活窗口
                 SetTimer 关闭提示, -500 ;500毫秒后关闭提示
                 MButton_presses:=0 ;键击记录重置为0
@@ -2283,6 +2384,7 @@ $MButton:: ;中键
             }
             else ;依然在右边屏幕不变
             {
+                MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 Critical, Off
                 HSJM:=1
                 HSJH:=0
@@ -2562,7 +2664,7 @@ Return
 return
 
 基础功能:
-    MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      如果最大化过大请加入白名单`n      长按中键窗口填满整个屏幕`n      填满后短按中键可以切换标题栏显示或隐藏`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口到其他屏幕`n      可以发送窗口到中键抬起时所处的屏幕`n在屏幕底部`n      拨动滚轮最大或最小化全部窗口`n      打开兼容模式将会以输出快捷键方式`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
+    MsgBox, ,基础功能 ,在窗口顶部`n      拨动滚轮最大或最小化当前窗口`n      如果最大化过大请加入白名单`n      长按中键窗口填满整个屏幕`n      填满后短按中键可以切换标题栏显示或隐藏`n在最大化窗口顶部`n      鼠标左键点住快速往下拖关闭窗口`n      拖离屏幕顶部缩小窗口至适合大小`n      窗口拖动到靠近主屏幕顶部设为条状贴边`n在窗口任意位置`n      按住中键并拖动窗口可以移动窗口`n      Shift`+Capslock 将当前激活的窗口移到鼠标位置`n在屏幕底部`n      拨动滚轮最大或最小化全部窗口`n      打开兼容模式将会以输出快捷键方式`n设置主窗口`n      在窗口顶部按下Shif`+左键设置主窗口`n呼出窗口`n      按中键可以呼出主窗口或最近一次最小化的窗口`n      优先呼出设置的主窗口`n`n双击中键`n      暂停运行`n      再次双击恢复运行`n`n黑钨重工出品 免费开源 请勿商用 侵权必究`n更多免费教程尽在`nQQ频道AutoHotKey12`nQQ5群793083640`nhttps://github.com/Furtory
 return
 
 进阶功能:
@@ -4245,7 +4347,7 @@ MagImageScalingCallback(hwnd, srcdata, srcheader, destdata, destheader, unclippe
 
 放大镜:
     Gui 放大镜:New
-    Gui 放大镜:+AlwaysOnTop +Resize +ToolWindow +DPIScale -Caption -Resize
+    Gui 放大镜:+AlwaysOnTop +Resize +ToolWindow -Caption -Resize -DPIScale
     Gui 放大镜:Show, % "w" 2*Rx " h" 2*Ry, Magnifier
     WinGet MagnifierID, ID,  Magnifier
     WinSet Transparent, 255, Magnifier
