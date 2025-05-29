@@ -46,7 +46,7 @@
 
     MButton_presses:=0
     running:=1 ;1为运行 0为暂停
-    Menu Tray, NoStandard ;不显示默认的AHK右键菜单
+    ; Menu Tray, NoStandard ;不显示默认的AHK右键菜单
     Menu Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
     Menu Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
     Menu Tray, Add, 兼容说明, 兼容说明 ;添加新的右键菜单
@@ -193,15 +193,15 @@
             Menu Tray, Check, 自动暂停
 
         IniRead MediaWindow, Settings.ini, 设置, 呼出播放器 ;从ini文件读取设置
-        IniRead AutoHideClass, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
-        if (AutoHideClass!="") and (AutoHideClass!="ERROR")
+        IniRead AutoHideWindow, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
+        if (AutoHideWindow!="") and (AutoHideWindow!="ERROR")
         {
             Menu Tray, Check, 神隐窗口
-            WinSet AlwaysOnTop, On, ahk_class %AutoHideClass%  ;切换窗口的顶置状态
+            WinSet AlwaysOnTop, On, ahk_class %AutoHideWindow%  ;切换窗口的顶置状态
         }
 
-        IniRead AutoMoveClass, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
-        if (AutoMoveClass!="") and (AutoMoveClass!="ERROR")
+        IniRead AutoMoveWindow, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
+        if (AutoMoveWindow!="") and (AutoMoveWindow!="ERROR")
         {
             Menu Tray, Check, 飘逸窗口
         }
@@ -265,10 +265,10 @@
         IniWrite %WinActiveTop%, Settings.ini, 设置, 主动顶置窗口 ;写入设置到ini文件
         WinActiveTop:=[]
 
-        BlackList:="Class===ActualTools_MultiMonitorTaskbar|Class===DesktopLyrics|Class===WorkerW"
+        BlackList:="Same Class===ActualTools_MultiMonitorTaskbar|Same Class===DesktopLyrics|Same Class===WorkerW"
         IniWrite %BlackList%, Settings.ini, 设置, 黑名单列表 ;写入设置到ini文件
 
-        WhiteList:="Exe===Code.exe|Exe===Notepad--.exe"
+        WhiteList:="Same Exe===Code.exe|Same Exe===Notepad--.exe"
         IniRead WhiteList, Settings.ini, Settings, 白名单列表 ;从ini文件读取
 
         BlackListWindow_AutoStop:=""
@@ -415,28 +415,70 @@ Return
     if (running=1)
         SetTimer 屏幕监测, Off
 
+    if (HSJ=1)
+    {
+        ; ToolTip 关闭后视镜
+        WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+        WinHide ahk_id %MagnifierWindowID%
+        HSJM:=0
+    }
+
     KeyWait LButton
     Critical, On
     WhiteListType:=1
+    WhiteListMode:=1 ; 1=完全匹配 2=包含
+    防误触:=0
     loop
     {
-        KeyWait Ctrl
         MouseGetPos, , , WinID
-        WinGetTitle WinTitle, Ahk_id %WinID%
-        WinGetClass WinClass, Ahk_id %WinID%
-        WinGet WinExe, ProcessName, Ahk_id %WinID%
+        ; WinActivate ahk_id %WinID%
+        WinGetTitle WinTitle, ahk_id %WinID%
+        WinGetClass WinClass, ahk_id %WinID%
+        WinGet WinExe, ProcessName, ahk_id %WinID%
+
         if (WhiteListType=1)
-            ToolTip 当前窗口Title: %WinTitle%`n点击左键添加到白名单 点击Ctrl键切换类型
+            WhiteListToolTip:="当前窗口Title:" . WinTitle
         Else if (WhiteListType=2)
-            ToolTip 当前窗口Class: %WinClass%`n点击左键添加到白名单 点击Ctrl键切换类型
+            WhiteListToolTip:="当前窗口Class:" . WinClass
         Else if (WhiteListType=3)
-            ToolTip 当前窗口Exe: %WinExe%`n点击左键添加到白名单 点击Ctrl键切换类型
+            WhiteListToolTip:="当前窗口Exe:" . WinExe
+
+        if (WhiteListMode=1)
+            WhiteListToolTip.=" 完全匹配"
+        else if (WhiteListMode=2)
+            WhiteListToolTip.=" 包含内容"
+
+        WhiteListToolTip.= "`n点击左键确定添加到白名单 点击Esc键退出白名单设置`n点击Ctrl键切换类型 点击Shift键切换匹配模式"
+        ToolTip %WhiteListToolTip% %防误触%
+
+        if (防误触=1)
+        {
+            if GetKeyState("Ctrl", "P") or GetKeyState("Shift", "P")
+            {
+                Sleep 30
+                Continue
+            }
+            else if !GetKeyState("Ctrl", "P") and !GetKeyState("Shift", "P")
+            {
+                防误触:=0
+            }
+        }
 
         if GetKeyState("Ctrl", "P")
         {
+            防误触:=1
             WhiteListType:=WhiteListType+1
             if (WhiteListType>3)
                 WhiteListType:=1
+        }
+        else if GetKeyState("Shift", "P")
+        {
+            防误触:=1
+            if (WhiteListMode=2)
+                WhiteListMode:=1
+            else ;if (WhiteListMode=1)
+                WhiteListMode:=2
+
         }
         else if GetKeyState("Esc", "P")
         {
@@ -445,19 +487,24 @@ Return
         }
         else if GetKeyState("Lbutton", "P")
         {
+            if (WhiteListMode=1)
+                NewWhiteList:="Same "
+            else if (WhiteListMode=2)
+                NewWhiteList:="Include "
+
             if (WhiteListType=1)
             {
-                NewWhiteList:="Title==="
+                NewWhiteList.="Title==="
                 NewWhiteList.=WinTitle
             }
             else if (WhiteListType=2)
             {
-                NewWhiteList:="Class==="
+                NewWhiteList.="Class==="
                 NewWhiteList.=WinClass
             }
             else if (WhiteListType=3)
             {
-                NewWhiteList:="Exe==="
+                NewWhiteList.="Exe==="
                 NewWhiteList.=WinExe
             }
             ToolTip
@@ -468,7 +515,7 @@ Return
             {
                 if (WhiteList="") or (WhiteList="ERROR")
                 {
-                    WhiteList:="Exe===Code.exe|Exe===Notepad--.exe"
+                    WhiteList:="Same Exe===Code.exe|Same Exe===Notepad--.exe"
                 }
                 WhiteList.="|"
                 WhiteList.=NewWhiteList
@@ -503,9 +550,14 @@ Return
 Return
 
 白名单设置:
-    InputBox WhiteList, 白名单设置, 请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n请用 “|” 分隔开每个窗口`n举例: Title===窗口标题, , A_ScreenHeight, 180, , , Locale, ,%WhiteList%
+    InputBox WhiteList, 白名单设置, 匹配模式作为开头并跟随空格 匹配模式有 Same完全匹配 Include包含内容`n请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n请用 “|” 分隔开每个窗口`n举例: Include Title===窗口标题 表示:匹配窗口标题包含内容为"窗口标题"的窗口, , A_ScreenHeight, 200, , , Locale, ,%WhiteList%
     if !ErrorLevel
     {
+        ;如果白名单最后的字符串是"|"则删除
+        if (InStr(WhiteList, "|", , 0)=StrLen(WhiteList))
+        {
+            WhiteList:=SubStr(WhiteList, 1, StrLen(WhiteList)-1)
+        }
         IniWrite %WhiteList%, Settings.ini, Settings, 白名单列表 ;写入设置到ini文件
     }
     else
@@ -516,38 +568,30 @@ Return
 
 白名单:
     白名单:=0
-    MouseGetPos, , , 白名单识别排除ID
+    MouseGetPos, , , 白名单识别包含ID
     白名单列表:=StrSplit(WhiteList,"|")
     匹配次数:=白名单列表.Length() 
     Loop %匹配次数% ;Title Class Exe
     {
         ; ToolTip % 白名单列表[A_Index]
         if (InStr(白名单列表[A_Index], "Title")!=0)
-        {
-            排除项位置:=InStr(白名单列表[A_Index], "===")+3
-            排除项:=SubStr(白名单列表[A_Index], 排除项位置)
-            WinGetTitle 当前特征, ahk_id %白名单识别排除ID%
-            ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
-            if (当前特征=排除项)
-                白名单:=1
-        }
+            WinGetTitle 当前特征, ahk_id %白名单识别包含ID%
         else if (InStr(白名单列表[A_Index], "Class")!=0)
-        {
-            排除项位置:=InStr(白名单列表[A_Index], "===")+3
-            排除项:=SubStr(白名单列表[A_Index], 排除项位置)
-            WinGetClass 当前特征, ahk_id %白名单识别排除ID%
-            ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
-            if (当前特征=排除项)
-                白名单:=1
-        }
+            WinGetClass 当前特征, ahk_id %白名单识别包含ID%
         else if (InStr(白名单列表[A_Index], "Exe")!=0)
+            WinGet 当前特征, ProcessName, ahk_id %白名单识别包含ID%
+
+        包含项位置:=InStr(白名单列表[A_Index], "===")+3
+        包含项:=SubStr(白名单列表[A_Index], 包含项位置)
+        ; ToolTip, 包含项%包含项%`n当前特征%当前特征%
+
+        if (InStr(白名单列表[A_Index], "Same")!=0) and (当前特征=包含项)
         {
-            排除项位置:=InStr(白名单列表[A_Index], "===")+3
-            排除项:=SubStr(白名单列表[A_Index], 排除项位置)
-            WinGet 当前特征, ProcessName, ahk_id %白名单识别排除ID%
-            ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
-            if (当前特征=排除项)
-                白名单:=1
+            白名单:=1
+        }
+        else if (InStr(白名单列表[A_Index], "Include")!=0) and (InStr(当前特征, 包含项)!=0)
+        {
+            白名单:=1
         }
     }
 Return
@@ -556,28 +600,68 @@ Return
     if (running=1)
         SetTimer 屏幕监测, Off
 
+    if (HSJ=1)
+    {
+        ; ToolTip 关闭后视镜
+        WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+        WinHide ahk_id %MagnifierWindowID%
+        HSJM:=0
+    }
+
     KeyWait LButton
     Critical, On
     BlackListType:=1
+    BlackListMode:=1 ; 1=完全匹配 2=包含
+    防误触:=0
     loop
     {
-        KeyWait Ctrl
         MouseGetPos, , , WinID
-        WinGetTitle WinTitle, Ahk_id %WinID%
-        WinGetClass WinClass, Ahk_id %WinID%
-        WinGet WinExe, ProcessName, Ahk_id %WinID%
+        WinGetTitle WinTitle, ahk_id %WinID%
+        WinGetClass WinClass, ahk_id %WinID%
+        WinGet WinExe, ProcessName, ahk_id %WinID%
+
         if (BlackListType=1)
-            ToolTip 当前窗口Title: %WinTitle%`n点击左键添加到黑名单 点击Ctrl键切换类型
+            BlackListToolTip:="当前窗口Title:" . WinTitle
         Else if (BlackListType=2)
-            ToolTip 当前窗口Class: %WinClass%`n点击左键添加到黑名单 点击Ctrl键切换类型
+            BlackListToolTip:="当前窗口Class:" . WinClass
         Else if (BlackListType=3)
-            ToolTip 当前窗口Exe: %WinExe%`n点击左键添加到黑名单 点击Ctrl键切换类型
+            BlackListToolTip:="当前窗口Exe:" . WinExe
+
+        if (BlackListMode=1)
+            BlackListToolTip.=" 完全匹配"
+        else if (BlackListMode=2)
+            BlackListToolTip.=" 包含内容"
+
+        BlackListToolTip.= "`n点击左键确定添加到黑名单 点击Esc键退出黑名单设置`n点击Ctrl键切换类型 点击Shift键切换匹配模式"
+        ToolTip %BlackListToolTip%
+
+        if (防误触=1)
+        {
+            if GetKeyState("Ctrl", "P") or GetKeyState("Shift", "P")
+            {
+                Sleep 30
+                Continue
+            }
+            else if !GetKeyState("Ctrl", "P") and !GetKeyState("Shift", "P")
+            {
+                防误触:=0
+            }
+        }
 
         if GetKeyState("Ctrl", "P")
         {
+            防误触:=1
             BlackListType:=BlackListType+1
             if (BlackListType>3)
                 BlackListType:=1
+        }
+        else if GetKeyState("Shift", "P")
+        {
+            防误触:=1
+            if (BlackListMode=2)
+                BlackListMode:=1
+            else ;;if (BlackListMode=1)
+                BlackListMode:=2
         }
         else if GetKeyState("Esc", "P")
         {
@@ -586,19 +670,24 @@ Return
         }
         else if GetKeyState("Lbutton", "P")
         {
+            if (BlackListMode=1)
+                NewBlackList:="Same "
+            else if (BlackListMode=2)
+                NewBlackList:="Include "
+
             if (BlackListType=1)
             {
-                NewBlackList:="Title==="
+                NewBlackList.="Title==="
                 NewBlackList.=WinTitle
             }
             else if (BlackListType=2)
             {
-                NewBlackList:="Class==="
+                NewBlackList.="Class==="
                 NewBlackList.=WinClass
             }
             else if (BlackListType=3)
             {
-                NewBlackList:="Exe==="
+                NewBlackList.="Exe==="
                 NewBlackList.=WinExe
             }
             ToolTip
@@ -609,7 +698,7 @@ Return
             {
                 if (BlackList="") or (BlackList="ERROR")
                 {
-                    BlackList:="Exe===Code.exe|Exe===Notepad--.exe"
+                    BlackList:="Same Class===ActualTools_MultiMonitorTaskbar|Same Class===DesktopLyrics|Same Class===WorkerW"
                 }
                 BlackList.="|"
                 BlackList.=NewBlackList
@@ -644,9 +733,14 @@ Return
 Return
 
 黑名单设置:
-    InputBox BlackList, 黑名单设置, 请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n`n举例: Title===窗口标题, , A_ScreenHeight, 180, , , Locale, ,%BlackList%
+    InputBox BlackList, 黑名单设置, 匹配模式作为开头并跟随空格 匹配模式有 Same完全匹配 Include包含内容`n请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n请用 “|” 分隔开每个窗口`n举例: Include Title===窗口标题 表示:匹配窗口标题包含内容为"窗口标题"的窗口, , A_ScreenHeight, 200, , , Locale, ,%BlackList%
     if !ErrorLevel
     {
+        ;如果黑名单最后的字符串是"|"则删除
+        if (InStr(BlackList, "|", , 0)=StrLen(BlackList))
+        {
+            BlackList:=SubStr(BlackList, 1, StrLen(BlackList)-1)
+        }
         IniWrite %BlackList%, Settings.ini, 设置, 黑名单列表 ;写入设置到ini文件
     }
     else
@@ -664,31 +758,23 @@ Return
     {
         ; ToolTip % 黑名单列表[A_Index]
         if (InStr(黑名单列表[A_Index], "Title")!=0)
-        {
-            排除项位置:=InStr(黑名单列表[A_Index], "===")+3
-            排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
             WinGetTitle 当前特征, ahk_id %黑名单识别排除ID%
-            ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
-            if (当前特征=排除项)
-                黑名单:=1
-        }
         else if (InStr(黑名单列表[A_Index], "Class")!=0)
-        {
-            排除项位置:=InStr(黑名单列表[A_Index], "===")+3
-            排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
             WinGetClass 当前特征, ahk_id %黑名单识别排除ID%
-            ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
-            if (当前特征=排除项)
-                黑名单:=1
-        }
         else if (InStr(黑名单列表[A_Index], "Exe")!=0)
-        {
-            排除项位置:=InStr(黑名单列表[A_Index], "===")+3
-            排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
             WinGet 当前特征, ProcessName, ahk_id %黑名单识别排除ID%
-            ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
-            if (当前特征=排除项)
-                黑名单:=1
+
+        排除项位置:=InStr(黑名单列表[A_Index], "===")+3
+        排除项:=SubStr(黑名单列表[A_Index], 排除项位置)
+        ; ToolTip, 排除项%排除项%`n当前特征%当前特征%
+
+        if (InStr(黑名单列表[A_Index], "Same")!=0) and (当前特征=排除项)
+        {
+            黑名单:=1
+        }
+        else if (InStr(黑名单列表[A_Index], "Include")!=0) and (InStr(当前特征, 排除项)!=0)
+        {
+            黑名单:=1
         }
     }
 
@@ -759,6 +845,14 @@ Return
     Critical, On
     CoordMode Mouse, Screen ;以屏幕为基准
     MouseGetPos MX, MY, WinID ;获取鼠标在屏幕中的位置
+    WinID:=HexToDec(WinID) ;将句柄转换为16进制格式
+    WinGetPos WinX, WinY, WinW, WinH, ahk_id %WinID% ;获取窗口位置和大小
+    WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
+    WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
+    WinGet WinExe, ProcessName, ahk_id %WinID%
+    ; MsgBox, %WinExe%
+    ; WinGet 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
+    ; 窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
     if (MY>ScreenBottom) ;如果鼠标在屏幕底部
     {
         if (CompatibleMode=0) ;不是兼容模式
@@ -785,7 +879,7 @@ Return
     {
         WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
         WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
-        WinGet WinExe, ProcessName, Ahk_id %WinID%
+        WinGet WinExe, ProcessName, ahk_id %WinID%
         GoSub 危险操作识别
         if (危险操作=1)
         {
@@ -810,7 +904,10 @@ Return
             {
                 WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
             }
-            WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+            if (WinExe!="ugraf.exe")
+                WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
             SetTimer 关闭提示, -500 ;500毫秒后关闭提示
         }
         else if (WinInScreenX>FJL) and (WinInScreenX<FJR) and (WY<WinTop) ;点击的窗口在中间屏幕 并且 点击位置在窗口顶部
@@ -825,7 +922,10 @@ Return
             {
                 WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
             }
-            WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+            if (WinExe!="ugraf.exe")
+                WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
             SetTimer 关闭提示, -500 ;500毫秒后关闭提示
         }
         else if (WinInScreenX>FJR) and (WY<WinTop) ;点击的窗口在右边屏幕 并且 点击位置在窗口顶部
@@ -840,7 +940,10 @@ Return
             {
                 WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
             }
-            WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+            if (WinExe!="ugraf.exe")
+                WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
             SetTimer 关闭提示, -500 ;500毫秒后关闭提示
         }
     }
@@ -888,7 +991,7 @@ return
     {
         WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
         WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
-        WinGet WinExe, ProcessName, Ahk_id %WinID%
+        WinGet WinExe, ProcessName, ahk_id %WinID%
         GoSub 危险操作识别
         if (危险操作=1)
         {
@@ -1145,7 +1248,7 @@ return
     MouseGetPos, , WindowY, WinID_Monitor ;获取鼠标在窗口中的位置
     WinGetClass WinClass, ahk_id %WinID_Monitor% ;获取窗口类名
     WinGetTitle WinTitle, ahk_id %WinID_Monitor% ;获取窗口类名
-    WinGet WinExe, ProcessName, Ahk_id %WinID_Monitor%
+    WinGet WinExe, ProcessName, ahk_id %WinID_Monitor%
     GoSub 危险操作识别
     if (危险操作=1)
     {
@@ -1154,7 +1257,7 @@ return
     WinGet 窗口样式, ExStyle, ahk_id %WinID_Monitor% ;获取窗口样式
     窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
     ; ToolTip %窗口样式%
-    if (窗口样式=0) and (WindowY<WinTop) and (WinClass!=AutoHideClass) and (危险操作=0) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
+    if (窗口样式=0) and (WindowY<WinTop) and (WinClass!=AutoHideWindow) and (危险操作=0) ;如果没有处于总是顶置状态 并且 点击在窗口顶部
     {
         Menu Tray, Check, 自动暂停
         WinGetClass WinClass, ahk_id %WinID_Monitor% ;根据句柄获取窗口的名字
@@ -1221,7 +1324,7 @@ HexToDec(hex)
     WinGetPos WinX, WinY, WinW, WinH, ahk_id %WinID% ;获取窗口位置和大小
     WinGetClass WinClass, ahk_id %WinID% ;获取窗口类名
     WinGetTitle WinTitle, ahk_id %WinID% ;获取窗口类名
-    WinGet WinExe, ProcessName, Ahk_id %WinID%
+    WinGet WinExe, ProcessName, ahk_id %WinID%
     WinGet 窗口样式, ExStyle, ahk_id %WinID% ;获取窗口样式
     窗口样式:= (窗口样式 & 0x8) ? true : false ;验证窗口是否处于总是顶置状态
 
@@ -1564,7 +1667,10 @@ HexToDec(hex)
                 {
                     WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 }
-                WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+                if (WinExe!="ugraf.exe")
+                    WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
                 Critical Off  
             }
             else if (SX>=FJL) and (SX<=FJR) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;左边屏幕贴左半边顶 最大化
@@ -1577,7 +1683,10 @@ HexToDec(hex)
                 {
                     WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 }
-                WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+                if (WinExe!="ugraf.exe")
+                    WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
                 Critical Off  
             }
             else if (SX>=FJR+Round(RSW/5*2)) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;右边屏幕贴右半边顶 最大化
@@ -1590,7 +1699,10 @@ HexToDec(hex)
                 {
                     WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 }
-                WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+                if (WinExe!="ugraf.exe")
+                    WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
                 Critical Off  
             }
             else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;左边屏幕贴右半边顶 竖条显示
@@ -1773,6 +1885,12 @@ Return
 
 MoveWinFllowMouse(WinID, InitialW, InitialH)
 {
+    global SW
+    global SH
+    global RSW
+    global RSH
+    global YDY
+    global YDL
     global FJL
     global FJR
     global BKXZ
@@ -1781,29 +1899,42 @@ MoveWinFllowMouse(WinID, InitialW, InitialH)
     MouseGetPos MouseX, MouseY
     ; ToolTip %A_ScreenWidth% %A_ScreenHeight% %FJL% %FJR%
 
-    if (MouseX<Round(InitialW/2))
-        FMoveWinX:=0
-    else if (MouseX>Round(FJL-BKXZ/2-InitialW/2)) and (MouseX<FJL)
-        FMoveWinX:=Round(FJL-InitialW)
-    else if (MouseX<=Round(FJL+BKXZ/2+InitialW/2)) and (MouseX>=FJL)
-        FMoveWinX:=Round(FJL+BKXZ)
-    else if (MouseX<Round(FJR+BKXZ/2+InitialW/2)) and (MouseX>FJR)
-        FMoveWinX:=FJR
-    else if (MouseX>=Round(FJR-BKXZ/2-InitialW/2)) and (MouseX<=FJR)
-        FMoveWinX:=Round(FJR-InitialW-BKXZ)
-    else if (MouseX>Round(A_ScreenWidth-InitialW/2))
-        FMoveWinX:=A_ScreenWidth-InitialW
+    WinRestore ahk_id %WinID%
+    if (InitialW>=RSW) and (InitialH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
+    {
+        if (MouseX<FJL)
+            WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        if (MouseX>FJR)
+            WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+        else if (MouseX>=FJL) and (MouseX<=FJR)
+            WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+    }
     else
-        FMoveWinX:=Round(MouseX-InitialW/2)
+    {
+        if (MouseX<Round(InitialW/2))
+            FMoveWinX:=0
+        else if (MouseX>Round(FJL-BKXZ/2-InitialW/2)) and (MouseX<FJL)
+            FMoveWinX:=Round(FJL-InitialW)
+        else if (MouseX<=Round(FJL+BKXZ/2+InitialW/2)) and (MouseX>=FJL)
+            FMoveWinX:=Round(FJL+BKXZ)
+        else if (MouseX<Round(FJR+BKXZ/2+InitialW/2)) and (MouseX>FJR)
+            FMoveWinX:=FJR
+        else if (MouseX>=Round(FJR-BKXZ/2-InitialW/2)) and (MouseX<=FJR)
+            FMoveWinX:=Round(FJR-InitialW-BKXZ)
+        else if (MouseX>Round(A_ScreenWidth-InitialW/2))
+            FMoveWinX:=A_ScreenWidth-InitialW
+        else
+            FMoveWinX:=Round(MouseX-InitialW/2)
 
-    if (MouseY<Round(InitialH/2))
-        FMoveWinY:=0
-    else if (MouseY>Round(A_ScreenHeight-InitialH/2))
-        FMoveWinY:=A_ScreenHeight-InitialH
-    else
-        FMoveWinY:=Round(MouseY-InitialH/2)
+        if (MouseY<Round(InitialH/2))
+            FMoveWinY:=0
+        else if (MouseY>Round(A_ScreenHeight-InitialH/2))
+            FMoveWinY:=A_ScreenHeight-InitialH
+        else
+            FMoveWinY:=Round(MouseY-InitialH/2)
 
-    WinMove Ahk_id %WinID%, , FMoveWinX, FMoveWinY
+        WinMove ahk_id %WinID%, , FMoveWinX, FMoveWinY
+    }
     Return
 }
 
@@ -1970,7 +2101,8 @@ $MButton:: ;中键
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
         MouseGetPos InitiaMouseX, InitiaMouseY, InitiaWinID  ;获取鼠标在屏幕中的位置
-        WinGetPos InitialWinX, InitialWinY, InitialWinW, InitialWinH, Ahk_id %WinID% ;获取窗口位置
+        WinGetPos InitialWinX, InitialWinY, InitialWinW, InitialWinH, ahk_id %InitiaWinID% ;获取窗口位置
+        WinActivate ahk_id %InitiaWinID%
         HSJM:=0
         HSJH:=1
 
@@ -2018,7 +2150,7 @@ $MButton:: ;中键
         总移动距离:=0
         CoordMode Mouse, Screen ;以屏幕为基准
         MouseGetPos MXNew, MYNew, WinID  ;获取鼠标在屏幕中的位置
-        WinGetPos WinX, WinY, , , Ahk_id %WinID% ;获取窗口位置
+        WinGetPos WinX, WinY, , , ahk_id %WinID% ;获取窗口位置
         if (MYNew-WinY<WinTop) and (MYNew-WinY>0) ;初次点击又没有点在窗口顶部
             FirstClickTop:=1
         else
@@ -2172,7 +2304,7 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到右边屏幕
                 WinRestore ahk_id %WinID%
-                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
                     WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 else
                     MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
@@ -2188,7 +2320,7 @@ $MButton:: ;中键
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
-            else if (MXNew>FJL) ;左边屏幕 到 中间屏幕
+            else if (MXNew>=FJL) ;左边屏幕 到 中间屏幕
             {
                 ; ToolTip 左边屏幕 到 中间屏幕
                 if (WinID=MiniWinIDL)
@@ -2209,7 +2341,7 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到中间屏幕
                 WinRestore ahk_id %WinID%
-                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
                     WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 else
                     MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
@@ -2253,7 +2385,7 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到左边屏幕
                 WinRestore ahk_id %WinID%
-                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
                     WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 else
                     MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
@@ -2290,7 +2422,7 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到右边屏幕
                 WinRestore ahk_id %WinID%
-                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
                     WinMove ahk_id %WinID%, ,YDR ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 else
                     MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
@@ -2335,7 +2467,7 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到左边屏幕
                 WinRestore ahk_id %WinID%
-                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
                     WinMove ahk_id %WinID%, ,YDL ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 else
                     MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
@@ -2351,7 +2483,7 @@ $MButton:: ;中键
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
-            else if (MXNew<FJR) ;右边屏幕 到 中间屏幕
+            else if (MXNew<=FJR) ;右边屏幕 到 中间屏幕
             {
                 ; ToolTip 右边屏幕 到 中间屏幕
                 if (WinID=MiniWinIDR)
@@ -2372,7 +2504,7 @@ $MButton:: ;中键
                 WinGetTitle ActiveWindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
                 ToolTip 发送%ActiveWindowID%窗口到中间屏幕
                 WinRestore ahk_id %WinID%
-                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于右边屏幕大小
+                if (InitialWinW>=RSW) and (InitialWinH>=RSH) ;如果窗口初始大小大于等于物理屏幕大小
                     WinMove ahk_id %WinID%, ,YDM ,YDY ,SW ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
                 else
                     MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
@@ -2413,7 +2545,10 @@ $MButton:: ;中键
                 {
                     WinRestore ahk_id %WinID%
                     WinMove ahk_id %WinID%, ,0-KDXZ/2 ,0 ,A_ScreenWidth+KDXZ ,A_ScreenHeight+GDXZ ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
-                    WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
+                    if (WinExe!="ugraf.exe")
+                        WinSet Style, -0x40000, ahk_id %WinID% ;禁止调整窗口大小
+
                     WinActivate ahk_id %WinID% ; 激活窗口
                     ToolTip 将%WinTitle%窗口超大化
                     SetTimer 关闭提示, -500 ;500毫秒后关闭提示
@@ -2820,7 +2955,7 @@ return
         thisID := idList%A_Index%
         WinGetClass WinClass, ahk_id %thisID%
         WinGetTitle WinTitle, ahk_id %thisID% ;获取窗口类名
-        WinGet WinExe, ProcessName, Ahk_id %thisID%
+        WinGet WinExe, ProcessName, ahk_id %thisID%
         GoSub 危险操作识别
 
         ; 获取窗口的位置和大小
@@ -2917,14 +3052,42 @@ return
     if (running=1)
         SetTimer 屏幕监测, Off
 
-    Critical, on
-    if (AutoHideClass="") or (AutoHideClass="ERROR")
+    if (HSJ=1)
     {
-        KeyWait Lbutton
+        ; ToolTip 关闭后视镜
+        WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+        WinHide ahk_id %MagnifierWindowID%
+        HSJM:=0
+    }
+
+    KeyWait LButton
+    Critical, on
+
+    if (AutoHideWindow="") or (AutoHideWindow="ERROR")
+    {
+        AutoHideType:=1
+        AutoHideMode:=1 ; 1=完全匹配 2=包含
+        防误触:=0
         loop
         {
             MouseGetPos, , , WinID
+            ; WinActivate ahk_id %WinID%
+            WinGetTitle WinTitle, ahk_id %WinID%
             WinGetClass WinClass, ahk_id %WinID%
+            WinGet WinExe, ProcessName, ahk_id %WinID%
+
+            if (AutoHideType=1)
+                AutoHideToolTip:="当前窗口Title:" . WinTitle
+            Else if (AutoHideType=2)
+                AutoHideToolTip:="当前窗口Class:" . WinClass
+            Else if (AutoHideType=3)
+                AutoHideToolTip:="当前窗口Exe:" . WinExe
+
+            if (AutoHideMode=1)
+                AutoHideToolTip.=" 完全匹配"
+            else if (AutoHideMode=2)
+                AutoHideToolTip.=" 包含内容"
+
             GoSub 危险操作识别
             if (危险操作=1)
             {
@@ -2932,25 +3095,93 @@ return
                 Sleep 30
                 Continue
             }
-            ToolTip 当前窗口%WinClass%`n请按下左键捕获神隐窗口
-
-            if GetKeyState("LButton", "P") and (危险操作=0)
+            else
             {
-                Menu Tray, Check, 神隐窗口
-                AutoHideClass:=WinClass
-                WinSet AlwaysOnTop, On, ahk_class %AutoHideClass%  ;切换窗口的顶置状态
-                IniWrite %WinClass%, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
-                loop 20
+                AutoHideToolTip.= "`n点击左键确定添加到神隐窗口 点击Esc键退出神隐窗口设置`n点击Ctrl键切换类型 点击Shift键切换匹配模式"
+                ToolTip %AutoHideToolTip% %防误触%
+            }
+
+            if (防误触=1)
+            {
+                if GetKeyState("Ctrl", "P") or GetKeyState("Shift", "P")
                 {
-                    ToolTip %WinClass%已设为神隐窗口
                     Sleep 30
+                    Continue
                 }
+                else if !GetKeyState("Ctrl", "P") and !GetKeyState("Shift", "P")
+                {
+                    防误触:=0
+                }
+            }
+
+            if GetKeyState("Ctrl", "P")
+            {
+                防误触:=1
+                AutoHideType:=AutoHideType+1
+                if (AutoHideType>3)
+                    AutoHideType:=1
+            }
+            else if GetKeyState("Shift", "P")
+            {
+                防误触:=1
+                if (AutoHideMode=2)
+                    AutoHideMode:=1
+                else ;if (AutoHideMode=1)
+                    AutoHideMode:=2
+
+            }
+            else if GetKeyState("Esc", "P")
+            {
                 ToolTip
                 Break
             }
-
-            if GetKeyState("Esc", "P")
+            else if GetKeyState("Lbutton", "P")
             {
+                if (AutoHideMode=1)
+                    AutoHideWindow:="Same "
+                else if (AutoHideMode=2)
+                    AutoHideWindow:="Include "
+
+                if (AutoHideType=1)
+                {
+                    AutoHideWindow.="Title==="
+                    AutoHideWindow.=WinTitle
+                }
+                else if (AutoHideType=2)
+                {
+                    AutoHideWindow.="Class==="
+                    AutoHideWindow.=WinClass
+                }
+                else if (AutoHideType=3)
+                {
+                    AutoHideWindow.="Exe==="
+                    AutoHideWindow.=WinExe
+                }
+                ToolTip
+                Sleep 100
+
+                ; ToolTip, 包含项%包含项%`n当前特征%当前特征%
+
+                if (AutoHideMode=2)
+                {
+                    InputBox AutoHideWindow, 神隐窗口设置, 匹配模式作为开头并跟随空格 匹配模式有 Same完全匹配 Include包含内容`n请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n举例: Include Title===窗口标题 表示:匹配窗口标题包含内容为"窗口标题"的窗口, , A_ScreenHeight, 200, , , Locale, ,%AutoHideWindow%
+                    if !ErrorLevel
+                        IniWrite %AutoHideWindow%, Settings.ini, Settings, 神隐窗口 ;写入设置到ini文件
+                    else
+                        IniRead AutoHideWindow, Settings.ini, Settings, 神隐窗口 ;写入设置到ini文件
+                }
+                else
+                    IniWrite %AutoHideWindow%, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
+
+                窗口控制(AutoHideWindow, AutoHideMode, 1, 255, 0, "")
+
+                Menu Tray, Check, 神隐窗口
+                loop 20
+                {
+                    ToolTip %AutoHideWindow%已设为神隐窗口
+                    Sleep 30
+                }
+                ToolTip
                 Break
             }
         }
@@ -2958,13 +3189,10 @@ return
     else
     {
         Menu Tray, UnCheck, 神隐窗口
-        AutoHideClass:=""
-        IniWrite %AutoHideClass%, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
+        窗口控制(AutoHideWindow, AutoHideMode, 0, 255, 0, "")
 
-        Sleep 300
-        WinSet AlwaysOnTop, Off, ahk_class %AutoHideClass%  ;切换窗口的顶置状态
-        WinSet Transparent, 255, ahk_class %AutoHideClass%
-        WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+        AutoHideWindow:=""
+        IniWrite %AutoHideWindow%, Settings.ini, 设置, 神隐窗口 ;写入设置到ini文件
     }
 
     if (running=1)
@@ -2972,18 +3200,121 @@ return
     Critical, Off
 Return
 
+窗口控制(识别特征, 匹配方式, 顶置状态, 透明度, 鼠标穿透, 移动Y)
+{
+    global ControlWindowID
+    包含项位置:=InStr(识别特征, "===")+3
+    包含项:=SubStr(识别特征, 包含项位置)
+
+    ; 遍历所有窗口
+    匹配特征:=""
+    WinGet idList, List
+    Loop, %idList%
+    {
+        ; 获取当前窗口的ID
+        thisID := idList%A_Index%
+
+        ; 获取当前窗口的信息
+        匹配成功:=0
+        if (InStr(识别特征, "Title")!=0)
+        {
+            ; 检查类名是否包含指定的内容
+            类型:="标题"
+            WinGetTitle 当前特征, ahk_id %thisID%
+            if (当前特征=包含项) and (匹配方式=1) ;完全匹配
+                匹配成功:=1
+            else if (InStr(当前特征, 包含项)!=0) and (匹配方式=2) ;包含
+                匹配成功:=1
+        }
+        else if (InStr(识别特征, "Class")!=0)
+        {
+            ; 检查类名是否包含指定的内容
+            类型:="类名"
+            WinGetClass 当前特征, ahk_id %thisID%
+            if (当前特征=包含项) and (匹配方式=1) ;完全匹配
+                匹配成功:=1
+            else if (InStr(当前特征, 包含项)!=0) and (匹配方式=2) ;包含
+                匹配成功:=1
+        }
+        else if (InStr(识别特征, "Exe")!=0)
+        {
+            ; 检查类名是否包含指定的内容
+            类型:="进程名"
+            WinGet 当前特征, ProcessName, ahk_id %thisID%
+            if (当前特征=包含项) and (匹配方式=1) ;完全匹配
+                匹配成功:=1
+            else if (InStr(当前特征, 包含项)!=0) and (匹配方式=2) ;包含
+                匹配成功:=1
+        }
+
+        匹配特征.=匹配成功 . 类型 . " " . 当前特征 . "`n" ;记录匹配特征
+        if (匹配成功=1)
+        {
+            ControlWindowID:=thisID
+
+            if (顶置状态!="")
+                WinSet AlwaysOnTop, %顶置状态%, ahk_id %thisID%  ;切换窗口的顶置状态
+
+            if (透明度!="")
+                WinSet Transparent, %透明度%, ahk_id %thisID%
+
+            if (鼠标穿透=1)
+                WinSet ExStyle, +0x20, ahk_id %thisID% ;开启鼠标穿透
+            else if (鼠标穿透=0)
+                WinSet ExStyle, -0x20, ahk_id %thisID% ;关闭鼠标穿透
+
+            if (移动Y!="") ;and (移动窗口=1)
+                WinMove ahk_id %thisID%, , , 移动Y ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+
+            Break
+        }
+    }
+
+    ; ToolTip 方式%匹配方式% 次数%idList% %识别特征%`n识别特征: %包含项%`n当前特征:`n%匹配特征%`n顶置%顶置状态% 透明度%透明度% 穿透%鼠标穿透% 移动%移动Y%, , ,2
+    ; ToolTip ControlWindowID%ControlWindowID%`n顶置%顶置状态% 透明度%透明度% 穿透%鼠标穿透% 移动%移动Y%, , ,2
+    Return ControlWindowID
+}
+
 飘逸窗口:
     if (running=1)
         SetTimer 屏幕监测, Off
 
-    Critical, on
-    if (AutoMoveClass="") or (AutoMoveClass="ERROR")
+    if (HSJ=1)
     {
-        KeyWait Lbutton
+        ; ToolTip 关闭后视镜
+        WinSet Transparent, 0, ahk_id %MagnifierWindowID%
+        WinHide ahk_id %MagnifierWindowID%
+        HSJM:=0
+    }
+
+    KeyWait LButton
+    Critical, on
+
+    if (AutoMoveWindow="") or (AutoMoveWindow="ERROR")
+    {
+        AutoMoveType:=1
+        AutoMoveMode:=1 ; 1=完全匹配 2=包含
+        防误触:=0
         loop
         {
             MouseGetPos, , , WinID
+            ; WinActivate ahk_id %WinID%
+            WinGetTitle WinTitle, ahk_id %WinID%
             WinGetClass WinClass, ahk_id %WinID%
+            WinGet WinExe, ProcessName, ahk_id %WinID%
+
+            if (AutoMoveType=1)
+                AutoMoveToolTip:="当前窗口Title:" . WinTitle
+            Else if (AutoMoveType=2)
+                AutoMoveToolTip:="当前窗口Class:" . WinClass
+            Else if (AutoMoveType=3)
+                AutoMoveToolTip:="当前窗口Exe:" . WinExe
+
+            if (AutoMoveMode=1)
+                AutoMoveToolTip.=" 完全匹配"
+            else if (AutoMoveMode=2)
+                AutoMoveToolTip.=" 包含内容"
+
             GoSub 危险操作识别
             if (危险操作=1) and (WinClass!="DesktopLyrics")
             {
@@ -2991,28 +3322,91 @@ Return
                 Sleep 30
                 Continue
             }
-            ToolTip 当前窗口%WinClass%`n请按下左键捕获飘逸窗口
-
-            if GetKeyState("LButton", "P") and (危险操作=0 or WinClass="DesktopLyrics")
+            else
             {
-                Menu Tray, Check, 飘逸窗口
-                AutoMoveClass:=WinClass
-                WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_class %AutoMoveClass%
-                IniWrite %WinClass%, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
-                loop 20
+                AutoMoveToolTip.= "`n点击左键确定添加到飘逸窗口 点击Esc键退出飘逸窗口设置`n点击Ctrl键切换类型 点击Shift键切换匹配模式"
+                ToolTip %AutoMoveToolTip% %防误触%
+            }
+
+            if (防误触=1)
+            {
+                if GetKeyState("Ctrl", "P") or GetKeyState("Shift", "P")
                 {
-                    ToolTip %WinClass%已设为飘逸窗口
                     Sleep 30
+                    Continue
                 }
+                else if !GetKeyState("Ctrl", "P") and !GetKeyState("Shift", "P")
+                {
+                    防误触:=0
+                }
+            }
+
+            if GetKeyState("Ctrl", "P")
+            {
+                防误触:=1
+                AutoMoveType:=AutoMoveType+1
+                if (AutoMoveType>3)
+                    AutoMoveType:=1
+            }
+            else if GetKeyState("Shift", "P")
+            {
+                防误触:=1
+                if (AutoMoveMode=2)
+                    AutoMoveMode:=1
+                else ;if (AutoMoveMode=1)
+                    AutoMoveMode:=2
+
+            }
+            else if GetKeyState("Esc", "P")
+            {
                 ToolTip
                 Break
             }
-
-            if GetKeyState("Esc", "P")
+            else if GetKeyState("Lbutton", "P")
             {
+                if (AutoMoveMode=1)
+                    AutoMoveWindow:="Same "
+                else if (AutoMoveMode=2)
+                    AutoMoveWindow:="Include "
+
+                if (AutoMoveType=1)
+                {
+                    AutoMoveWindow.="Title==="
+                    AutoMoveWindow.=WinTitle
+                }
+                else if (AutoMoveType=2)
+                {
+                    AutoMoveWindow.="Class==="
+                    AutoMoveWindow.=WinClass
+                }
+                else if (AutoMoveType=3)
+                {
+                    AutoMoveWindow.="Exe==="
+                    AutoMoveWindow.=WinExe
+                }
+                ToolTip
+                Sleep 100
+
+                ; ToolTip, 包含项%包含项%`n当前特征%当前特征%
+
+                if (AutoMoveMode=2)
+                {
+                    InputBox AutoMoveWindow, 飘逸窗口设置, 匹配模式作为开头并跟随空格 匹配模式有 Same完全匹配 Include包含内容`n请用 “===” 分隔开 匹配类型 和 匹配特征`n匹配类型有 Title Class Exe`n举例: Include Title===窗口标题 表示:匹配窗口标题包含内容为"窗口标题"的窗口, , A_ScreenHeight, 200, , , Locale, ,%AutoMoveWindow%
+                    if !ErrorLevel
+                        IniWrite %AutoMoveWindow%, Settings.ini, Settings, 飘逸窗口 ;写入设置到ini文件
+                    else
+                        IniRead AutoMoveWindow, Settings.ini, Settings, 飘逸窗口 ;写入设置到ini文件
+                }
+                else
+                    IniWrite %AutoMoveWindow%, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
+
+                窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", "")
+                WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_id %AutoMoveWindowID%
+
+                Menu Tray, Check, 飘逸窗口
                 loop 20
                 {
-                    ToolTip 取消设置飘逸窗口
+                    ToolTip %AutoMoveWindow%已设为飘逸窗口
                     Sleep 30
                 }
                 ToolTip
@@ -3023,8 +3417,10 @@ Return
     else
     {
         Menu Tray, UnCheck, 飘逸窗口
-        AutoMoveClass:=""
-        IniWrite %AutoMoveClass%, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
+        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY)
+
+        AutoMoveWindow:=""
+        IniWrite %AutoMoveWindow%, Settings.ini, 设置, 飘逸窗口 ;写入设置到ini文件
     }
 
     if (running=1)
@@ -3209,32 +3605,22 @@ return
 return
 
 重启软件:
-    if (AutoMoveClass!="") and (AutoMoveClass!="ERROR")
+    if (AutoMoveWindow!="") and (AutoMoveWindow!="ERROR") and (AutoMoveWinX!="") and (AutoMoveWinY!="") and (AutoMoveWinWidth!="") and (AutoMoveWinHeight!="")
     {
-        if (AutoMoveWinX="") or (AutoMoveWinY="") or (AutoMoveWinWidth="") or (AutoMoveWinHeight="") ;第一次运行
-        {
-            WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_class %AutoMoveClass%
-        }
-        WinMove ahk_class %AutoMoveClass%, , AutoMoveWinX, AutoMoveWinY ;还原窗口位置
+        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY) ;还原飘逸窗口
     }
 Reload
 Return
 
 退出软件:
     Critical, On
-    if (AutoHideClass!="") and (AutoHideClass!="ERROR")
+    if (AutoHideWindow!="") and (AutoHideWindow!="ERROR")
     {
-        WinSet AlwaysOnTop, Off, ahk_class %AutoHideClass%  ;切换窗口的顶置状态
-        WinSet Transparent, 255, ahk_class %AutoHideClass%
-        WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+        窗口控制(AutoHideWindow, AutoHideMode, 0, 255, 0, "") ;关闭神隐窗口
     }
-    if (AutoMoveClass!="") and (AutoMoveClass!="ERROR")
+    if (AutoMoveWindow!="") and (AutoMoveWindow!="ERROR") and (AutoMoveWinX!="") and (AutoMoveWinY!="") and (AutoMoveWinWidth!="") and (AutoMoveWinHeight!="")
     {
-        if (AutoMoveWinX="") or (AutoMoveWinY="") or (AutoMoveWinWidth="") or (AutoMoveWinHeight="") ;第一次运行
-        {
-            WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_class %AutoMoveClass%
-        }
-        WinMove ahk_class %AutoMoveClass%, , AutoMoveWinX, AutoMoveWinY ;还原窗口位置
+        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY) ;还原飘逸窗口
     }
     DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
     DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
@@ -3975,24 +4361,45 @@ return
     }
 
     ; 神隐窗口 窗口自动调整透明度
-    if (AutoHideClass!="") and (AutoHideClass!="ERROR") and (WinExist("ahk_class "AutoHideClass))
+    if (AutoHideWindow!="") and (AutoHideWindow!="ERROR")
     {
         Critical, On
         ; MouseGetPos AutoHideMX, AutoHideMY
+        神隐窗口:=0
         AutoHideMX:=MISX
         AutoHideMY:=MISY
-        WinGetClass AutoHideWinClass, ahk_id %AWinID%
-        ; ToolTip %AutoHideClass% %AutoHideWinClass%
-        if (AutoHideWinClass=AutoHideClass) ;是自动隐藏窗口 打开神隐
+
+        MouseGetPos, , , 神隐窗口识别包含ID ;获取鼠标所在窗口的句柄
+        if (InStr(AutoHideWindow, "Title")!=0)
+            WinGetTitle 当前特征, ahk_id %神隐窗口识别包含ID%
+        else if (InStr(AutoHideWindow, "Class")!=0)
+            WinGetClass 当前特征, ahk_id %神隐窗口识别包含ID%
+        else if (InStr(AutoHideWindow, "Exe")!=0)
+            WinGet 当前特征, ProcessName, ahk_id %神隐窗口识别包含ID%
+
+        包含项位置:=InStr(AutoHideWindow, "===")+3
+        包含项:=SubStr(AutoHideWindow, 包含项位置)
+        if (InStr(AutoHideWindow, "Same")!=0) and (当前特征=包含项)
+        {
+            神隐窗口:=1
+            AutoHideMode:=1
+        }
+        else if (InStr(AutoHideWindow, "Include")!=0) and (InStr(当前特征, 包含项)!=0)
+        {
+            神隐窗口:=1
+            AutoHideMode:=2
+        }
+
+        if (神隐窗口=1) ;是自动隐藏窗口 打开神隐
         {
             if !GetKeyState("Alt", "P")
                 OutOfAutoHide:=0
 
             AutoHide:=0
-            WinSet Transparent, 100, ahk_class %AutoHideClass%
-            WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
-
-            WinGetPos AutoHideWinX, AutoHideWinY, AutoHideWinWidth, AutoHideWinHeight, ahk_class %AutoHideClass%
+            窗口控制(AutoHideWindow, AutoHideMode, 1, 100, 1, "")
+            AutoHideWindowID:=ControlWindowID
+            WinGetPos AutoHideWinX, AutoHideWinY, AutoHideWinWidth, AutoHideWinHeight, ahk_id %AutoHideWindowID%
+            ; ToolTip AutoHideWindowID%AutoHideWindowID%`nX%AutoHideWinX% Y%AutoHideWinY% Width%AutoHideWinWidth% Height%AutoHideWinHeight%`n鼠标X%AutoHideMX% Y%AutoHideMY%
         }
         else ;不是自动隐藏窗口 关闭神隐
         {
@@ -4007,8 +4414,7 @@ return
                 if (AutoHide=0)
                 {
                     AutoHide:=1
-                    WinSet Transparent, 255, ahk_class %AutoHideClass%
-                    WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+                    窗口控制(AutoHideWindow, AutoHideMode, 1, 255, 0, "")
                 }
             }
             else ;鼠标在窗口内
@@ -4025,8 +4431,7 @@ return
                         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
                     }
 
-                    WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
-                    WinSet Transparent, 175, ahk_class %AutoHideClass%
+                    窗口控制(AutoHideWindow, AutoHideMode, 1, 175, 0, "")
 
                     loop
                     {
@@ -4038,14 +4443,12 @@ return
                             {
                                 OutOfAutoHide:=1
                                 AutoHide:=1
-                                WinSet Transparent, 255, ahk_class %AutoHideClass%
-                                WinSet ExStyle, -0x20, ahk_class %AutoHideClass% ;关闭鼠标穿透
+                                窗口控制(AutoHideWindow, AutoHideMode, 1, 255, 0, "")穿透
                             }
                             else ; 鼠标在窗口内
                             {
                                 OutOfAutoHide:=0
-                                WinSet ExStyle, +0x20, ahk_class %AutoHideClass% ;打开鼠标穿透
-                                WinSet Transparent, 100, ahk_class %AutoHideClass%
+                                窗口控制(AutoHideWindow, AutoHideMode, 1, 100, 1, "")
                             }
 
                             if (HSJ=1)
@@ -4083,51 +4486,61 @@ return
     }
 
     ; 飘逸窗口 自动移动位置
-    if (AutoMoveClass!="") and (AutoMoveClass!="ERROR") and (WinExist("ahk_class "AutoMoveClass))
+    if (AutoMoveWindow!="") and (AutoMoveWindow!="ERROR")
     {
         Critical, On
         ; MouseGetPos AutoMoveMX, AutoMoveMY
         AutoMoveMX:=MISX
         AutoMoveMY:=MISY
-        ; ToolTip %AutoMoveClass% %AutoMoveWinClass%
-        if (AutoMoveWinX="") or (AutoMoveWinY="") or (AutoMoveWinWidth="") or (AutoMoveWinHeight="") ;第一次运行
+        ; ToolTip %AutoMoveWindow%`nID: %AutoMoveWindowID%`nX%AutoMoveWinX% Y%AutoMoveWinY% W%AutoMoveWinWidth% H%AutoMoveWinHeight%
+        if (AutoMoveWindowID="") or (AutoMoveWinX="") or (AutoMoveWinY="") or (AutoMoveWinWidth="") or (AutoMoveWinHeight="") ;第一次运行
         {
-            WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_class %AutoMoveClass%
-        }
+            if (InStr(AutoMoveWindow, "Same")!=0)
+                AutoMoveMode:=1
+            else if (InStr(AutoMoveWindow, "Include")!=0)
+                AutoMoveMode:=2
 
-        if (AutoMoveMY>=AutoMoveWinY) and (AutoMoveMY<=AutoMoveWinY+AutoMoveWinHeight) and (AutoMoveMX>=AutoMoveWinX) and (AutoMoveMX<=AutoMoveWinX+AutoMoveWinWidth) ;鼠标在窗口内
-        {
-            if (AutoMoveWinY+AutoMoveWinHeight/2<=A_ScreenHeight/2) ;窗口在屏幕上半部分
-            {
-                if (AutoMoveWinY<AutoMoveWinHeight) and (AutoMove=1) ;窗口上方位置不足以显示 向下移动
-                {
-                    AutoMove:=0
-                    WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY+AutoMoveWinHeight
-                }
-                else if (AutoMove=1) ;窗口上方位置足够 向上移动
-                {
-                    AutoMove:=0
-                    WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY-AutoMoveWinHeight
-                }
-            }
-            else if (AutoMoveWinY+AutoMoveWinHeight/2>A_ScreenHeight/2) ;窗口在屏幕下半部分
-            {
-                if (A_ScreenHeight-(AutoMoveWinY+AutoMoveWinHeight)<AutoMoveWinHeight) and (AutoMove=1) ;窗口下方位置不足以显示 向上移动
-                {
-                    AutoMove:=0
-                    WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY-AutoMoveWinHeight
-                }
-                else if (AutoMove=1) ;窗口下方位置足够 向下移动
-                {
-                    AutoMove:=0
-                    WinMove ahk_class %AutoMoveClass%, , , AutoMoveWinY+AutoMoveWinHeight
-                }
-            }
+            窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", "")
+            AutoMoveWindowID:=ControlWindowID
+            WinGetPos AutoMoveWinX, AutoMoveWinY, AutoMoveWinWidth, AutoMoveWinHeight, ahk_id %AutoMoveWindowID%
         }
-        else if (AutoMoveMY<AutoMoveWinY-20) or (AutoMoveMY>AutoMoveWinY+AutoMoveWinHeight+20) or (AutoMoveMX<AutoMoveWinX-20) or (AutoMoveMX>AutoMoveWinX+AutoMoveWinWidth+20) ;鼠标在窗口外
+        else ;不是第一次运行
         {
-            AutoMove:=1
-            WinMove ahk_class %AutoMoveClass%, , AutoMoveWinX, AutoMoveWinY ;还原窗口位置
+
+            if (AutoMoveMY>=AutoMoveWinY) and (AutoMoveMY<=AutoMoveWinY+AutoMoveWinHeight) and (AutoMoveMX>=AutoMoveWinX) and (AutoMoveMX<=AutoMoveWinX+AutoMoveWinWidth) ;鼠标在窗口内
+            {
+                if (AutoMoveWinY+AutoMoveWinHeight/2<=A_ScreenHeight/2) ;窗口在屏幕上半部分
+                {
+                    if (AutoMoveWinY<AutoMoveWinHeight) and (AutoMove=1) ;窗口上方位置不足以显示 向下移动
+                    {
+                        AutoMove:=0
+                        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY+AutoMoveWinHeight) ;关闭神隐窗口
+                    }
+                    else if (AutoMove=1) ;窗口上方位置足够 向上移动
+                    {
+                        AutoMove:=0
+                        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY-AutoMoveWinHeight) ;关闭神隐窗口
+                    }
+                }
+                else if (AutoMoveWinY+AutoMoveWinHeight/2>A_ScreenHeight/2) ;窗口在屏幕下半部分
+                {
+                    if (A_ScreenHeight-(AutoMoveWinY+AutoMoveWinHeight)<AutoMoveWinHeight) and (AutoMove=1) ;窗口下方位置不足以显示 向上移动
+                    {
+                        AutoMove:=0
+                        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY-AutoMoveWinHeight) ;关闭神隐窗口
+                    }
+                    else if (AutoMove=1) ;窗口下方位置足够 向下移动
+                    {
+                        AutoMove:=0
+                        窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY+AutoMoveWinHeight) ;关闭神隐窗口
+                    }
+                }
+            }
+            else if (AutoMoveMY<AutoMoveWinY-20) or (AutoMoveMY>AutoMoveWinY+AutoMoveWinHeight+20) or (AutoMoveMX<AutoMoveWinX-20) or (AutoMoveMX>AutoMoveWinX+AutoMoveWinWidth+20) ;鼠标在窗口外
+            {
+                AutoMove:=1
+                窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY) ;还原窗口位置
+            }
         }
         Critical, Off
     }
