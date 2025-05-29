@@ -46,7 +46,7 @@
 
     MButton_presses:=0
     running:=1 ;1为运行 0为暂停
-    ; Menu Tray, NoStandard ;不显示默认的AHK右键菜单
+    Menu Tray, NoStandard ;不显示默认的AHK右键菜单
     Menu Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
     Menu Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
     Menu Tray, Add, 兼容说明, 兼容说明 ;添加新的右键菜单
@@ -1630,8 +1630,7 @@ HexToDec(hex)
             Else
                 窗口贴顶:=0
 
-            ; 设置快捷键窗口
-            if (SX>=FJL) and (SX<=FJL+BKXZ) and (危险操作=0)
+            if (SX>=FJL) and (SX<=FJL+BKXZ) and (危险操作=0) ; 设置快捷键窗口 左
             {
                 左边快捷呼出窗口:=WinID
                 IniWrite %左边快捷呼出窗口%, Settings.ini, 设置, 左边快捷呼出窗口 ;写入设置到ini文件
@@ -1644,7 +1643,7 @@ HexToDec(hex)
                 快捷呼出计时:=-1
                 Critical Off  
             }
-            else if (SX<=FJR) and (SX>=FJR-BKXZ) and (危险操作=0)
+            else if (SX<=FJR) and (SX>=FJR-BKXZ) and (危险操作=0) ; 设置快捷键窗口 右
             {
                 右边快捷呼出窗口:=WinID
                 IniWrite %右边快捷呼出窗口%, Settings.ini, 设置, 右边快捷呼出窗口 ;写入设置到ini文件
@@ -1673,7 +1672,7 @@ HexToDec(hex)
 
                 Critical Off  
             }
-            else if (SX>=FJL) and (SX<=FJR) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;左边屏幕贴左半边顶 最大化
+            else if (SX>=FJL) and (SX<=FJR) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;中间屏幕贴顶 最大化
             {
                 if (ExtraHeightFit=1)
                 {
@@ -1707,17 +1706,61 @@ HexToDec(hex)
             }
             else if (SX>FJL-Round(RSW/5*2+KDXZ/2)) and (SX<FJL) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;左边屏幕贴右半边顶 竖条显示
             {
-                WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+                if (ExtraHeightFit=1)
+                {
+                    WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2+ExtraHeight, Round(SW/5*2)+KDXZ, SH+GDXZ-ExtraHeight
+                }
+                else
+                {
+                    WinMove ahk_id %WinID%, , FJL-Round(SW/5*2+KDXZ/2), 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+                }
+
                 WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
                 Critical Off  
             }
             else if (SX<FJR+Round(RSW/5*2)) and (SX>FJR) and (窗口贴顶=1) and (危险操作=0) and (WinTitle!="QQ") ;右边屏幕贴左半边顶 竖条显示
             {
-                WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+                if (ExtraHeightFit=1)
+                {
+                    WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2+ExtraHeight, Round(SW/5*2)+KDXZ, SH+GDXZ-ExtraHeight
+                }
+                else
+                {
+                    WinMove ahk_id %WinID%, , FJR-KDXZ/2, 0-GDXZ/2, Round(SW/5*2)+KDXZ, SH+GDXZ
+                }
+
                 WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
                 Critical Off  
             }
-            else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (WinW!=Round(SW/5*3)) and (WinH!=Round(SH/5*4)) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinH>=A_ScreenHeight-ExtraHeight) and (危险操作=0) and (WinTitle!="QQ") ;如果鼠标移动了窗口低于屏幕顶部范围
+            else if (SX<=3) and (危险操作=0) and (WinTitle!="QQ") ;and (窗口贴顶=1) ;左边屏幕贴右半边顶 竖条左边填充显示
+            {
+                if (ExtraHeightFit=1)
+                {
+                    WinMove ahk_id %WinID%, ,YDL ,YDY+ExtraHeight ,SW-Round(SW/5*2) ,SH-ExtraHeight ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                }
+                else
+                {
+                    WinMove ahk_id %WinID%, ,YDL ,YDY ,SW-Round(SW/5*2) ,SH ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
+                }
+
+                WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
+                Critical Off  
+            }
+            else if (SX>=A_ScreenWidth-3) and (危险操作=0) and (WinTitle!="QQ") ;and (窗口贴顶=1) ;右边屏幕贴右半边顶 竖条右边填充显示
+            {
+                if (ExtraHeightFit=1)
+                {
+                    WinMove ahk_id %WinID%, , FJR-KDXZ/2+Round(SW/5*2)+KDXZ, 0-GDXZ/2+ExtraHeight, RSW-Round(SW/5*2)+KDXZ, SH+GDXZ-ExtraHeight
+                }
+                else
+                {
+                    WinMove ahk_id %WinID%, , FJR-KDXZ/2+Round(SW/5*2)+KDXZ, 0-GDXZ/2, RSW-Round(SW/5*2)+KDXZ, SH+GDXZ
+                }
+
+                WinSet Style, +0x40000, ahk_id %WinID% ;允许调整窗口大小
+                Critical Off  
+            }
+            else if (NewWinSY>Round(A_ScreenHeight*(50/1080))) and (NewWinSY-OldWinSY>Round(A_ScreenHeight*(80/1080))) and (WinYHistory<=ExtraHeight) and (WinH>=A_ScreenHeight-ExtraHeight) and (危险操作=0) and (WinTitle!="QQ") ;如果鼠标移动了窗口低于屏幕顶部范围 还原窗口大小
             {
                 WinRestore ahk_id %WinID%
                 WinMove ahk_id %WinID%, ,SX-Round(SW/5*3/2) ,SY-Round(A_ScreenHeight*(10/1080)) ,Round(SW/5*3) ,Round(SH/5*4) ;移动窗口 窗口句柄 位置X 位置Y 宽度 高度
