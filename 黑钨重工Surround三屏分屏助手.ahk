@@ -4122,7 +4122,7 @@ return
             }
         }
     }
-    else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单>1) ;如果开始菜单没有显示并且弹出过任务栏
+    else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单>1) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) ;如果开始菜单没有显示并且弹出过任务栏
     {
         WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
         DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
@@ -4173,7 +4173,7 @@ return
         DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
         任务栏计时器:=1
     }
-    else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
+    else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
     {
         if (AWinExeName="explorer.exe") or (AWinClass="TaskListThumbnailWnd") or (AWinClass="DV2ControlHost") or (AWinClass="Windows.UI.Core.CoreWindow") or (AWinClass="Xaml_WindowedPopupClass") ;
         {
@@ -4194,7 +4194,7 @@ return
         }
     }
 
-    if (任务栏存在=1) and (主动呼出任务栏=0) and (开始菜单=0) ; 如果没有主动呼出任务栏但是任务栏显示了
+    if (任务栏存在=1) and (主动呼出任务栏=0) and (开始菜单=0) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) ; 如果没有主动呼出任务栏但是任务栏显示了
     {
         WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
         DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
@@ -4384,15 +4384,16 @@ return
     ; ToolTip %EverythingToolbarX% %搜索栏X%`n%EverythingToolbarY% %搜索栏Y%`n%EverythingToolbarW% %搜索栏W%`n%EverythingToolbarH% %搜索栏H%
     if (WinExist("ahk_exe EverythingToolbar.Launcher.exe")!=0)
     {
-        搜索栏:=1
         if (EverythingToolbarX!=搜索栏X) or (EverythingToolbarY!=搜索栏Y) or (EverythingToolbarW!=搜索栏W) or (EverythingToolbarH!=搜索栏H)
         {
-            if (任务栏移动完成!=1)
+            if (搜索框移动完成<=5)
                 WinMove ahk_exe EverythingToolbar.Launcher.exe, , 搜索栏X, 搜索栏Y, 搜索栏W, 搜索栏H
+            else
+                搜索栏:=1
         }
         if (EverythingToolbarX=搜索栏X) and (EverythingToolbarY=搜索栏Y) and (EverythingToolbarW=搜索栏W) and (EverythingToolbarH=搜索栏H)
         {
-            任务栏移动完成:=1
+            搜索框移动完成:=搜索框移动完成+1
         }
     }
     else
@@ -4400,7 +4401,7 @@ return
         if (搜索栏=1)
             DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
         搜索栏:=0
-        任务栏移动完成:=0
+        搜索框移动完成:=0
     }
 
     ; 神隐窗口 窗口自动调整透明度
