@@ -3615,6 +3615,11 @@ return
         {
             WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
             DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+
+            WinGet StatusbarID, ID, ahk_class NotifyIconOverflowWindow ;获取任务栏句柄
+            if (StatusbarID="")
+                WinKill ahk_class NotifyIconOverflowWindow ; 隐藏状态栏
+
         }
         else
         {
@@ -4087,6 +4092,9 @@ return
 
     ;=====================================================================Y轴
     ; ToolTip 防误触时间%防误触时间%ms
+
+    WinGet StatusbarID, ID, ahk_class NotifyIconOverflowWindow ;获取任务栏句柄
+    ; ToolTip StatusbarID%StatusbarID%
     if (MISY<3) ;如果鼠标贴着屏幕顶部
     {
         Loop
@@ -4122,11 +4130,14 @@ return
             }
         }
     }
-    else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单>1) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) ;如果开始菜单没有显示并且弹出过任务栏
+    else if (WinExist("ahk_class TaskListThumbnailWnd")=0) and (WinExist("ahk_class DV2ControlHost")=0) and (WinExist("ahk_class Windows.UI.Core.CoreWindow")=0) and (WinExist("ahk_class Xaml_WindowedPopupClass")=0) and (开始菜单>1) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) and (StatusbarID="") ;如果开始菜单没有显示并且弹出过任务栏
     {
         WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
         DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
         开始菜单:=0
+
+        if (StatusbarID="")
+            WinKill ahk_class NotifyIconOverflowWindow ; 隐藏状态栏
     }
     else if (MISY>=A_ScreenHeight-3) and (任务栏存在=0) and (开始菜单=0) and (搜索栏=0) ;如果鼠标贴着屏幕底部
     {
@@ -4173,7 +4184,7 @@ return
         DllCall("QueryPerformanceCounter", "Int64*", KeyDown_离开任务栏)
         任务栏计时器:=1
     }
-    else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
+    else if (任务栏存在=1) and (MISY<ScreenBottom) and (任务栏计时器!=0) and (开始菜单=0) and (搜索栏=0) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) and (StatusbarID="") ;and (MISY>ScreenBottomMax) ;任务栏处于激活状态没有开始菜单和预览窗口 等待3秒才隐藏任务栏
     {
         if (AWinExeName="explorer.exe") or (AWinClass="TaskListThumbnailWnd") or (AWinClass="DV2ControlHost") or (AWinClass="Windows.UI.Core.CoreWindow") or (AWinClass="Xaml_WindowedPopupClass") ;
         {
@@ -4188,16 +4199,22 @@ return
             {
                 WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
                 DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+
+                if (StatusbarID="")
+                    WinKill ahk_class NotifyIconOverflowWindow ; 隐藏状态栏
                 主动呼出任务栏:=0
                 KeyDown_屏幕底部:=""
             }
         }
     }
 
-    if (任务栏存在=1) and (主动呼出任务栏=0) and (开始菜单=0) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) ; 如果没有主动呼出任务栏但是任务栏显示了
+    if (任务栏存在=1) and (主动呼出任务栏=0) and (开始菜单=0) and (WinExist("ahk_exe EverythingToolbar.Launcher.exe")=0) and (StatusbarID="") ; 如果没有主动呼出任务栏但是任务栏显示了
     {
         WinGet TaskbarID, ID, ahk_class Shell_TrayWnd ;获取任务栏句柄
         DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+
+        if (StatusbarID="")
+            WinKill ahk_class NotifyIconOverflowWindow ; 隐藏状态栏
     }
 
     if (running=0)
@@ -4399,7 +4416,13 @@ return
     else
     {
         if (搜索栏=1)
+        {
             DllCall("ShowWindow", "Ptr", TaskbarID, "Int", 0) ; 隐藏任务栏
+
+            WinGet StatusbarID, ID, ahk_class NotifyIconOverflowWindow ;获取任务栏句柄
+            if (WinExist("ahk_id " StatusbarID)) and (StatusbarID="")
+                WinKill ahk_class NotifyIconOverflowWindow ; 隐藏状态栏
+        }
         搜索栏:=0
         搜索框移动完成:=0
     }
@@ -4701,7 +4724,7 @@ Return
         ; ToolTip %高效模式% 后视镜%HSJ%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
         if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0)
         {
-            Sleep 50
+            Sleep 60
             Continue
         }
         else if (running=0) ;自动暂停
@@ -4712,7 +4735,7 @@ Return
                 WinHide ahk_id %MagnifierWindowID%
                 HSJM:=0
             }
-            Sleep 100
+            Sleep 90
             Continue
         }
         else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
