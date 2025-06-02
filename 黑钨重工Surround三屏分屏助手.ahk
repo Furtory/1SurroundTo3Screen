@@ -320,10 +320,10 @@
     Hotkey ~Shift, Off
     Hotkey ~Ctrl, Off
 
-    HSJ:=0 ;后视镜打开状态
-    HSJM:=0 ;后视镜移动状态 每次关闭后视镜时重置为0 只移动一次节省性能开销
-    HSJH:=0 ;后视镜隐藏状态 隐藏直到移动到中间屏幕
-    OpenHSJ:=0 ;打开后视镜中
+    RearView:=0 ;后视镜打开状态
+    RearViewMode:=0 ;后视镜移动状态 每次关闭后视镜时重置为0 只移动一次节省性能开销
+    RearViewH:=0 ;后视镜隐藏状态 隐藏直到移动到中间屏幕
+    OpenRearView:=0 ;打开后视镜中
     ToolTipTimes:=0 ;后视镜提示文字显示
     ToolTipCount:=0 ;后视镜提示文字计时
     ToolTipText:="" ;后视镜提示文字
@@ -401,12 +401,12 @@ return
     WinTop:=Round(RSH*(45/1080)) ;窗口顶部识别分界线
     ScreenBottom:=RSH-Floor(RSH*(40/1080)) ;屏幕底部识别分界线
 
-    HSJWidth:=Round(RSH/2) ;后视镜宽度
-    HSJHeight:=Round(HSJWidth/4*3) ;后视镜高度
-    HSJLX:=Round(FJL+RSH/10) ;左后视镜显示位置X
-    HSJRX:=Round(FJR-HSJWidth-RSH/10) ;右后视镜显示位置X
-    HSJY:=Round(RSH/2-HSJHeight/2) ;后视镜显示位置Y
-    ; MsgBox, %HSJLX% %HSJRX% %HSJY%
+    RearViewWidth:=Round(RSH/2) ;后视镜宽度
+    RearViewHeight:=Round(RearViewWidth/4*3) ;后视镜高度
+    RearViewLX:=Round(FJL+RSH/10) ;左后视镜显示位置X
+    RearViewRX:=Round(FJR-RearViewWidth-RSH/10) ;右后视镜显示位置X
+    RearViewY:=Round(RSH/2-RearViewHeight/2) ;后视镜显示位置Y
+    ; MsgBox, %RearViewLX% %RearViewRX% %RearViewY%
 
     ; MsgBox 屏幕高度%A_ScreenHeight%`n修正后屏幕高度%SH% 高度修正%GDXZ%`n`n屏幕宽度%A_ScreenWidth%`n修正后屏幕宽度%SW% 宽度修正%KDXZ%`n`n分界线 %FJL% %FJM% %FJR%`n原点 %YDL% %YDM% %YDR%
 Return
@@ -415,12 +415,12 @@ Return
     if (running=1)
         SetTimer 屏幕监测, Off
 
-    if (HSJ=1)
+    if (RearView=1)
     {
         ; ToolTip 关闭后视镜
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID%
-        HSJM:=0
+        RearViewMode:=0
     }
 
     KeyWait LButton
@@ -600,12 +600,12 @@ Return
     if (running=1)
         SetTimer 屏幕监测, Off
 
-    if (HSJ=1)
+    if (RearView=1)
     {
         ; ToolTip 关闭后视镜
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID%
-        HSJM:=0
+        RearViewMode:=0
     }
 
     KeyWait LButton
@@ -1083,8 +1083,8 @@ return
         ; ToolTip 关闭后视镜
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
-        HSJM:=0
-        HSJH:=1
+        RearViewMode:=0
+        RearViewH:=1
 
         CoordMode Mouse, Screen ;以屏幕为基准
         MouseGetPos, , ScreenOldY, WinID ;获取鼠标在屏幕中的位置
@@ -1152,26 +1152,26 @@ return
             }
         }
 
-        if (HSJ=1)
+        if (RearView=1)
         {
             CoordMode Mouse, Screen ;以屏幕为基准
             MouseGetPos ReloadX, ReloadY
             ; MsgBox, ReloadX%ReloadX% ReloadY%ReloadY%
             if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
             {
-                HSJM:=0
-                HSJH:=0
+                RearViewMode:=0
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
 
-                if (HSJM=0) and (ReloadX<FJL) ;如果在左侧屏幕
+                if (RearViewMode=0) and (ReloadX<FJL) ;如果在左侧屏幕
                 {
-                    WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-                    HSJM:=1
+                    WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
+                    RearViewMode:=1
                 }
-                else if (HSJM=0) and (ReloadX>FJR) ;如果在右侧屏幕
+                else if (RearViewMode=0) and (ReloadX>FJR) ;如果在右侧屏幕
                 {
-                    WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-                    HSJM:=1
+                    WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
+                    RearViewMode:=1
                 }
 
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
@@ -1383,8 +1383,8 @@ HexToDec(hex)
     {
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
-        HSJM:=0
-        HSJH:=1
+        RearViewMode:=0
+        RearViewH:=1
 
         if (WinExe="firefox.exe") or (WinExe="chrome.exe") or (WinExe="msedge.exe") ;如果是浏览器
         {
@@ -1400,7 +1400,7 @@ HexToDec(hex)
         CoordMode Mouse, Screen ;以屏幕为基准
         MouseGetPos, , OldWinSY
         gosub AeroShake ;跳转检测程序
-        HSJH:=0
+        RearViewH:=0
         DllCall("QueryPerformanceCounter", "Int64*", LBUpOnTop) ;第二次记录时间
         MouseGetPos, , NewWinSY
         下移距离:=NewWinSY-OldWinSY
@@ -2146,8 +2146,8 @@ $MButton:: ;中键
         MouseGetPos InitiaMouseX, InitiaMouseY, InitiaWinID  ;获取鼠标在屏幕中的位置
         WinGetPos InitialWinX, InitialWinY, InitialWinW, InitialWinH, ahk_id %InitiaWinID% ;获取窗口位置
         WinActivate ahk_id %InitiaWinID%
-        HSJM:=0
-        HSJH:=1
+        RearViewMode:=0
+        RearViewH:=1
 
         MButton_presses:=1
         if (MButtonHotkey=0)
@@ -2356,10 +2356,10 @@ $MButton:: ;中键
                 MButton_presses:=0 ;键击记录重置为0
                 Critical, Off
 
-                HSJM:=1
-                HSJH:=0
+                RearViewMode:=1
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-                WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+                WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
@@ -2398,10 +2398,10 @@ $MButton:: ;中键
             {
                 MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 Critical, Off
-                HSJM:=1
-                HSJH:=0
+                RearViewMode:=1
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-                WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+                WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
             }
         }
@@ -2437,10 +2437,10 @@ $MButton:: ;中键
                 MButton_presses:=0 ;键击记录重置为0
                 Critical, Off
 
-                HSJM:=1
-                HSJH:=0
+                RearViewMode:=1
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-                WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+                WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
@@ -2474,10 +2474,10 @@ $MButton:: ;中键
                 MButton_presses:=0 ;键击记录重置为0
                 Critical, Off
 
-                HSJM:=1
-                HSJH:=0
+                RearViewMode:=1
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-                WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+                WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
@@ -2519,10 +2519,10 @@ $MButton:: ;中键
                 MButton_presses:=0 ;键击记录重置为0
                 Critical, Off
 
-                HSJM:=1
-                HSJH:=0
+                RearViewMode:=1
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-                WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
+                WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
                 return
             }
@@ -2561,10 +2561,10 @@ $MButton:: ;中键
             {
                 MoveWinFllowMouse(InitiaWinID, InitialWinW, InitialWinH)
                 Critical, Off
-                HSJM:=1
-                HSJH:=0
+                RearViewMode:=1
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
-                WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
+                WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
             }
         }
@@ -3095,12 +3095,12 @@ return
     if (running=1)
         SetTimer 屏幕监测, Off
 
-    if (HSJ=1)
+    if (RearView=1)
     {
         ; ToolTip 关闭后视镜
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID%
-        HSJM:=0
+        RearViewMode:=0
     }
 
     KeyWait LButton
@@ -3322,12 +3322,12 @@ Return
     if (running=1)
         SetTimer 屏幕监测, Off
 
-    if (HSJ=1)
+    if (RearView=1)
     {
         ; ToolTip 关闭后视镜
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID%
-        HSJM:=0
+        RearViewMode:=0
     }
 
     KeyWait LButton
@@ -3556,26 +3556,26 @@ return
         ; Hotkey ^c, On ;打开Ctrl+C的热键
         ; SetTimer 自动隐藏任务栏, Delete
 
-        if (HSJ=1)
+        if (RearView=1)
         {
             CoordMode Mouse, Screen ;以屏幕为基准
             MouseGetPos ReloadX, ReloadY
             ; MsgBox, ReloadX%ReloadX% ReloadY%ReloadY%
             if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
             {
-                HSJM:=0
-                HSJH:=0
+                RearViewMode:=0
+                RearViewH:=0
                 WinShow ahk_id %MagnifierWindowID% ;打开后视镜
 
-                if (HSJM=0) and (ReloadX<FJL) ;如果在左侧屏幕
+                if (RearViewMode=0) and (ReloadX<FJL) ;如果在左侧屏幕
                 {
-                    WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-                    HSJM:=1
+                    WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
+                    RearViewMode:=1
                 }
-                else if (HSJM=0) and (ReloadX>FJR) ;如果在右侧屏幕
+                else if (RearViewMode=0) and (ReloadX>FJR) ;如果在右侧屏幕
                 {
-                    WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-                    HSJM:=1
+                    WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
+                    RearViewMode:=1
                 }
 
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
@@ -3628,7 +3628,7 @@ return
         }
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
-        HSJM:=0
+        RearViewMode:=0
         Menu Tray, Check, 暂停运行 ;右键菜单打勾
 
         if (Alt自动暂停=1)
@@ -3716,7 +3716,7 @@ Down::
 Return
 
 KeyMedia:
-    双击限时:=200
+    双击限时:=300
     if (KeyMediaDown="")
     {
         DllCall("QueryPerformanceFrequency", "Int64*", freq)
@@ -4049,7 +4049,7 @@ KeyMedia:
         Sleep 10
     }
 
-    if (NeedReloadHSJ=1)
+    if (NeedReloadRearView=1)
         SetTimer 恢复运行后视镜, -1
 return
 
@@ -4228,24 +4228,24 @@ return
             ToolTip 鼠标在屏幕左侧
         屏幕实时位置:=1
         主动隐藏快捷呼出窗口:=0
-        ; ToolTip 屏幕实时位置%屏幕实时位置% w%HSJWidth% h%HSJHeight%
-        if (HSJ=0)
+        ; ToolTip 屏幕实时位置%屏幕实时位置% w%RearViewWidth% h%RearViewHeight%
+        if (RearView=0)
         {
-            if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenHSJ=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕左侧 且鼠标左键没有按下
+            if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenRearView=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕左侧 且鼠标左键没有按下
             {
                 SetTimer 后视镜, -1 ;打开后视镜
             }
         }
-        else if (HSJ=1)
+        else if (RearView=1)
         {
-            if (WinExist("ahk_id "MagnifierWindowID)=0) and (HSJH=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕左侧 且鼠标左键没有按下
+            if (WinExist("ahk_id "MagnifierWindowID)=0) and (RearViewH=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕左侧 且鼠标左键没有按下
             {
                 ; ToolTip 打开后视镜
                 WinShow ahk_id %MagnifierWindowID%
-                if (HSJM=0)
+                if (RearViewMode=0)
                 {
-                    WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-                    HSJM:=1
+                    WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
+                    RearViewMode:=1
                 }
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
             }
@@ -4269,24 +4269,24 @@ return
             ToolTip 鼠标在屏幕右侧
         屏幕实时位置:=3
         主动隐藏快捷呼出窗口:=0
-        ; ToolTip 屏幕实时位置%屏幕实时位置% w%HSJWidth% h%HSJHeight%
-        if (HSJ=0)
+        ; ToolTip 屏幕实时位置%屏幕实时位置% w%RearViewWidth% h%RearViewHeight%
+        if (RearView=0)
         {
-            if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenHSJ=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕右侧 且鼠标左键没有按下
+            if (WinExist("ahk_id "MagnifierWindowID)=0) and (OpenRearView=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕右侧 且鼠标左键没有按下
             {
                 SetTimer 后视镜, -1 ;打开后视镜
             }
         }
-        else if (HSJ=1)
+        else if (RearView=1)
         {
-            if (WinExist("ahk_id "MagnifierWindowID)=0) and (HSJH=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕右侧 且鼠标左键没有按下
+            if (WinExist("ahk_id "MagnifierWindowID)=0) and (RearViewH=0) and !GetKeyState("Lbutton", "P") ;如果鼠标在屏幕右侧 且鼠标左键没有按下
             {
                 ; ToolTip 打开后视镜
                 WinShow ahk_id %MagnifierWindowID%
-                if (HSJM=0)
+                if (RearViewMode=0)
                 {
-                    WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-                    HSJM:=1
+                    WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
+                    RearViewMode:=1
                 }
                 WinSet Transparent, 255, ahk_id %MagnifierWindowID%
             }
@@ -4310,14 +4310,14 @@ return
             ToolTip 鼠标在屏幕中间
         屏幕实时位置:=2
         主动隐藏快捷呼出窗口:=0
-        HSJH:=0
-        ; ToolTip 屏幕实时位置%屏幕实时位置% w%HSJWidth% h%HSJHeight%
-        if (HSJ=1)
+        RearViewH:=0
+        ; ToolTip 屏幕实时位置%屏幕实时位置% w%RearViewWidth% h%RearViewHeight%
+        if (RearView=1)
         {
             ; ToolTip 关闭后视镜
             WinSet Transparent, 0, ahk_id %MagnifierWindowID%
             WinHide ahk_id %MagnifierWindowID%
-            HSJM:=0
+            RearViewMode:=0
         }
 
         快捷呼出计时:=-1
@@ -4393,7 +4393,7 @@ return
 
     ;=====================================================================其他功能
     ;后视镜线程卡顿重启
-    if (NeedReloadHSJ=1) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+    if (NeedReloadRearView=1) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
         SetTimer 恢复运行后视镜, -1
 
     ;搜索栏 Everything 修正
@@ -4518,26 +4518,26 @@ return
                                 窗口控制(AutoHideWindow, AutoHideMode, 1, 100, 1, "")
                             }
 
-                            if (HSJ=1)
+                            if (RearView=1)
                             {
                                 CoordMode Mouse, Screen ;以屏幕为基准
                                 MouseGetPos ReloadX, ReloadY
                                 ; MsgBox, ReloadX%ReloadX% ReloadY%ReloadY%
                                 if (ReloadX<FJL) or (ReloadX>FJR) ;如果在左侧屏幕或者在右侧屏幕
                                 {
-                                    HSJM:=0
-                                    HSJH:=0
+                                    RearViewMode:=0
+                                    RearViewH:=0
                                     WinShow ahk_id %MagnifierWindowID% ;打开后视镜
 
-                                    if (HSJM=0) and (ReloadX<FJL) ;如果在左侧屏幕
+                                    if (RearViewMode=0) and (ReloadX<FJL) ;如果在左侧屏幕
                                     {
-                                        WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-                                        HSJM:=1
+                                        WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
+                                        RearViewMode:=1
                                     }
-                                    else if (HSJM=0) and (ReloadX>FJR) ;如果在右侧屏幕
+                                    else if (RearViewMode=0) and (ReloadX>FJR) ;如果在右侧屏幕
                                     {
-                                        WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-                                        HSJM:=1
+                                        WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
+                                        RearViewMode:=1
                                     }
 
                                     WinSet Transparent, 255, ahk_id %MagnifierWindowID%
@@ -4651,9 +4651,9 @@ Return
 ; Return
 
 后视镜: ;打开后视镜
-    if (HSJ=0) and (OpenHSJ=0) ;如果后视镜没有打开
+    if (RearView=0) and (OpenRearView=0) ;如果后视镜没有打开
     {
-        OpenHSJ:=1
+        OpenRearView:=1
         Ptr := A_PtrSize ? "UPtr" : "UInt"
         if !DllCall("GetModuleHandle", "str", "gdiplus", Ptr)
             DllCall("LoadLibrary", "str", "gdiplus")
@@ -4663,20 +4663,20 @@ Return
         Gui 后视镜:New
         Gui 后视镜:-Caption +AlwaysOnTop +E0x02000000 +E0x00080000 -DPIScale  ;  WS_EX_COMPOSITED := E0x02000000  WS_EX_LAYERED := E0x00080000
         Gui 后视镜:Margin, 0,0
-        Gui 后视镜:Add, text, w%HSJWidth% h%HSJHeight% 0xE hwndhPic ; SS_BITMAP = 0xE
+        Gui 后视镜:Add, text, w%RearViewWidth% h%RearViewHeight% 0xE hwndhPic ; SS_BITMAP = 0xE
         if (屏幕实时位置=1)
         {
-            Gui 后视镜:Show, x%HSJLX% y%HSJY% NA, MagnifierCloneWindowAHK
+            Gui 后视镜:Show, x%RearViewLX% y%RearViewY% NA, MagnifierCloneWindowAHK
         }
         else if (屏幕实时位置=3)
         {
-            Gui 后视镜:Show, x%HSJRX% y%HSJY% NA, MagnifierCloneWindowAHK
+            Gui 后视镜:Show, x%RearViewRX% y%RearViewY% NA, MagnifierCloneWindowAHK
         }
         WinGet MagnifierWindowID, ID, MagnifierCloneWindowAHK
 
         Gui MagnifierWindow:New
         Gui MagnifierWindow: +AlwaysOnTop -Caption +ToolWindow +HWNDhMagnifier -DPIScale
-        Gui MagnifierWindow: Show, w%HSJWidth% h%HSJHeight% NA Hide, MagnifierWindowAHK
+        Gui MagnifierWindow: Show, w%RearViewWidth% h%RearViewHeight% NA Hide, MagnifierWindowAHK
 
         DllCall("LoadLibrary", "str", "magnification.dll")
         DllCall("magnification.dll\MagInitialize")
@@ -4690,8 +4690,8 @@ Return
             , "UInt", MS_SHOWMAGNIFIEDCURSOR | WS_CHILD | WS_VISIBLE
             , "Int", 0
             , "Int", 0
-            , "Int", HSJWidth
-            , "Int", HSJHeight
+            , "Int", RearViewWidth
+            , "Int", RearViewHeight
             , Ptr, hMagnifier
             , "UInt", 0
             , Ptr, DllCall("GetWindowLong", Ptr, hMagnifier, "UInt", GWL_HINSTANCE := -6)
@@ -4713,18 +4713,50 @@ Return
         DllCall("magnification.dll\MagSetImageScalingCallback", Ptr, hChildMagnifier, "Int", RegisterCallback("MagImageScalingCallback", "Fast"))
 
         VarSetCapacity(RECT, 16, 0)
-        HSJ:=1
+        RearView:=1
     }
 
 恢复运行后视镜:
-    NeedReloadHSJ:=0
+    最长耗时时间:=0
+    NeedReloadRearView:=0
     Loop
     {
         ; WinExistMagnifierWindow:=WinExist("ahk_id "MagnifierWindowID)
-        ; ToolTip %高效模式% 后视镜%HSJ%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
+        ; ToolTip %高效模式% 后视镜%RearView%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
         if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0)
         {
-            Sleep 60
+            if (渲染耗时记录=0)
+            {
+                精确休眠:=A_TickCount
+                loop
+                {
+                    if (A_TickCount-精确休眠>60)
+                    {
+                        break
+                    }
+                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
+                    {
+                        NeedReloadRearView:=1
+                        break, 2
+                    }
+                }
+            }
+            else
+            {
+                精确休眠:=A_TickCount
+                loop
+                {
+                    if (A_TickCount-精确休眠>最长耗时时间+15.6*(A_ScreenHeight/2160))
+                    {
+                        break
+                    }
+                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
+                    {
+                        NeedReloadRearView:=1
+                        break, 2
+                    }
+                }
+            }
             Continue
         }
         else if (running=0) ;自动暂停
@@ -4733,14 +4765,47 @@ Return
             {
                 WinSet Transparent, 0, ahk_id %MagnifierWindowID%
                 WinHide ahk_id %MagnifierWindowID%
-                HSJM:=0
+                RearViewMode:=0
             }
-            Sleep 90
+
+
+            if (渲染耗时记录=0)
+            {
+                精确休眠:=A_TickCount
+                loop
+                {
+                    if (A_TickCount-精确休眠>90)
+                    {
+                        break
+                    }
+                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
+                    {
+                        NeedReloadRearView:=1
+                        break, 2
+                    }
+                }
+            }
+            else
+            {
+                精确休眠:=A_TickCount
+                loop
+                {
+                    if (A_TickCount-精确休眠>最长耗时时间+15.6*(A_ScreenHeight/2160))
+                    {
+                        break
+                    }
+                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
+                    {
+                        NeedReloadRearView:=1
+                        break, 2
+                    }
+                }
+            }
             Continue
         }
         else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
         {
-            NeedReloadHSJ:=1
+            NeedReloadRearView:=1
             break
         }
 
@@ -4762,13 +4827,23 @@ Return
             }
         }
 
+        开始渲染:=A_TickCount
         CoordMode Mouse, Screen ;以屏幕为基准
         MouseGetPos MXS, MYS
-        NumPut(MXS - HSJWidth/2, RECT, 0, "Int")
-        NumPut(MYS - HSJHeight/2, RECT, 4, "Int")
-        NumPut(HSJWidth, RECT, 8, "Int")
-        NumPut(HSJHeight, RECT, 12, "Int")
-        DllCall("magnification.dll\MagSetWindowSource", Ptr, hChildMagnifier, Ptr, &RECT)
+        NumPut(MXS - RearViewWidth/2, RECT, 0, "Int")
+        NumPut(MYS - RearViewHeight/2, RECT, 4, "Int")
+        NumPut(RearViewWidth, RECT, 8, "Int")
+        NumPut(RearViewHeight, RECT, 12, "Int")
+        渲染完成:=DllCall("magnification.dll\MagSetWindowSource", Ptr, hChildMagnifier, Ptr, &RECT)
+        if (渲染完成=1)
+        {
+            渲染耗时:=A_TickCount-开始渲染
+            if (渲染耗时>0) and (渲染耗时>最长耗时时间)
+                最长耗时时间:=渲染耗时
+            if (最长耗时时间>100)
+                最长耗时时间:=100
+        }
+        ; ToolTip %A_Index%`n渲染耗时记录%渲染耗时记录% 渲染耗时%渲染耗时%ms`n最长耗时时间%最长耗时时间%ms
     }
 
     ; Gui 后视镜:Destroy
@@ -4937,19 +5012,19 @@ return
     ; ToolTip X%X% Y%Y%`nL%FJL% R%FJR%, , , 2
     if (x<FJL) or (x>FJR) ;如果在两侧屏幕
     {
-        HSJM:=0
-        HSJH:=0
+        RearViewMode:=0
+        RearViewH:=0
         WinShow ahk_id %MagnifierWindowID% ;打开后视镜
 
-        if (HSJM=0) and (x<FJL) ;如果在左侧屏幕
+        if (RearViewMode=0) and (x<FJL) ;如果在左侧屏幕
         {
-            WinMove ahk_id %MagnifierWindowID%, , HSJLX, HSJY
-            HSJM:=1
+            WinMove ahk_id %MagnifierWindowID%, , RearViewLX, RearViewY
+            RearViewMode:=1
         }
-        else if (HSJM=0) and (x>FJR) ;如果在右侧屏幕
+        else if (RearViewMode=0) and (x>FJR) ;如果在右侧屏幕
         {
-            WinMove ahk_id %MagnifierWindowID%, , HSJRX, HSJY
-            HSJM:=1
+            WinMove ahk_id %MagnifierWindowID%, , RearViewRX, RearViewY
+            RearViewMode:=1
         }
 
         WinSet Transparent, 255, ahk_id %MagnifierWindowID%
@@ -4967,8 +5042,8 @@ Return
     {
         WinSet Transparent, 0, ahk_id %MagnifierWindowID%
         WinHide ahk_id %MagnifierWindowID% ;关闭后视镜
-        HSJM:=0
-        HSJH:=1
+        RearViewMode:=0
+        RearViewH:=1
     }
     gosub 放大镜
     SetTimer Repaint, 30
@@ -4996,3 +5071,264 @@ Return
     Zx := Rx/zoom
     Zy := Ry/zoom
 Return
+
+Class ExecProcess {  ; By dbgba   Thank FeiYue
+    ; 关联进程变量 := New ExecProcess("标签名称") 新建一个关联进程，重复新建该进程变量可重启此进程。最多可传递8组参数
+    __New(LabelOrFunc, Arg1:="", Arg2:="", Arg3:="", Arg4:="", Arg5:="", Arg6:="", Arg7:="", Arg8:="") {
+        if (A_Args[9]!="")
+            Return
+        ParentPID := DllCall("GetCurrentProcessId")
+        if A_IsCompiled
+            Run "%A_ScriptFullPath%" /f "%Arg1%" "%Arg2%" "%Arg3%" "%Arg4%" "%Arg5%" "%Arg6%" "%Arg7%" "%Arg8%" "%ParentPID%" "%LabelOrFunc%",,, pid
+        else
+            Run "%A_AhkPath%" /f "%A_ScriptFullPath%" "%Arg1%" "%Arg2%" "%Arg3%" "%Arg4%" "%Arg5%" "%Arg6%" "%Arg7%" "%Arg8%" "%ParentPID%" "%LabelOrFunc%",,, pid
+        this.pid := pid
+    }
+    ; 关联进程变量 := ""，清空这个“进程变量”来关闭对应的进程
+    __Delete() {
+        DetectHiddenWindows On  ; Logging Out Script
+        SendMessage 0x111, 65307,,, % A_ScriptFullPath " ahk_pid " this.pid
+        Process Close, % this.pid
+    }
+    ; 与新进程同步退出，使用异步等待主进程结束回调
+    _CallBack() {
+        ExitApp
+    }
+    _ScriptStart() {
+        Static init:=ExecProcess._ScriptStart()
+        #NoTrayIcon
+        SetBatchLines % ("-1", Bch:=A_BatchLines)
+        OnMessage(0x4a, "_ExecProcessReceive_WM_COPYDATA")
+        Gui _ExecProcess_Label%A_ScriptHwnd%: Add, Button, g_ExecProcessGuiHideLabelGoto
+        if (A_Args[9]="") {
+            DetectHiddenWindows % ("On", DHW:=A_DetectHiddenWindows)
+            PostMessage 0x111, 65307,,, <<ExecProcessParent>> ahk_class AutoHotkeyGUI
+            DetectHiddenWindows %DHW%
+            Menu Tray, Icon
+            Gui _ExecProcess_Label%A_ScriptHwnd%: Show, Hide, <<ExecProcessParent>>
+            SetBatchLines %Bch%
+            Return
+        }
+        _ := DllCall("OpenProcess", "Uint", 0x100000, "int", False, "Uint", A_Args[9], "Ptr")
+        Gui _ExecProcess_Label%A_ScriptHwnd%: Show, Hide, % "<<ExecProcess" A_Args[10] ">>"
+        Suspend On  ; 屏蔽新进程的热键，来避免冲突
+        DllCall("RegisterWaitForSingleObject", "Ptr*", 0, "Ptr", _, "Ptr", RegisterCallback("ExecProcess._CallBack", "F"), "Ptr", 0, "Uint", -1, "Uint", 8)
+        SetBatchLines %Bch%
+    }
+    Send(StringToSend, Label:="Parent", wParam:=0) {
+        SetBatchLines % ("-1", Bch:=A_BatchLines)
+        VarSetCapacity(CopyDataStruct, 3*A_PtrSize, 0)
+            , NumPut((StrLen(StringToSend) + 1) * (A_IsUnicode ? 2 : 1), CopyDataStruct, A_PtrSize)
+            , NumPut(&StringToSend, CopyDataStruct, 2*A_PtrSize)
+        DetectHiddenWindows % ("On", DHW:=A_DetectHiddenWindows)
+        WinGet NewPID, PID, <<ExecProcess%Label%>> ahk_class AutoHotkeyGUI
+        SendMessage 0x4a, wParam, &CopyDataStruct,, ahk_pid %NewPID% ahk_class AutoHotkey
+        DetectHiddenWindows %DHW%
+        SetBatchLines %Bch%
+        Return ErrorLevel
+    }
+} ; // Class End
+; ==================== ↓ 内部调用私有函数与标签 ↓ ====================
+; 接收字符串后保存在变量名为"CopyOfData"，以供调用
+_ExecProcessReceive_WM_COPYDATA(wParam, lParam) {
+    CopyOfData := StrGet(NumGet(lParam + 2*A_PtrSize))
+    Switch wParam
+    {    ; wParam 是ExecProcess库内部通讯的编号
+        Case 1 : _ExecProcessPostFunction(CopyOfData)
+        Case 2 : _ExecProcessPostFunction(CopyOfData,1)
+        Case 3 :
+            LabelName := StrReplace(SubStr(CopyOfData, 1, 50), " ")
+            if !IsLabel(LabelName)
+                Return False
+            Gosub %LabelName%
+        Case 4 :
+            LabelName := StrReplace(SubStr(CopyOfData, 1, 50), " ")
+            if !IsLabel(LabelName)
+                Return False
+            Global _ExecProcessVarNameRtn := "_ExecProcessVarGetvarValue"
+            Gosub _ExecProcessVarGetvarRtn
+            _ExecProcessVarGetvarValue := LabelName
+            DetectHiddenWindows On
+            Control Check, , Button1, % "<<ExecProcess" (A_Args[10]="" ? "Parent" : A_Args[10]) ">> ahk_class AutoHotkeyGUI"
+        Case 5 : ExecProcessvarName := StrReplace(SubStr(CopyOfData, 1, 50), " "), %ExecProcessvarName% := SubStr(CopyOfData, 51)
+        Case 6 : Global _ExecProcessVarGetvarRtnVar := CopyOfData
+        Case 7 :
+            Global _ExecProcessVarNameRtn := StrReplace(SubStr(CopyOfData, 1, 50), " ")
+            Gosub _ExecProcessVarGetvarRtn
+            ExecProcess.Send(_ExecProcessVarGetvarValue, , 6)
+        Case 8 : ExecProcess.Send(A_IsPaused, , 6)
+        Case 9 :
+            SetBatchLines % ("-1", Bch:=A_BatchLines)
+            Critical
+            Suspend Off
+            s:="||Home|End|Ins|Del|PgUp|PgDn|Left|Right|Up|Down|NumpadEnter|"
+            Loop 254
+                k:=GetKeyName(Format("VK{:X}",A_Index)), s.=InStr(s,"|" k "|") ? "" : k "|"
+            For k,v in { Escape:"Esc", Control:"Ctrl", Backspace:"BS" }
+                s:=StrReplace(s, k, v)
+            s:=Trim(RegExReplace(s,"\|+","|"), "|")
+            Loop, Parse, s, |
+            {  ; 只能够禁用大多数热键和组合
+                Hotkey %A_LoopField%, Off, UseErrorLevel
+                Hotkey ~%A_LoopField%, Off, UseErrorLevel
+                Hotkey ^%A_LoopField%, Off, UseErrorLevel
+                Hotkey #%A_LoopField%, Off, UseErrorLevel
+                Hotkey !%A_LoopField%, Off, UseErrorLevel
+                Hotkey +%A_LoopField%, Off, UseErrorLevel
+                Hotkey ^!%A_LoopField%, Off, UseErrorLevel
+                Hotkey ^+%A_LoopField%, Off, UseErrorLevel
+                Hotkey ^#%A_LoopField%, Off, UseErrorLevel
+            }
+            For _,v in StrSplit(CopyOfData, "|")
+                Hotkey %v%, On
+            Critical Off
+            SetBatchLines %Bch%
+    }
+    Return True
+}
+_ExecProcessPostFunction(CopyOfData, Synchronous:=0) {
+    Global _ExecProcessFunctionName := StrReplace(SubStr(CopyOfData, 1, 50), " "), _ExecProcessFunctionArgs := []
+    Loop 10
+        _ExecProcessFunctionArgs[A_Index] := RegExReplace(CopyOfData, "(^.+ExecProcessFuncNameLabelArg" A_Index+10 ")(.*)(ExecProcessFuncNameLabelArg" A_Index+30 ".+)", "$2")
+    if !IsFunc(_ExecProcessFunctionName)
+        Return
+    if Synchronous
+        SetTimer _ProcessPostFunctionSetTimer, -1
+    else
+        Gosub _ProcessPostFunctionSetTimer
+    Return
+    _ProcessPostFunctionSetTimer:
+    %_ExecProcessFunctionName%(_ExecProcessFunctionArgs*)
+    Return
+}
+Goto _ExecProcessLabelSkip
+_ExecProcessGuiHideLabelGoto:
+    Goto %_ExecProcessVarGetvarValue%
+Return
+_ExecProcessVarGetvarRtn:
+    Global _ExecProcessVarGetvarValue := %_ExecProcessVarNameRtn%
+    Gui _debug_%A_ScriptHwnd%: Add, Text,, % _ExecProcessVarGetvarValue %_ExecProcessVarNameRtn%
+Return
+_ExecProcessLabelSkip:
+    SetBatchLines %A_BatchLines%
+    ; ==================== ↑ 内部调用私有函数与标签 ↑ ====================
+    ; 让进程调用函数【等待函数执行完毕才返回】
+    ; ExecFunction("演示新进程代码载入", "MyFunc", "Hello World!")
+    ExecFunction(ProcessLabel:="Parent", FuncName:="", Arg1:="", Arg2:="", Arg3:="", Arg4:="", Arg5:="", Arg6:="", Arg7:="", Arg8:="", Arg9:="", Arg10:="") {
+        L := "ExecProcessFuncNameLabelArg", FuncNameArgs := Format("{:-50}", FuncName) . L "11" Arg1 L "31" L "12" Arg2 L "32" L "13" Arg3 L "33" L "14" Arg4 L "34" L "15" Arg5 L "35" L "16" Arg6 L "36" L "17" Arg7 L "37" L "18" Arg8 L "38" L "19" Arg9 L "39" L "20" Arg10 L "40End"
+        Return ExecProcess.Send(FuncNameArgs, ProcessLabel, 1)
+    }
+    ; 让进程调用函数【不等待函数执行完毕返回】
+    ; ExecPostFunction("演示新进程代码载入", "MyFunc", "Hello World!")
+    ExecPostFunction(ProcessLabel:="Parent", FuncName:="", Arg1:="", Arg2:="", Arg3:="", Arg4:="", Arg5:="", Arg6:="", Arg7:="", Arg8:="", Arg9:="", Arg10:="") {
+        L := "ExecProcessFuncNameLabelArg", FuncNameArgs := Format("{:-50}", FuncName) . L "11" Arg1 L "31" L "12" Arg2 L "32" L "13" Arg3 L "33" L "14" Arg4 L "34" L "15" Arg5 L "35" L "16" Arg6 L "36" L "17" Arg7 L "37" L "18" Arg8 L "38" L "19" Arg9 L "39" L "20" Arg10 L "40End"
+        Return ExecProcess.Send(FuncNameArgs, ProcessLabel, 2)
+    }
+    ; 只有异步执行标签能不受变量作用域影响，所以默认使用异步执行
+    ; 让进程跳转至指定标签 ExecLabel("演示新进程代码载入", "MyLabel")
+    ExecLabel(ProcessLabel:="Parent", LabelName:="", DoNotWait:=0) {
+        if DoNotWait
+            Rtn := ExecProcess.Send(Format("{:-50}", LabelName), ProcessLabel, 3)  ; Synchronisation
+        else
+            Rtn := ExecProcess.Send(Format("{:-50}", LabelName), ProcessLabel, 4)  ; Asynchronous
+        Return Rtn
+    }
+    ; 给进程的变量赋值：ExecAssign("演示新进程代码载入", "var", "123456")
+    ExecAssign(ProcessLabel:="Parent", VarName:="", Value:="") {
+        Return ExecProcess.Send(Format("{:-50}", VarName) . Value, ProcessLabel, 5)
+    }
+    ; 返回进程中变量的内容：MsgBox % ExecGetvar("演示新进程代码载入","var")
+    ExecGetvar(ProcessLabel:="Parent", VarName:="") {
+        Global _ExecProcessVarGetvarRtnVar
+        ExecProcess.Send(Format("{:-50}", VarName), ProcessLabel, 7)
+        Return _ExecProcessVarGetvarRtnVar
+    }
+    ; 查看新进程运行状态：MsgBox % ExecReady("演示新进程代码载入")
+    ExecReady(ProcessLabel) {
+        DetectHiddenWindows On
+        Return WinExist("<<ExecProcess" ProcessLabel ">> ahk_class AutoHotkeyGUI") ? 1 : 0
+    }
+    ; 暂停指定进程：ExecPause("演示新进程代码载入", "Off")
+    ExecPause(ProcessLabel, ahkPauseOnOff:="On") {
+        Global _ExecProcessVarGetvarRtnVar
+        ExecProcess.Send("", ProcessLabel, 8) ; Return _ExecProcessVarGetvarRtnVar
+        DetectHiddenWindows On
+        if (_ExecProcessVarGetvarRtnVar=1) && (ahkPauseOnOff="Off")
+            PostMessage 0x111, 65306,,, <<ExecProcess%ProcessLabel%>> ahk_class AutoHotkeyGUI
+        else if (_ExecProcessVarGetvarRtnVar=0) && (ahkPauseOnOff="On")
+            PostMessage 0x111, 65306,,, <<ExecProcess%ProcessLabel%>> ahk_class AutoHotkeyGUI
+    }
+    /*
+    ; 【由于复用进程机制的缘故，新进程将无法启用热键。若想在新进程启用热键可参考以下方法】
+    ; ==== F3和F4为弥补措施, 按F3后F2结束新进程将无法启用, 需要按F4恢复给主进程才行 ====
+    ; 开启关联进程的热键，启用后会屏蔽主进程对应热键。屏蔽后，需要F4为主进程恢复热键
+    F3::ExecHotkey("演示新进程代码载入","Esc|F2|F3") ; 用 | 号分隔来添加多个热键
+    ; ExecHotkey只能屏蔽日常大部分热键和组合键，会有组合键疏漏。若不了解, 则不推荐对新进程开启热键
+    F4::ExecRecoveryHotkey("演示新进程代码载入") ; 恢复主进程热键
+    */
+    ; 启用指定进程的热键：ExecHotkey("演示新进程代码载入","Esc|F2|^1")
+    ExecHotkey(ProcessLabel, ProcessHotkey) {
+        if (ProcessLabel!="")
+            For _,v in StrSplit(ProcessHotkey, "|")
+                Hotkey %v%, Off
+        ExecRecoveryHotkey(ProcessLabel, ProcessHotkey)
+            , ExecProcess.Send(ProcessHotkey, ProcessLabel, 9)
+    }
+    ; 记录与恢复主进程热键：ExecRecoveryHotkey("演示新进程代码载入")
+    ExecRecoveryHotkey(ProcessLabel, ProcessHotkey:="") {
+        Static _Boolean
+        if (A_Args[9]!="")
+            Return
+        if !_Boolean
+            _Boolean:=[]
+        if (ProcessHotkey="") {
+            For _,v in StrSplit(_Boolean[ProcessLabel], "|")
+                Hotkey %v%, On
+            Return _Boolean[ProcessLabel]
+        }
+        Return _Boolean[ProcessLabel] := ProcessHotkey
+    }
+    ; 临时新建进程【依赖AHK解释器，编译后无效】ProcessExec("Loop{`nSleep 80`nToolTip test-%A_Index%`n}")
+    ; 结束临时进程：ProcessExec("")    ;【第二个参数带编号可不重复新建临时进程】
+    ProcessExec(NewCode:="", flag:="Default") {
+        if A_AhkPath {
+            SetBatchLines % ("-1", Bch:=A_BatchLines)
+            Critical
+            DetectHiddenWindows On
+            WinGet NewPID, PID, <<ExecNew%flag%>> ahk_class AutoHotkeyGUI
+            Process Close, %NewPID%
+            add=`nflag=<<ExecNew%flag%>>`n
+            (%
+            #NoTrayIcon
+            Gui Gui_ExecFlag_Gui%A_ScriptHwnd%: Show, Hide, %flag%
+            DllCall("RegisterShellHookWindow", "Ptr", A_ScriptHwnd)
+            , OnMessage(DllCall("RegisterWindowMessage", "Str", "ShellHook"), "_ShellEvent")
+            _ShellEvent() {
+                DetectHiddenWindows On
+                IfWinNotExist <<ExecProcessParent>> ahk_class AutoHotkeyGUI, , ExitApp
+             }
+            )
+            NewCode:=add "`n" NewCode "`nExitApp"
+                , exec := ComObjCreate("WScript.Shell").Exec(A_AhkPath " /ErrorStdOut /f *")
+                , exec.StdIn.Write(NewCode)
+                , exec.StdIn.Close()
+            Critical Off
+            SetBatchLines %Bch%
+            WinWait <<ExecNew%flag%>> ahk_class AutoHotkeyGUI, , 3
+            WinGet RtnID, ID, <<ExecNew%flag%>> ahk_class AutoHotkeyGUI
+            if RtnID
+                Return True
+        }
+        Return False
+    }
+    ; 读取ahk脚本来新建临时新进程【依赖AHK解释器，编译后无效】
+    ; ProcessExecFile("NewScript.ahk")  ;【第二个参数带编号可不重复新建临时进程】
+    ProcessExecFile(FilePath:="", flag:="Default") {
+        SplitPath FilePath,,,,, drive
+        if drive=
+            FilePath=%A_ScriptDir%\%FilePath%
+        FileRead FileReadVar, %FilePath%
+        if (FileReadVar!="")
+            Rtn := ProcessExec(FileReadVar, flag)
+        Return (Rtn="" ? False : Rtn)
+    }
