@@ -3712,6 +3712,7 @@ MediaHotKey:
 
     running:=A_Args[1] ;获取运行状态
     媒体快捷键:=1
+    原义输出:=0
     按下次数:=0
     全部抬起:=1
     按键名称:=""
@@ -3730,7 +3731,7 @@ MediaHotKey:
             ExitApp
         else
         {
-            ; ToolTip 抬起%全部抬起%`n按下数量%按下快捷键数量% 按下次数%按下次数%`n上次按下%按键名称记录% 当前按下%按键名称%`n媒体快捷键%媒体快捷键%`n`n媒体快捷键抬起时长%媒体快捷键抬起时长%`n媒体快捷键初次按下时长%媒体快捷键初次按下时长%`n媒体快捷键连击按下时长%媒体快捷键连击按下时长%
+            ; ToolTip 抬起%全部抬起%`n按下数量%按下快捷键数量% 按下次数%按下次数%`n上次按下%按键名称记录% 当前按下%按键名称%`n媒体快捷键%媒体快捷键% 原义输出%原义输出%`n`n媒体快捷键抬起时长%媒体快捷键抬起时长%`n媒体快捷键初次按下时长%媒体快捷键初次按下时长%`n媒体快捷键连击按下时长%媒体快捷键连击按下时长%
             Sleep 30
             ; Continue
         }
@@ -3780,6 +3781,7 @@ MediaHotKey:
                     {
                         MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
                         WinGetClass MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
+                        WinGetTitle MediaWindowTitle , ahk_id %WinID_Media%
 
                         if (MediaWindow!="_cls_desk_") and (MediaWindow!="Shell_TrayWnd") and (MediaWindow!="WorkerW")
                         {
@@ -3787,7 +3789,7 @@ MediaHotKey:
 
                             Loop 20
                             {
-                                ToolTip 已设置%MediaWindow%为播放器快捷呼出
+                                ToolTip 已设置%MediaWindowTitle%为播放器快捷呼出
                                 Sleep 30
                             }
                             ToolTip
@@ -3798,9 +3800,10 @@ MediaHotKey:
                         WinActivate ahk_class %MediaWindow%
                         WinShow ahk_class %MediaWindow%
 
+                        WinGetTitle MediaWindowTitle , ahk_class %MediaWindow%
                         Loop 20
                         {
-                            ToolTip 快捷呼出%MediaWindow%播放器
+                            ToolTip 快捷呼出%MediaWindowTitle%播放器
                             Sleep 30
                         }
                         ToolTip
@@ -3809,9 +3812,10 @@ MediaHotKey:
                     {
                         WinMinimize ahk_class %MediaWindow%
 
+                        WinGetTitle MediaWindowTitle , ahk_class %MediaWindow%
                         Loop 20
                         {
-                            ToolTip 快捷关闭%MediaWindow%播放器
+                            ToolTip 快捷关闭%MediaWindowTitle%播放器
                             Sleep 30
                         }
                         ToolTip
@@ -3889,9 +3893,18 @@ MediaHotKey:
 
         ; Continue
 
-        if ((按下次数=1) and (按下快捷键数量=1) and (全部抬起=1) and (媒体快捷键初次按下时长>1000)) or (媒体快捷键=0)
+        if (媒体快捷键抬起时长>1000) and (原义输出=1)
         {
-            全部抬起:=0
+            原义输出:=0
+        }
+
+        if ((按下次数=1) and (按下快捷键数量=1) and (媒体快捷键初次按下时长>1000)) or (媒体快捷键=0) or (原义输出=1)
+        {
+            if (原义输出=0)
+                媒体快捷键抬起时长:=0
+            原义输出:=1
+
+            ; 发送原义按键
             if GetKeyState("Left", "P") and !GetKeyState("Left")
             {
                 Send {Left Down}
@@ -3909,15 +3922,7 @@ MediaHotKey:
                 Send {Down Down}
             }
 
-            ; Loop
-            ; {
-            ;     if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-            ;     {
-            ;         break
-            ;     }
-            ;     Sleep 10
-            ; }
-
+            ; 抬起原义按键
             if !GetKeyState("Left", "P") and GetKeyState("Left")
             {
                 Send {Left Up}
