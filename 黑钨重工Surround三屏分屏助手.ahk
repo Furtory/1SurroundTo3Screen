@@ -44,8 +44,21 @@
     更多免费教程尽在QQ群 1群763625227 2群643763519
     */
 
+    if (InStr(A_Args[10], "MediaHotKey")!=0) ; 子进程
+        Goto MediaHotKey
+    else
+    {
+        Hotkey $Left, 屏蔽按键
+        Hotkey $Right, 屏蔽按键
+        Hotkey $Down, 屏蔽按键
+        Hotkey $Up, 屏蔽按键
+    }
+
     MButton_presses:=0
     running:=1 ;1为运行 0为暂停
+    Process%A_Index% := New ExecProcess("MediaHotKey", running) ;创建子进程
+    ; ExecAssign("MediaHotKey", "running", running)
+
     Menu Tray, NoStandard ;不显示默认的AHK右键菜单
     Menu Tray, Add, 基础功能, 基础功能 ;添加新的右键菜单
     Menu Tray, Add, 进阶功能, 进阶功能 ;添加新的右键菜单
@@ -213,7 +226,7 @@
         }
 
         IniRead 上组合键, Settings.ini, 设置, 双击箭头上输出组合键 ;从ini文件读取设置
-        IniRead 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;
+        IniRead 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;从ini文件读取设置
 
         IniRead BKXZ, Settings.ini, 设置, 边框修正 ;写入设置到ini文件
 
@@ -307,7 +320,6 @@
     白名单:=0
     媒体快捷键:=1
     暂停:=0
-    KeyMediaDown:=""
     主动呼出任务栏:=0
 
     FDJ:=0 ;放大镜打开状态
@@ -2299,9 +2311,15 @@ $MButton:: ;中键
                     {
                         if (MXNew<增加音量) and (MXNew>降低音量) and (YLTZ=0) ;没有滑动且没有调整过音量 播放/暂停媒体
                         {
+                            子进程媒体快捷键:=ExecGetvar("MediaHotKey","媒体快捷键")
+                            if (子进程媒体快捷键!="")
+                            {
+                                媒体快捷键:=子进程媒体快捷键
+                            }
                             if (媒体快捷键=0)
                             {
                                 媒体快捷键:=1
+                                ExecAssign("MediaHotKey", "媒体快捷键", 媒体快捷键)
                                 Hotkey Left, On
                                 Hotkey Right, On
                                 Hotkey Up, On
@@ -3541,6 +3559,7 @@ return
     {
         Menu Tray, Icon, %A_ScriptDir%\Running.ico ;任务栏图标改成正在运行
         running:=1
+        ExecAssign("MediaHotKey", "running", running)
         MButtonHotkey:=1 ;打开中键的部分功能
         Hotkey WheelUp, On ;打开滚轮上的热键
         Hotkey WheelDown, On ;打开滚轮下的热键
@@ -3598,6 +3617,7 @@ return
     {
         Menu Tray, Icon, %A_ScriptDir%\Stopped.ico ;任务栏图标改成暂停运行
         running:=0
+        ExecAssign("MediaHotKey", "running", running)
         MButtonHotkey:=0 ;关闭中键的部分功能
         Hotkey WheelUp, Off ;关闭滚轮上的热键
         Hotkey WheelDown, Off ;关闭滚轮下的热键
@@ -3653,6 +3673,7 @@ return
 return
 
 重启软件:
+    ExecAssign("MediaHotKey", "running", -1)
     if (AutoMoveWindow!="") and (AutoMoveWindow!="ERROR") and (AutoMoveWinX!="") and (AutoMoveWinY!="") and (AutoMoveWinWidth!="") and (AutoMoveWinHeight!="")
     {
         窗口控制(AutoMoveWindow, AutoMoveMode, "", "", "", AutoMoveWinY) ;还原飘逸窗口
@@ -3662,6 +3683,7 @@ Return
 
 退出软件:
     Critical, On
+    ExecAssign("MediaHotKey", "running", -1)
     if (AutoHideWindow!="") and (AutoHideWindow!="ERROR")
     {
         窗口控制(AutoHideWindow, AutoHideMode, 0, 255, 0, "") ;关闭神隐窗口
@@ -3683,375 +3705,365 @@ Return
     Critical, Off
 ExitApp
 
-Left::
-    if GetKeyState("Right", "P")
-    {
-        Return
-    }
-    SetTimer KeyMedia, -1
-Return
+MediaHotKey:
+    IniRead MediaWindow, Settings.ini, 设置, 呼出播放器 ;从ini文件读取设置
+    IniRead 上组合键, Settings.ini, 设置, 双击箭头上输出组合键 ;从ini文件读取设置
+    IniRead 下组合键, Settings.ini, 设置, 双击箭头下输出组合键 ;从ini文件读取设置
 
-Right::
-    if GetKeyState("Left", "P")
-    {
-        Return
-    }
-    SetTimer KeyMedia, -1
-Return
-
-Up::
-    if GetKeyState("Down", "P")
-    {
-        Return
-    }
-    SetTimer KeyMedia, -1
-Return
-
-Down::
-    if GetKeyState("Up", "P")
-    {
-        Return
-    }
-    SetTimer KeyMedia, -1
-Return
-
-KeyMedia:
-    双击限时:=300
-    if (KeyMediaDown="")
-    {
-        DllCall("QueryPerformanceFrequency", "Int64*", freq)
-        DllCall("QueryPerformanceCounter", "Int64*", KeyMediaDown)
-        最近按键:=A_PriorKey
-    }
-    else
-    {
-        DllCall("QueryPerformanceCounter", "Int64*", KeyMediaUp)
-        媒体快捷键按下时长:=Round((KeyMediaUp-KeyMediaDown)/freq*1000, 2)
-        if (媒体快捷键按下时长>双击限时) ;超过限时 重新记录按下时间
-        {
-            DllCall("QueryPerformanceFrequency", "Int64*", freq)
-            DllCall("QueryPerformanceCounter", "Int64*", KeyMediaDown)
-            最近按键:="无"
-        }
-        else
-        {
-            最近按键:=A_PriorKey
-        }
-    }
-
+    running:=A_Args[1] ;获取运行状态
+    媒体快捷键:=1
+    按下次数:=0
+    全部抬起:=1
+    按键名称:=""
+    媒体快捷键抬起计时:=A_TickCount
+    媒体快捷键初次按下计时:=0
+    媒体快捷键初次按下时长:=-1
+    媒体快捷键连击按下计时:=0
+    媒体快捷键连击按下时长:=-1
+    按下快捷键数量:=GetKeyState("Left", "P") + GetKeyState("Right", "P") + GetKeyState("Up", "P") + GetKeyState("Down", "P")
+    媒体快捷键操作限时:=500
     Loop
     {
-        DllCall("QueryPerformanceCounter", "Int64*", KeyMediaUp)
-        媒体快捷键按下时长:=Round((KeyMediaUp-KeyMediaDown)/freq*1000, 2)
-        ; ToolTip 媒体快捷键按下时长%媒体快捷键按下时长%ms 最近按键%最近按键%, , ,2
-
-        if (最近按键="Left") and (媒体快捷键按下时长<=双击限时) and GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+        if (running=0)
+            Continue
+        else if (running=-1)
+            ExitApp
+        else
         {
-            Send {Media_Prev}
-            if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-            {
-                Loop
-                {
-                    ToolTip 上一曲
-                    Sleep 30
-
-                    if !GetKeyState("Left", "P")
-                    {
-                        Loop, 20
-                        {
-                            ToolTip 上一曲
-                            Sleep 30
-                        }
-                        ToolTip
-                        break
-                    }
-                }
-                break
-            }
-            else ;后视镜窗口存在
-            {
-                ToolTipText:="上一曲"
-            }
-        }
-        else if (最近按键="Right") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-        {
-            Send {Media_Next}
-            if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-            {
-                Loop
-                {
-                    ToolTip 下一曲
-                    Sleep 30
-
-                    if !GetKeyState("Right", "P")
-                    {
-                        Loop 20
-                        {
-                            ToolTip 下一曲
-                            Sleep 30
-                        }
-                        ToolTip
-                        break
-                    }
-                }
-            }
-            else ;后视镜窗口存在
-            {
-                ToolTipText:="下一曲"
-            }
-        }
-        else if (最近按键="Up") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-        {
-            Send %上组合键%
-            if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-            {
-                Loop
-                {
-                    ToolTip 喜欢歌曲
-                    Sleep 30
-
-                    if !GetKeyState("Up", "P")
-                    {
-                        Loop 20
-                        {
-                            ToolTip 喜欢歌曲
-                            Sleep 30
-                        }
-                        ToolTip
-                        break
-                    }
-                }
-            }
-            else ;后视镜窗口存在
-            {
-                ToolTipText:="喜欢歌曲"
-            }
-        }
-        else if (最近按键="Down") and (媒体快捷键按下时长<=双击限时) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and GetKeyState("Down", "P")
-        {
-            Send %下组合键%
-            if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-            {
-                Loop
-                {
-                    ToolTip 桌面歌词
-                    Sleep 30
-
-                    if !GetKeyState("Down", "P")
-                    {
-                        Loop 20
-                        {
-                            ToolTip 桌面歌词
-                            Sleep 30
-                        }
-                        ToolTip
-                        break
-                    }
-                }
-            }
-            else ;后视镜窗口存在
-            {
-                ToolTipText:="桌面歌词"
-            }
-        }
-        else if GetKeyState("Left", "P") and GetKeyState("Right", "P") and (媒体快捷键按下时长<=双击限时)
-        {
-            DllCall("QueryPerformanceFrequency", "Int64*", freq)
-            DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Lefty_Right)
-            Loop  
-            {
-                DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Lefty_Right)
-                媒体快捷键按下时长:=Round((KeyUp_Lefty_Right-KeyDown_Lefty_Right)/freq*1000, 2)
-                ; ToolTip LR
-                if (媒体快捷键按下时长>1000) and (媒体快捷键=1)
-                {
-                    媒体快捷键:=0
-                    Hotkey Left, Off
-                    Hotkey Right, Off
-                    Hotkey Up, Off
-                    Hotkey Down, Off
-                    if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-                    {
-                        Loop 20
-                        {
-                            ToolTip 媒体快捷键已关闭
-                            Sleep 30
-                        }
-                    }
-                    else ;后视镜窗口存在
-                    {
-                        ToolTipText:="媒体快捷键已关闭"
-                    }
-                    ToolTip
-                    Break
-                }
-                else if !GetKeyState("Left", "P") and !GetKeyState("Right", "P")
-                {
-                    ; ToolTip %媒体快捷键% %媒体快捷键按下时长%
-                    Send {Media_Play_Pause}
-                    Break
-                }
-                Sleep 10
-            }
-        }
-        else if GetKeyState("Up", "P") and GetKeyState("Down", "P") and (媒体快捷键按下时长<=双击限时)
-        {
-            DllCall("QueryPerformanceFrequency", "Int64*", freq)
-            DllCall("QueryPerformanceCounter", "Int64*", KeyDown_Up_Down)
-            Loop
-            {
-                ; ToolTip UD
-                if !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-                {
-                    DllCall("QueryPerformanceCounter", "Int64*", KeyUp_Up_Down)
-                    清除播放器快捷呼出设置记录时间:=Round((KeyUp_Up_Down-KeyDown_Up_Down)/freq*1000, 2)
-                    if (清除播放器快捷呼出设置记录时间>2000) and (MediaWindow!="") ;如果按下时长超过2秒，则清除快捷呼出设置
-                    {
-                        MediaWindow:=""
-                        IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-                        if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-                        {
-                            Loop 20
-                            {
-                                ToolTip 已清除播放器快捷呼出设置
-                                Sleep 30
-                            }
-                        }
-                        else ;后视镜窗口存在
-                        {
-                            ToolTipText:=清除播放器快捷呼出设置记录时间 . "已清除播放器快捷呼出设置"
-                        }
-                        ToolTip
-                        Break
-                    }
-                    else
-                    {
-                        MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
-                        WinGetClass WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
-                        if (MediaWindow="") or (MediaWindow="ERROR")
-                        {
-                            MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
-                            WinGetClass MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
-
-                            if (MediaWindow!="_cls_desk_") and (MediaWindow!="Shell_TrayWnd") and (MediaWindow!="WorkerW")
-                            {
-                                IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
-
-                                if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-                                {
-                                    Loop 20
-                                    {
-                                        ToolTip 已设置%MediaWindow%为播放器快捷呼出
-                                        Sleep 30
-                                    }
-                                }
-                                else ;后视镜窗口存在
-                                {
-                                    ToolTipText:="已设置" . MediaWindow . "为播放器快捷呼出"
-                                }
-                                ToolTip
-                            }
-                        }
-                        else if (WindowID!=MediaWindow)
-                        {
-                            WinActivate ahk_class %MediaWindow%
-                            WinShow ahk_class %MediaWindow%
-
-                            if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-                            {
-                                Loop 20
-                                {
-                                    ToolTip 快捷呼出%MediaWindow%播放器
-                                    Sleep 30
-                                }
-                            }
-                            else ;后视镜窗口存在
-                            {
-                                ToolTipText:="快捷呼出" . MediaWindow . "播放器"
-                            }
-                            ToolTip
-                        }
-                        else
-                        {
-                            WinMinimize ahk_class %MediaWindow%
-
-                            if (WinExist("ahk_id "MagnifierWindowID)=0) ;后视镜窗口不存在
-                            {
-                                Loop 20
-                                {
-                                    ToolTip 快捷关闭%MediaWindow%播放器
-                                    Sleep 30
-                                }
-                            }
-                            else ;后视镜窗口存在
-                            {
-                                ToolTipText:="快捷关闭" . MediaWindow . "播放器"
-                            }
-                            ToolTip
-                        }
-                        Break
-                    }
-                }
-                Sleep 10
-            }
-        }
-        else if (媒体快捷键按下时长>双击限时)
-        {
-            if GetKeyState("Left", "P")
-            {
-                Send {Left Down}
-            }
-            if GetKeyState("Right", "P")
-            {
-                Send {Right Down}
-            }
-            if GetKeyState("Up", "P")
-            {
-                Send {Up Down}
-            }
-            if GetKeyState("Down", "P")
-            {
-                Send {Down Down}
-            }
-
-            Loop
-            {
-                if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-                {
-                    break
-                }
-                Sleep 10
-            }
-
-            if !GetKeyState("Left", "P")
-            {
-                Send {Left Up}
-            }
-            if !GetKeyState("Right", "P")
-            {
-                Send {Right Up}
-            }
-            if !GetKeyState("Up", "P")
-            {
-                Send {Up Up}
-            }
-            if !GetKeyState("Down", "P")
-            {
-                Send {Down Up}
-            }
-            break
+            ; ToolTip 抬起%全部抬起%`n按下数量%按下快捷键数量% 按下次数%按下次数%`n上次按下%按键名称记录% 当前按下%按键名称%`n媒体快捷键%媒体快捷键%`n`n媒体快捷键抬起时长%媒体快捷键抬起时长%`n媒体快捷键初次按下时长%媒体快捷键初次按下时长%`n媒体快捷键连击按下时长%媒体快捷键连击按下时长%
+            Sleep 30
+            ; Continue
         }
 
         if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
         {
-            break
-        }
-        Sleep 10
-    }
+            if (按下快捷键数量>0)
+            {
+                媒体快捷键抬起计时:=A_TickCount
+            }
+            else
+            {
+                媒体快捷键抬起时长:=A_TickCount-媒体快捷键抬起计时
+                if (媒体快捷键抬起时长>媒体快捷键操作限时)
+                {
+                    按下次数:=0
+                    全部抬起:=1
+                    按键名称:=""
+                    按键名称记录:=""
+                    媒体快捷键初次按下计时:=0
+                    媒体快捷键初次按下时长:=-1
+                    媒体快捷键连击按下计时:=0
+                    媒体快捷键连击按下时长:=-1
+                }
 
-    if (NeedReloadRearView=1)
-        SetTimer 恢复运行后视镜, -1
+                if (抬起发送!="")
+                {
+                    Send {%抬起发送%}
+                    if (抬起发送="Media_Play_Pause")
+                    {
+                        Loop 20
+                        {
+                            ToolTip 播放/暂停
+                            Sleep 30
+                        }
+                        ToolTip
+                    }
+                    抬起发送:=""
+                    全部抬起:=0
+                }
+
+                if (播放器快捷呼出=1)
+                {
+                    MouseGetPos, , , WinID ;获取鼠标所在窗口的句柄
+                    WinGetClass WindowID, ahk_id %WinID% ;根据句柄获取窗口的名字
+                    if (MediaWindow="") or (MediaWindow="ERROR")
+                    {
+                        MouseGetPos, , , WinID_Media ;获取鼠标所在窗口的句柄
+                        WinGetClass MediaWindow, ahk_id %WinID_Media% ;根据句柄获取窗口的名字
+
+                        if (MediaWindow!="_cls_desk_") and (MediaWindow!="Shell_TrayWnd") and (MediaWindow!="WorkerW")
+                        {
+                            IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+
+                            Loop 20
+                            {
+                                ToolTip 已设置%MediaWindow%为播放器快捷呼出
+                                Sleep 30
+                            }
+                            ToolTip
+                        }
+                    }
+                    else if (WindowID!=MediaWindow)
+                    {
+                        WinActivate ahk_class %MediaWindow%
+                        WinShow ahk_class %MediaWindow%
+
+                        Loop 20
+                        {
+                            ToolTip 快捷呼出%MediaWindow%播放器
+                            Sleep 30
+                        }
+                        ToolTip
+                    }
+                    else
+                    {
+                        WinMinimize ahk_class %MediaWindow%
+
+                        Loop 20
+                        {
+                            ToolTip 快捷关闭%MediaWindow%播放器
+                            Sleep 30
+                        }
+                        ToolTip
+                    }
+                    播放器快捷呼出:=0
+                }
+            }
+
+            按下快捷键数量:=0
+            if (媒体快捷键连击按下时长>媒体快捷键操作限时*按下次数) and (按下次数>0)
+            {
+                按下次数:=0
+                全部抬起:=1
+                按键名称:=""
+                按键名称记录:=""
+                媒体快捷键初次按下计时:=0
+                媒体快捷键初次按下时长:=-1
+                媒体快捷键连击按下计时:=0
+                媒体快捷键连击按下时长:=-1
+            }
+
+            if (按键名称!="")
+            {
+                按键名称记录:=按键名称
+                按键名称:=""
+            }
+        }
+        else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P")
+        {
+            按下快捷键数量记录:=按下快捷键数量
+            按下快捷键数量:=GetKeyState("Left", "P") + GetKeyState("Right", "P") + GetKeyState("Up", "P") + GetKeyState("Down", "P")
+            if (按下快捷键数量!=按下快捷键数量记录) and (按下快捷键数量记录=0)
+                按下次数:=按下次数+1
+
+            if GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+            {
+                按键名称:="Left"
+            }
+            else if !GetKeyState("Left", "P") and GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+            {
+                按键名称:="Right"
+            }
+            else if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+            {
+                按键名称:="Up"
+            }
+            else if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and GetKeyState("Down", "P")
+            {
+                按键名称:="Down"
+            }
+        }
+
+        if (按下次数=1)
+        {
+            if (媒体快捷键初次按下计时=0)
+            {
+                媒体快捷键初次按下计时:=A_TickCount
+            }
+            else if (媒体快捷键初次按下计时!=0) and (按下快捷键数量!=0)
+            {
+                媒体快捷键初次按下时长:=A_TickCount-媒体快捷键初次按下计时
+            }
+        }
+        else if (按下次数>1) ; 连击
+        {
+            if (媒体快捷键连击按下计时=0)
+            {
+                媒体快捷键连击按下计时:=A_TickCount
+            }
+            else if (媒体快捷键连击按下计时!=0) and (按下快捷键数量!=0)
+            {
+                媒体快捷键连击按下时长:=A_TickCount-媒体快捷键连击按下计时
+            }
+        }
+
+        ; Continue
+
+        if ((按下次数=1) and (按下快捷键数量=1) and (全部抬起=1) and (媒体快捷键初次按下时长>1000)) or (媒体快捷键=0)
+        {
+            全部抬起:=0
+            if GetKeyState("Left", "P") and !GetKeyState("Left")
+            {
+                Send {Left Down}
+            }
+            if GetKeyState("Right", "P") and !GetKeyState("Right")
+            {
+                Send {Right Down}
+            }
+            if GetKeyState("Up", "P") and !GetKeyState("Up")
+            {
+                Send {Up Down}
+            }
+            if GetKeyState("Down", "P") and !GetKeyState("Down")
+            {
+                Send {Down Down}
+            }
+
+            ; Loop
+            ; {
+            ;     if !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
+            ;     {
+            ;         break
+            ;     }
+            ;     Sleep 10
+            ; }
+
+            if !GetKeyState("Left", "P") and GetKeyState("Left")
+            {
+                Send {Left Up}
+            }
+            if !GetKeyState("Right", "P") and GetKeyState("Right")
+            {
+                Send {Right Up}
+            }
+            if !GetKeyState("Up", "P") and GetKeyState("Up")
+            {
+                Send {Up Up}
+            }
+            if !GetKeyState("Down", "P") and GetKeyState("Down")
+            {
+                Send {Down Up}
+            }
+        }
+        else if (按下次数>=2) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (按键名称=按键名称记录) and (全部抬起=1) and (媒体快捷键=1) and (按键名称="Left") ; 双击左键
+        {
+            全部抬起:=0
+            Send {Media_Prev}
+            Loop
+            {
+                ToolTip 上一曲
+                Sleep 30
+
+                if !GetKeyState("Left", "P")
+                {
+                    Loop, 20
+                    {
+                        ToolTip 上一曲
+                        Sleep 30
+                    }
+                    ToolTip
+                    break
+                }
+            }
+        }
+        else if (按下次数>=2) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (按键名称=按键名称记录) and (全部抬起=1) and (媒体快捷键=1) and (按键名称="Right") ; 双击右键
+        {
+            全部抬起:=0
+            Send {Media_Next}
+            Loop
+            {
+                ToolTip 下一曲
+                Sleep 30
+
+                if !GetKeyState("Right", "P")
+                {
+                    Loop 20
+                    {
+                        ToolTip 下一曲
+                        Sleep 30
+                    }
+                    ToolTip
+                    break
+                }
+            }
+        }
+        else if (按下次数>=2) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (按键名称=按键名称记录) and (全部抬起=1) and (媒体快捷键=1) and (按键名称="Up") ; 双击上键
+        {
+            全部抬起:=0
+            Send %上组合键%
+            Loop
+            {
+                ToolTip 喜欢歌曲
+                Sleep 30
+
+                if !GetKeyState("Up", "P")
+                {
+                    Loop 20
+                    {
+                        ToolTip 喜欢歌曲
+                        Sleep 30
+                    }
+                    ToolTip
+                    break
+                }
+            }
+        }
+        else if (按下次数>=2) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (媒体快捷键初次按下时长<=媒体快捷键操作限时) and (按键名称=按键名称记录) and (全部抬起=1) and (媒体快捷键=1) and (按键名称="Down") ; 双击下键
+        {
+            全部抬起:=0
+            Send %下组合键%
+            Loop
+            {
+                ToolTip 桌面歌词
+                Sleep 30
+
+                if !GetKeyState("Down", "P")
+                {
+                    Loop 20
+                    {
+                        ToolTip 桌面歌词
+                        Sleep 30
+                    }
+                    ToolTip
+                    break
+                }
+            }
+        }
+        else if (按下次数=1) and (按下快捷键数量=2) and (全部抬起=1) and (媒体快捷键=1) and GetKeyState("Left", "P") and GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P") ; 同时按左右键
+        {
+            if (媒体快捷键初次按下时长>2000)
+            {
+                媒体快捷键:=0
+                Loop 20
+                {
+                    ToolTip 媒体快捷键已关闭
+                    Sleep 30
+                }
+                ToolTip
+                全部抬起:=0
+                抬起发送:=""
+            }
+            else
+            {
+                抬起发送:="Media_Play_Pause"
+            }
+        }
+        else if (按下次数=1) and (按下快捷键数量=2) and (全部抬起=1) and (媒体快捷键=1) and GetKeyState("Up", "P") and GetKeyState("Down", "P") and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") ; 同时按上下键
+        {
+            if (媒体快捷键初次按下时长>2000)
+            {
+                MediaWindow:=""
+                IniWrite %MediaWindow%, Settings.ini, 设置, 呼出播放器 ;写入设置到ini文件
+                Loop 20
+                {
+                    ToolTip 已清除播放器快捷呼出设置
+                    Sleep 30
+                }
+                ToolTip
+                全部抬起:=0
+                播放器快捷呼出:=0
+            }
+            else
+            {
+                播放器快捷呼出:=1
+            }
+        }
+    }
 return
+
+屏蔽按键:
+    ; MsgBox, % "屏蔽按键"
+Return
 
 屏幕监测:
     ;自动暂停
@@ -4392,9 +4404,6 @@ return
     ; ToolTip 快捷呼出计时%快捷呼出计时%`n停留时间%停留时间%ms 停留%停留呼出左边快捷窗口%`n左边窗口%左边快捷呼出窗口% 状态%已激活左边快捷呼出窗口% 实际%实际左边状态%`n主动隐藏%主动隐藏快捷呼出窗口%`n`n停留时间%停留时间%ms 停留%停留呼出右边快捷窗口%`n右边窗口%右边快捷呼出窗口% 状态%已激活右边快捷呼出窗口% 实际%实际右边状态%`n主动隐藏%主动隐藏快捷呼出窗口%
 
     ;=====================================================================其他功能
-    ;后视镜线程卡顿重启
-    if (NeedReloadRearView=1) and !GetKeyState("Left", "P") and !GetKeyState("Right", "P") and !GetKeyState("Up", "P") and !GetKeyState("Down", "P")
-        SetTimer 恢复运行后视镜, -1
 
     ;搜索栏 Everything 修正
     WinGetPos EverythingToolbarX, EverythingToolbarY, EverythingToolbarW, EverythingToolbarH, ahk_exe EverythingToolbar.Launcher.exe
@@ -4718,14 +4727,13 @@ Return
 
 恢复运行后视镜:
     最长耗时时间:=0
-    NeedReloadRearView:=0
     Loop
     {
         ; WinExistMagnifierWindow:=WinExist("ahk_id "MagnifierWindowID)
         ; ToolTip %高效模式% 后视镜%RearView%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
         if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0)
         {
-            if (渲染耗时记录=0)
+            if (最长耗时时间=0)
             {
                 精确休眠:=A_TickCount
                 loop
@@ -4733,11 +4741,6 @@ Return
                     if (A_TickCount-精确休眠>60)
                     {
                         break
-                    }
-                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
-                    {
-                        NeedReloadRearView:=1
-                        break, 2
                     }
                 }
             }
@@ -4749,11 +4752,6 @@ Return
                     if (A_TickCount-精确休眠>最长耗时时间+15.6*(A_ScreenHeight/2160))
                     {
                         break
-                    }
-                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
-                    {
-                        NeedReloadRearView:=1
-                        break, 2
                     }
                 }
             }
@@ -4768,8 +4766,7 @@ Return
                 RearViewMode:=0
             }
 
-
-            if (渲染耗时记录=0)
+            if (最长耗时时间=0)
             {
                 精确休眠:=A_TickCount
                 loop
@@ -4777,11 +4774,6 @@ Return
                     if (A_TickCount-精确休眠>90)
                     {
                         break
-                    }
-                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
-                    {
-                        NeedReloadRearView:=1
-                        break, 2
                     }
                 }
             }
@@ -4794,20 +4786,16 @@ Return
                     {
                         break
                     }
-                    else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
-                    {
-                        NeedReloadRearView:=1
-                        break, 2
-                    }
                 }
             }
             Continue
         }
-        else if GetKeyState("Left", "P") or GetKeyState("Right", "P") or GetKeyState("Up", "P") or GetKeyState("Down", "P") ;打断循环
-        {
-            NeedReloadRearView:=1
-            break
-        }
+
+        ; 子进程ToolTipText:=ExecGetvar("MediaHotKey","ToolTipText")
+        ; if (子进程ToolTipText!="")
+        ; {
+        ;     ToolTipText:=子进程ToolTipText
+        ; }
 
         if (ToolTipText!="")
         {
@@ -4821,6 +4809,7 @@ Return
                 if (ToolTipTimes>20)
                 {
                     ToolTipText:=""
+                    ExecAssign("MediaHotKey", "ToolTipText", "")
                     ToolTipTimes:=0
                     ToolTip
                 }
