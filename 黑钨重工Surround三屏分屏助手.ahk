@@ -33,7 +33,7 @@
     CoordMode Pixel, Screen
     CoordMode ToolTip, Screen
     SetBatchLines -1
-    SetWinDelay 10
+    SetWinDelay -1
     SetKeyDelay -1, 30
     SetWorkingDir %A_ScriptDir%
     OnExit 退出软件
@@ -54,6 +54,7 @@
         Hotkey $Up, 屏蔽按键
     }
 
+    软件启动:=A_TickCount
     MButton_presses:=0
     running:=1 ;1为运行 0为暂停
     Process%A_Index% := New ExecProcess("MediaHotKey", running) ;创建子进程
@@ -338,7 +339,7 @@
     OpenRearView:=0 ;打开后视镜中
     ToolTipTimes:=0 ;后视镜提示文字显示
     ToolTipCount:=0 ;后视镜提示文字计时
-    ToolTipText:="" ;后视镜提示文字
+    ; ToolTipText:="" ;后视镜提示文字
 
     搜索栏:=0
     开始菜单:=0
@@ -3722,7 +3723,7 @@ MediaHotKey:
     媒体快捷键连击按下计时:=0
     媒体快捷键连击按下时长:=-1
     按下快捷键数量:=GetKeyState("Left", "P") + GetKeyState("Right", "P") + GetKeyState("Up", "P") + GetKeyState("Down", "P")
-    媒体快捷键操作限时:=500
+    媒体快捷键操作限时:=250
     Loop
     {
         if (running=0)
@@ -4731,19 +4732,22 @@ Return
     }
 
 恢复运行后视镜:
+    渲染耗时数组:=[]
     最长耗时时间:=0
+    平均耗时时间:=0
+    总计耗时时间:=0
     Loop
     {
         ; WinExistMagnifierWindow:=WinExist("ahk_id "MagnifierWindowID)
         ; ToolTip %高效模式% 后视镜%RearView%`n%MagnifierWindowID% : %WinExistMagnifierWindow%
-        if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0)
+        if (高效模式=0) and (WinExist("ahk_id "MagnifierWindowID)=0) ; 节能模式下后视镜窗口不存在不执行渲染
         {
-            if (最长耗时时间=0)
+            if (平均耗时时间=0)
             {
                 精确休眠:=A_TickCount
                 loop
                 {
-                    if (A_TickCount-精确休眠>60)
+                    if (A_TickCount-精确休眠>15.6)
                     {
                         break
                     }
@@ -4754,7 +4758,7 @@ Return
                 精确休眠:=A_TickCount
                 loop
                 {
-                    if (A_TickCount-精确休眠>最长耗时时间+15.6*(A_ScreenHeight/2160))
+                    if (A_TickCount-精确休眠>平均耗时时间)
                     {
                         break
                     }
@@ -4762,7 +4766,7 @@ Return
             }
             Continue
         }
-        else if (running=0) ;自动暂停
+        else if (running=0) ; 自动暂停后 关闭后视镜窗口 不执行渲染
         {
             if (WinExist("ahk_id "MagnifierWindowID)!=0)
             {
@@ -4771,12 +4775,12 @@ Return
                 RearViewMode:=0
             }
 
-            if (最长耗时时间=0)
+            if (平均耗时时间=0)
             {
                 精确休眠:=A_TickCount
                 loop
                 {
-                    if (A_TickCount-精确休眠>90)
+                    if (A_TickCount-精确休眠>15.6)
                     {
                         break
                     }
@@ -4787,7 +4791,7 @@ Return
                 精确休眠:=A_TickCount
                 loop
                 {
-                    if (A_TickCount-精确休眠>最长耗时时间+15.6*(A_ScreenHeight/2160))
+                    if (A_TickCount-精确休眠>平均耗时时间)
                     {
                         break
                     }
@@ -4802,26 +4806,27 @@ Return
         ;     ToolTipText:=子进程ToolTipText
         ; }
 
-        if (ToolTipText!="")
-        {
-            if (ToolTipCount=0)
-                ToolTipCount:=A_TickCount
-            else if (A_TickCount-ToolTipCount>30)
-            {
-                ToolTip %ToolTipText%
-                ToolTipTimes:=ToolTipTimes+1
+        ; if (ToolTipText!="")
+        ; {
+        ;     if (ToolTipCount=0)
+        ;         ToolTipCount:=A_TickCount
+        ;     else if (A_TickCount-ToolTipCount>30)
+        ;     {
+        ;         ToolTip %ToolTipText%
+        ;         ToolTipTimes:=ToolTipTimes+1
 
-                if (ToolTipTimes>20)
-                {
-                    ToolTipText:=""
-                    ExecAssign("MediaHotKey", "ToolTipText", "")
-                    ToolTipTimes:=0
-                    ToolTip
-                }
-            }
-        }
+        ;         if (ToolTipTimes>20)
+        ;         {
+        ;             ToolTipText:=""
+        ;             ExecAssign("MediaHotKey", "ToolTipText", "")
+        ;             ToolTipTimes:=0
+        ;             ToolTip
+        ;         }
+        ;     }
+        ; }
 
-        开始渲染:=A_TickCount
+        DllCall("QueryPerformanceFrequency", "Int64*", freq)
+        DllCall("QueryPerformanceCounter", "Int64*", 开始渲染)
         CoordMode Mouse, Screen ;以屏幕为基准
         MouseGetPos MXS, MYS
         NumPut(MXS - RearViewWidth/2, RECT, 0, "Int")
@@ -4829,15 +4834,61 @@ Return
         NumPut(RearViewWidth, RECT, 8, "Int")
         NumPut(RearViewHeight, RECT, 12, "Int")
         渲染完成:=DllCall("magnification.dll\MagSetWindowSource", Ptr, hChildMagnifier, Ptr, &RECT)
-        if (渲染完成=1)
+        DllCall("QueryPerformanceCounter", "Int64*", 渲染结束)
+        渲染耗时:=Round((渲染结束-开始渲染)/freq*1000, 2)
+        渲染耗时数组.Push(渲染耗时)
+        if (渲染耗时数组.Length()>30) ;如果渲染耗时数组超过100个元素
         {
-            渲染耗时:=A_TickCount-开始渲染
-            if (渲染耗时>0) and (渲染耗时>最长耗时时间)
-                最长耗时时间:=渲染耗时
-            if (最长耗时时间>100)
-                最长耗时时间:=100
+            渲染耗时数组.RemoveAt(1) ;删除第一个元素
         }
-        ; ToolTip %A_Index%`n渲染耗时记录%渲染耗时记录% 渲染耗时%渲染耗时%ms`n最长耗时时间%最长耗时时间%ms
+
+        if (渲染完成=1) and (A_TickCount-软件启动>3000)
+        {
+            总计耗时时间:=0
+            loop % 渲染耗时数组.Length()
+            {
+                总计耗时时间:=总计耗时时间+渲染耗时数组[A_Index] ;计算总计耗时时间
+            }
+            平均耗时时间:=总计耗时时间/渲染耗时数组.Length()
+
+            ;从渲染耗时数组中找到最长的渲染耗时
+            if (A_Index=1)
+            {
+                最长耗时时间:=渲染耗时
+            }
+            else if (A_Index>1)
+            {
+                最长耗时时间:=Max(渲染耗时数组*)
+                if (最长耗时时间>78)
+                    最长耗时时间:=78
+            }
+
+            if (平均耗时时间>0) and (最长耗时时间>0)
+            {
+                精确休眠:=A_TickCount
+                if (高效模式=0)
+                {
+                    loop
+                    {
+                        if (A_TickCount-精确休眠>最长耗时时间+15.6)
+                        {
+                            break
+                        }
+                    }
+                }
+                else if (高效模式=1)
+                {
+                    loop
+                    {
+                        if (A_TickCount-精确休眠>平均耗时时间)
+                        {
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        ; ToolTip %A_Index% 渲染耗时%渲染耗时%ms`n最长耗时时间%最长耗时时间%ms`n平均耗时时间%平均耗时时间%ms
     }
 
     ; Gui 后视镜:Destroy
